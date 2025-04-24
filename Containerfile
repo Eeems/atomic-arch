@@ -63,12 +63,12 @@ RUN <<EOT
         networkmanager \
         dosfstools \
         grub \
-        skopeo \
         squashfs-tools \
-        umoci \
         xorriso \
         podman \
-        fuse-overlayfs
+        fuse-overlayfs \
+        mkinitcpio-archiso \
+        syslinux
     yes | pacman -Scc
     rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
 EOT
@@ -92,6 +92,13 @@ RUN <<EOT
     systemctl enable NetworkManager bluetooth
     mkdir /etc/system
 EOT
+
+RUN <<EOF cat > /etc/system/mkinitcpio-iso.conf
+MODULES=()
+BINARIES=()
+FILES=()
+HOOKS=(base udev modconf memdisk archiso archiso_loop_mnt kms block filesystems keyboard)
+EOF
 
 RUN <<EOF cat > /etc/system/Systemfile
 FROM atomic-arch:base
