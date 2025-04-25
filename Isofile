@@ -1,0 +1,39 @@
+FROM system:latest
+
+RUN <<EOT
+  set -e
+  pacman-key --init
+  pacman-key --populate archlinux
+  pacman -Syu --needed --noconfirm \
+    efibootmgr \
+    grub \
+    mkinitcpio-archiso \
+    qemu-guest-agent \
+    syslinux
+  yes | pacman -Scc
+  rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
+EOT
+
+RUN <<EOF cat > /etc/system/mkinitcpio-iso.conf
+MODULES=(virtio virtio_blk virtio_pci virtio_net)
+BINARIES=()
+FILES=()
+HOOKS=(base udev modconf memdisk archiso archiso_loop_mnt kms block filesystems keyboard)
+EOF
+
+RUN <<EOT
+  set -e
+  useradd -m live
+  passwd -d live
+  echo "live ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/live
+  mkinitcpio \
+    -k /boot/vmlinuz-linux-zen \
+    -c /etc/system/mkinitcpio-iso.conf \
+    -g /boot/initramfs-iso.img
+  if [ -f /usr/bin/gdm ]; then
+    mkdir -p /etc/gdm
+    echo "[daemon]" > /etc/gdm/custom.conf
+    echo "AutomaticLoginEnable=True" >> /etc/gdm/custom.conf
+    echo "AutomaticLogin=live" >> /etc/gdm/custom.conf
+  fi
+EOT

@@ -1,8 +1,11 @@
 #!/usr/bin/python
 import os
-import sys
+from re import sub
 import shutil
 import subprocess
+import sys
+from tabnanny import check
+import tarfile
 
 from time import time
 from pathlib import Path
@@ -75,67 +78,50 @@ play 600 988 1 1319 4
 
 
 def iso():
+    _ = subprocess.check_call(
+        [
+            "podman",
+            "--remote",
+            "build",
+            "--tag",
+            "system:iso",
+            "--tag",
+            f"system:{timestamp}",
+            "--file",
+            "/etc/system/Isofile",
+        ]
+    )
     system = "/var/lib/system"
-    rootfs = os.path.join(system, "rootfs")
-    os.makedirs(rootfs, exist_ok=True)
+    os.makedirs(system, exist_ok=True)
     _ = subprocess.check_call(
         [
             "podman",
             "--remote",
-            "run",
-            "--detach",
-            "--tty",
+            "create",
             "--name",
-            f"system-{timestamp}",
-            "system:latest",
+            f"iso-{timestamp}",
+            "system:iso",
         ]
     )
-    _ = subprocess.check_call(
-        [
-            "podman",
-            "--remote",
-            "exec",
-            f"system-{timestamp}",
-            "mkinitcpio",
-            "-k",
-            "/boot/vmlinuz-linux-zen",
-            "-c",
-            "/etc/system/mkinitcpio-iso.conf",
-            "-g",
-            "/boot/initramfs-iso.img",
-        ]
-    )
-    _ = subprocess.check_call(
-        ["podman", "--remote", "exec", f"system-{timestamp}", "useradd", "-m", "live"]
-    )
+    tar = os.path.join(system, "rootfs.tar")
+    if os.path.exists(tar):
+        os.unlink(tar)
 
     _ = subprocess.check_call(
-        ["podman", "--remote", "exec", f"system-{timestamp}", "passwd", "-d", "live"]
+        ["podman", "--remote", "export", f"iso-{timestamp}", "--output", tar]
     )
-    _ = subprocess.check_call(
-        [
-            "podman",
-            "--remote",
-            "stop",
-            f"system-{timestamp}",
-        ]
-    )
-    _ = subprocess.check_call(
-        [
-            "podman",
-            "--remote",
-            "cp",
-            "-a",
-            f"system-{timestamp}:/",
-            rootfs,
-        ]
-    )
+    rootfs = os.path.join(system, "rootfs")
+    os.makedirs(rootfs, exist_ok=True)
+    with tarfile.open(tar, mode="r") as t:
+        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
+
+    os.unlink(tar)
     _ = subprocess.check_call(
         [
             "podman",
             "--remote",
             "rm",
-            f"system-{timestamp}",
+            f"iso-{timestamp}",
         ]
     )
     iso = os.path.join(system, "iso")
@@ -157,16 +143,6 @@ def iso():
         os.path.join(rootfs, "boot/vmlinuz-linux-zen"),
         os.path.join(iso, "arch/boot/x86_64"),
     )
-    with open(os.path.join(rootfs, "etc/sudoers.d/live"), "w") as f:
-        _ = f.write("live ALL=(ALL:ALL) NOPASSWD: ALL\n")
-
-    if os.path.exists(os.path.join(rootfs, "usr/bin/gdm")):
-        os.makedirs(os.path.join(rootfs, "etc/gdm"), exist_ok=True)
-        with open(os.path.join(rootfs, "etc/gdm/custom.conf"), "w") as f:
-            _ = f.write("[daemon]\n")
-            _ = f.write("AutomaticLoginEnable=True\n")
-            _ = f.write("AutomaticLogin=live\n")
-
     squashfs = os.path.join(iso, "arch/x86_64/airootfs.sfs")
     if os.path.exists(squashfs):
         os.unlink(squashfs)

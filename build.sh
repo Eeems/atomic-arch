@@ -6,7 +6,7 @@ if (($EUID != 0)); then
   exit 1
 fi
 
-TAG=base
+TAG=${1:-gnome}
 podman build \
   --target "$TAG" \
   --tag "atomic-arch:$TAG" \
