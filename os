@@ -6,7 +6,6 @@ import sys
 import tarfile
 
 from time import time
-from pathlib import Path
 from datetime import datetime
 
 # TODO - locking
@@ -30,57 +29,20 @@ def build():
     )
 
 
-GRUB_CFG_TEMPLATE = r"""
-insmod part_gpt
-insmod part_msdos
-insmod fat
-insmod iso9660
-insmod ntfs
-insmod ntfscomp
-insmod exfat
-insmod udf
-
-search --file --set=root /boot/{0}.uuid
-
-if loadfont "\${prefix}/fonts/unicode.pf2" ; then
-    insmod all_video
-    set gfxmode="auto"
-    terminal_input console
-    terminal_output console
-fi
-
-default=archlinux
-timeout=15
-timeout_style=menu
-
-menuentry "Boot atomic-arch" --class arch --class gnu-linux --class gnu --class os --id 'archlinux' {
-    set gfxpayload=keep
-    linux /arch/boot/x86_64/vmlinuz-linux-zen archisobasedir=arch archisosearchuuid={0} copytoram=n
-    initrd /arch/boot/x86_64/initramfs.img
-}
-menuentry "Boot atomic-arch (nomodeset)" --class arch --class gnu-linux --class gnu --class os --id 'archlinux' {
-    set gfxpayload=keep
-    linux /arch/boot/x86_64/vmlinuz-linux-zen nomodeset archisobasedir=arch archisosearchuuid={0} copytoram=n
-    initrd /arch/boot/x86_64/initramfs.img
-}
-menuentry 'System shutdown' --class shutdown --class poweroff {
-    echo 'System shutting down...'
-    halt
-}
-menuentry 'System restart' --class reboot --class restart {
-    echo 'System rebooting...'
-    reboot
-}
-play 600 988 1 1319 4
-"""
-
-
 def iso():
+    uuid = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-00")
+    with open("/etc/system/Systemfile", "r") as f:
+        buildImage = [
+            x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")
+        ][0]
+
     _ = subprocess.check_call(
         [
             "podman",
             "--remote",
             "build",
+            f"--build-arg=UUID={uuid}",
+            f"--build-arg=BASE_IMAGE={buildImage}",
             "--tag",
             "system:iso",
             "--tag",
@@ -126,28 +88,12 @@ def iso():
     if os.path.exists(iso):
         shutil.rmtree(iso)
 
-    os.makedirs(os.path.join(iso, "arch/x86_64"), exist_ok=True)
-    os.makedirs(os.path.join(iso, "arch/boot/x86_64"), exist_ok=True)
-    os.makedirs(os.path.join(iso, "arch/boot/grub"), exist_ok=True)
-    os.makedirs(os.path.join(iso, "boot/grub"), exist_ok=True)
-    initramfs = os.path.join(iso, "arch/boot/x86_64/initramfs.img")
-    if os.path.exists(initramfs):
-        os.unlink(initramfs)
-
-    _ = shutil.move(os.path.join(rootfs, "boot/initramfs-iso.img"), initramfs)
-    uuid = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-00")
-    Path(os.path.join(iso, f"boot/{uuid}.uuid")).touch()
-    _ = shutil.copy2(
-        os.path.join(rootfs, "boot/vmlinuz-linux-zen"),
-        os.path.join(iso, "arch/boot/x86_64"),
-    )
+    _ = shutil.move(os.path.join(rootfs, "iso"), iso)
     squashfs = os.path.join(iso, "arch/x86_64/airootfs.sfs")
     if os.path.exists(squashfs):
         os.unlink(squashfs)
 
     _ = subprocess.check_call(["mksquashfs", rootfs, squashfs])
-    with open(os.path.join(iso, "boot/grub/grub.cfg"), "w") as f:
-        _ = f.write(GRUB_CFG_TEMPLATE.replace("{0}", uuid))
 
     efi = os.path.join(iso, "boot/grub/efi.img")
     if os.path.exists(efi):
@@ -241,11 +187,12 @@ def iso():
     os.sync()
     _ = subprocess.check_call(["umount", mount])
     os.rmdir(mount)
+    core = os.path.join(system, "core.img")
     _ = subprocess.check_call(
         [
             "grub-mkimage",
             "-o",
-            os.path.join(system, "core.img"),
+            core,
             "-p",
             "/boot/grub",
             "-O",
@@ -275,9 +222,10 @@ def iso():
         with open(os.path.join(rootfs, "usr/lib/grub/i386-pc/cdboot.img"), "rb") as f:
             _ = img.write(f.read())
 
-        with open(os.path.join(system, "core.img"), "rb") as f:
+        with open(core, "rb") as f:
             _ = img.write(f.read())
 
+    os.unlink(core)
     if os.path.exists(os.path.join(system, "atomic-arch.iso")):
         os.unlink(os.path.join(system, "atomic-arch.iso"))
 
@@ -307,6 +255,8 @@ def iso():
             iso,
         ]
     )
+    shutil.rmtree(rootfs)
+    shutil.rmtree(iso)
 
 
 if len(sys.argv) != 2:

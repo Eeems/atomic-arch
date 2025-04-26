@@ -64,6 +64,8 @@ HOME_URL="https://github.com/Eeems/atomic-arch"
 SUPPORT_URL="https://github.com/Eeems/atomic-arch/issues"
 BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues"
 VERSION_ID=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}
+VARIANT=Base
+VARIANT_ID=base
 EOF
 
 RUN <<EOT
@@ -105,7 +107,7 @@ RUN <<EOT
   echo 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf
   echo "kernel.unprivileged_userns_clone=1" > /usr/lib/sysctl.d/99-podman.conf
   echo "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/wheel
-  systemctl enable NetworkManager bluetooth
+  systemctl enable NetworkManager bluetooth podman
   mkdir /etc/system
 EOT
 
@@ -120,10 +122,12 @@ COPY Isofile /etc/system
 
 FROM base AS gnome
 
-RUN <<EOF cat >> /etc/os-release
-VARIANT=Gnome
-VARIANT_ID=gnome
-EOF
+RUN <<EOT
+  set -e
+  sed -i '/FROM atomic-arch:/ s|base|gnome|' /etc/system/{System,Iso}file
+  sed -i '/Variant=/ s|Base|Gnome|' /etc/os-release
+  sed -i '/Variant_id=/ s|base|gnome|' /etc/os-release
+EOT
 
 RUN <<EOT
   set -e
@@ -148,9 +152,3 @@ RUN <<EOT
   set -e
   systemctl enable gdm
 EOT
-
-RUN <<EOF cat > /etc/system/Systemfile
-FROM atomic-arch:gnome
-
-RUN echo "BUILD_ID=$(date +'%Y-%m-%d')" >> /etc/os-release
-EOF
