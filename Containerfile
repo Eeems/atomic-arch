@@ -52,6 +52,20 @@ ENTRYPOINT [ "/bin/bash" ]
 
 FROM rootfs AS base
 
+ARG ARCHIVE_YEAR
+ARG ARCHIVE_MONTH
+ARG ARCHIVE_DAY
+
+RUN <<EOF cat > /etc/os-release
+NAME="Atomic Arch"
+PRETTY_NAME="Atomic Arch Linux"
+ID=atomic-arch
+HOME_URL="https://github.com/Eeems/atomic-arch"
+SUPPORT_URL="https://github.com/Eeems/atomic-arch/issues"
+BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues"
+VERSION_ID=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}
+EOF
+
 RUN <<EOT
   set -e
   pacman-key --init
@@ -97,12 +111,19 @@ EOT
 
 RUN <<EOF cat > /etc/system/Systemfile
 FROM atomic-arch:base
+
+RUN echo "BUILD_ID=$(date +'%Y-%m-%d')" >> /etc/os-release
 EOF
 
 COPY os /usr/bin
 COPY Isofile /etc/system
 
 FROM base AS gnome
+
+RUN <<EOF cat >> /etc/os-release
+VARIANT=Gnome
+VARIANT_ID=gnome
+EOF
 
 RUN <<EOT
   set -e
@@ -130,4 +151,6 @@ EOT
 
 RUN <<EOF cat > /etc/system/Systemfile
 FROM atomic-arch:gnome
+
+RUN echo "BUILD_ID=$(date +'%Y-%m-%d')" >> /etc/os-release
 EOF
