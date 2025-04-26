@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import shlex
 
 from time import time
 from datetime import datetime
@@ -13,8 +14,21 @@ from datetime import datetime
 timestamp = int(time())
 
 
+def execute(cmd: str | list[str], *args: str):
+    if not isinstance(cmd, str):
+        cmd = shlex.join(cmd)
+
+    if args:
+        cmd = f"{cmd} {shlex.join(args)}"
+
+    status = os.system(cmd)
+    ret = os.waitstatus_to_exitcode(status)
+    if ret:
+        raise subprocess.CalledProcessError(ret, cmd, None, None)
+
+
 def build():
-    _ = subprocess.check_call(
+    execute(
         [
             "podman",
             "--remote",
@@ -36,7 +50,7 @@ def iso():
             x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")
         ][0]
 
-    _ = subprocess.check_call(
+    execute(
         [
             "podman",
             "--remote",
@@ -45,44 +59,36 @@ def iso():
             f"--build-arg=BASE_IMAGE={buildImage}",
             "--tag",
             "system:iso",
-            "--tag",
-            f"system:{timestamp}",
             "--file",
             "/etc/system/Isofile",
         ]
     )
     system = "/var/lib/system"
     os.makedirs(system, exist_ok=True)
-    _ = subprocess.check_call(
-        [
-            "podman",
-            "--remote",
-            "create",
-            "--name",
-            f"iso-{timestamp}",
-            "system:iso",
-        ]
+    execute(
+        "podman",
+        "--remote",
+        "create",
+        "--name",
+        f"iso-{timestamp}",
+        "system:iso",
     )
     tar = os.path.join(system, "rootfs.tar")
     if os.path.exists(tar):
         os.unlink(tar)
 
-    _ = subprocess.check_call(
-        ["podman", "--remote", "export", f"iso-{timestamp}", "--output", tar]
-    )
+    execute(["podman", "--remote", "export", f"iso-{timestamp}", "--output", tar])
     rootfs = os.path.join(system, "rootfs")
     os.makedirs(rootfs, exist_ok=True)
     with tarfile.open(tar, mode="r") as t:
         t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
 
     os.unlink(tar)
-    _ = subprocess.check_call(
-        [
-            "podman",
-            "--remote",
-            "rm",
-            f"iso-{timestamp}",
-        ]
+    execute(
+        "podman",
+        "--remote",
+        "rm",
+        f"iso-{timestamp}",
     )
     iso = os.path.join(system, "iso")
     if os.path.exists(iso):
@@ -93,18 +99,18 @@ def iso():
     if os.path.exists(squashfs):
         os.unlink(squashfs)
 
-    _ = subprocess.check_call(["mksquashfs", rootfs, squashfs])
+    execute("mksquashfs", rootfs, squashfs)
 
     efi = os.path.join(iso, "boot/grub/efi.img")
     if os.path.exists(efi):
         os.unlink(efi)
 
-    _ = subprocess.check_call(["truncate", "-s", "32M", efi])
-    _ = subprocess.check_call(["mkfs.vfat", efi])
+    execute("truncate", "-s", "32M", efi)
+    execute("mkfs.vfat", efi)
 
     mount = os.path.join(system, "mnt")
     os.makedirs(mount, exist_ok=True)
-    _ = subprocess.check_call(["mount", efi, mount])
+    execute("mount", efi, mount)
     os.makedirs(os.path.join(mount, "EFI/BOOT"), exist_ok=True)
     modules = " ".join(
         [
@@ -165,58 +171,54 @@ def iso():
             "zstd",
         ]
     )
-    _ = subprocess.check_call(
-        [
-            "grub-mkstandalone",
-            "-O",
-            "x86_64-efi",
-            f"--modules={modules}",
-            "--locales=en@quot",
-            '--themes=""',
-            "--sbat=/usr/share/grub/sbat.csv",
-            "--disable-shim-lock",
-            "-o",
-            os.path.join(mount, "EFI/BOOT/BOOTx64.EFI"),
-            "boot/grub/grub.cfg=./grub.cfg",
-        ]
+    execute(
+        "grub-mkstandalone",
+        "-O",
+        "x86_64-efi",
+        f"--modules={modules}",
+        "--locales=en@quot",
+        '--themes=""',
+        "--sbat=/usr/share/grub/sbat.csv",
+        "--disable-shim-lock",
+        "-o",
+        os.path.join(mount, "EFI/BOOT/BOOTx64.EFI"),
+        "boot/grub/grub.cfg=./grub.cfg",
     )
     if os.path.exists(os.path.join(iso, "EFI")):
         shutil.rmtree(os.path.join(iso, "EFI"))
 
     _ = shutil.copytree(os.path.join(mount, "EFI"), os.path.join(iso, "EFI"))
     os.sync()
-    _ = subprocess.check_call(["umount", mount])
+    execute("umount", mount)
     os.rmdir(mount)
     core = os.path.join(system, "core.img")
-    _ = subprocess.check_call(
-        [
-            "grub-mkimage",
-            "-o",
-            core,
-            "-p",
-            "/boot/grub",
-            "-O",
-            "i386-pc",
-            "all_video",
-            "at_keyboard",
-            "boot",
-            "btrfs",
-            "biosdisk",
-            "iso9660",
-            "multiboot",
-            "configfile",
-            "echo",
-            "halt",
-            "reboot",
-            "exfat",
-            "ext2",
-            "linux",
-            "ntfs",
-            "usb",
-            "sleep",
-            "xfs",
-            "zstd",
-        ]
+    execute(
+        "grub-mkimage",
+        "-o",
+        core,
+        "-p",
+        "/boot/grub",
+        "-O",
+        "i386-pc",
+        "all_video",
+        "at_keyboard",
+        "boot",
+        "btrfs",
+        "biosdisk",
+        "iso9660",
+        "multiboot",
+        "configfile",
+        "echo",
+        "halt",
+        "reboot",
+        "exfat",
+        "ext2",
+        "linux",
+        "ntfs",
+        "usb",
+        "sleep",
+        "xfs",
+        "zstd",
     )
     with open(os.path.join(iso, "boot/grub/atomic-arch.img"), "wb") as img:
         with open(os.path.join(rootfs, "usr/lib/grub/i386-pc/cdboot.img"), "rb") as f:
@@ -229,31 +231,29 @@ def iso():
     if os.path.exists(os.path.join(system, "atomic-arch.iso")):
         os.unlink(os.path.join(system, "atomic-arch.iso"))
 
-    _ = subprocess.check_call(
-        [
-            "xorriso",
-            "-volume_date",
-            "uuid",
-            f"{uuid.replace('-', '')}",
-            "-as",
-            "mkisofs",
-            "-b",
-            "boot/grub/atomic-arch.img",
-            "-no-emul-boot",
-            "-boot-load-size",
-            "4",
-            "-boot-info-table",
-            "--grub2-boot-info",
-            "--grub2-mbr",
-            os.path.join(rootfs, "usr/lib/grub/i386-pc/boot_hybrid.img"),
-            "--efi-boot",
-            "boot/grub/efi.img",
-            "-efi-boot-part",
-            "--efi-boot-image",
-            "-o",
-            os.path.join(system, "atomic-arch.iso"),
-            iso,
-        ]
+    execute(
+        "xorriso",
+        "-volume_date",
+        "uuid",
+        f"{uuid.replace('-', '')}",
+        "-as",
+        "mkisofs",
+        "-b",
+        "boot/grub/atomic-arch.img",
+        "-no-emul-boot",
+        "-boot-load-size",
+        "4",
+        "-boot-info-table",
+        "--grub2-boot-info",
+        "--grub2-mbr",
+        os.path.join(rootfs, "usr/lib/grub/i386-pc/boot_hybrid.img"),
+        "--efi-boot",
+        "boot/grub/efi.img",
+        "-efi-boot-part",
+        "--efi-boot-image",
+        "-o",
+        os.path.join(system, "atomic-arch.iso"),
+        iso,
     )
     shutil.rmtree(rootfs)
     shutil.rmtree(iso)
