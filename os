@@ -1,10 +1,8 @@
 #!/usr/bin/python
 import os
-from re import sub
 import shutil
 import subprocess
 import sys
-from tabnanny import check
 import tarfile
 
 from time import time
