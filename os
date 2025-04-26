@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import atexit
 import os
 import shutil
 import subprocess
@@ -58,10 +59,13 @@ def iso():
             f"--build-arg=UUID={uuid}",
             f"--build-arg=BASE_IMAGE={buildImage}",
             "--tag",
-            "system:iso",
+            f"system:iso-{uuid}",
             "--file",
             "/etc/system/Isofile",
         ]
+    )
+    exitFunc1 = atexit.register(
+        execute, "podman", "--remote", "rmi", f"system:iso-{uuid}"
     )
     system = "/var/lib/system"
     os.makedirs(system, exist_ok=True)
@@ -71,8 +75,9 @@ def iso():
         "create",
         "--name",
         f"iso-{timestamp}",
-        "system:iso",
+        f"system:iso-{uuid}",
     )
+    exitFunc2 = atexit.register(execute, "podman", "--remote", "rm", f"iso-{timestamp}")
     tar = os.path.join(system, "rootfs.tar")
     if os.path.exists(tar):
         os.unlink(tar)
@@ -84,12 +89,15 @@ def iso():
         t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
 
     os.unlink(tar)
+    atexit.unregister(exitFunc2)
     execute(
         "podman",
         "--remote",
         "rm",
         f"iso-{timestamp}",
     )
+    atexit.unregister(exitFunc1)
+    execute("podman", "--remote", "rmi", f"system:iso-{uuid}")
     iso = os.path.join(system, "iso")
     if os.path.exists(iso):
         shutil.rmtree(iso)
