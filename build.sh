@@ -7,25 +7,43 @@ if (($EUID != 0)); then
 fi
 
 TAG=${1:-gnome}
+SYSTEM_PATH=${2:-/var/lib/system}
+
+mkdir -p "${SYSTEM_PATH}"
+
+if [ -d /ostree ]; then
+  OSTREE_PATH="/ostree"
+  ln -sf /ostree "${SYSTEM_PATH}"
+else
+  OSTREE_PATH="${SYSTEM_PATH}/ostree"
+  mkdir -p "${SYSTEM_PATH}/ostree"
+  if ! [ -d "${SYSTEM_PATH}/ostree/repo" ]; then
+    ostree --repo="${SYSTEM_PATH}/ostree/repo" init
+  fi
+fi
+
 podman build \
-  --target "$TAG" \
-  --tag "atomic-arch:$TAG" \
+  --target "${TAG}" \
+  --tag "atomic-arch:${TAG}" \
+  --force-rm \
   .
 podman run \
   --rm \
   --privileged \
   --security-opt label=disable \
   --volume "/run/podman/podman.sock:/run/podman/podman.sock" \
+  --volume "${SYSTEM_PATH}:/var/lib/system" \
+  --volume "${OSTREE_PATH}:/ostree" \
   --entrypoint /usr/bin/os \
-  "atomic-arch:$TAG" \
+  "atomic-arch:${TAG}" \
   build
-mkdir -p build
 podman run \
   --rm \
   --privileged \
   --security-opt label=disable \
   --volume "/run/podman/podman.sock:/run/podman/podman.sock" \
-  --volume ./build:/var/lib/system \
+  --volume "${SYSTEM_PATH}:/var/lib/system" \
+  --volume "${OSTREE_PATH}:/ostree" \
   --entrypoint /usr/bin/os \
-  "atomic-arch:$TAG" \
+  "atomic-arch:${TAG}" \
   iso

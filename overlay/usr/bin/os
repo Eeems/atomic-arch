@@ -1,0 +1,428 @@
+#!/usr/bin/python
+import atexit
+import os
+import shutil
+import subprocess
+import sys
+import tarfile
+import shlex
+
+from time import time
+from glob import iglob
+from datetime import datetime
+
+
+SYSTEM_PATH = "/var/lib/system"
+RETAIN = 5
+DEV_BOOT = ""
+DEV_SYS = ""
+COMMAND_LINE = ""
+
+
+def _execute(cmd: str):
+    status = os.system(cmd)
+    return os.waitstatus_to_exitcode(status)
+
+
+def execute(cmd: str | list[str], *args: str):
+    if not isinstance(cmd, str):
+        cmd = shlex.join(cmd)
+
+    if args:
+        cmd = f"{cmd} {shlex.join(args)}"
+
+    ret = _execute(cmd)
+    if ret:
+        raise subprocess.CalledProcessError(ret, cmd, None, None)
+
+
+def podman(*args: str):
+    if _execute("systemd-detect-virt --quiet --container") == 0:
+        execute("podman", "--remote", *args)
+
+    else:
+        execute("podman", *args)
+
+
+def ostree(*args: str):
+    execute("ostree", f"--repo={getattr(ostree, 'repo')}", *args)
+
+
+setattr(ostree, "repo", "/ostree/repo")
+
+
+def export(tag: str = "latest", setup: str = ""):
+    cwd = os.getcwd()
+    os.chdir(SYSTEM_PATH)
+    if os.path.exists("rootfs"):
+        shutil.rmtree("rootfs")
+
+    timestamp = int(time())
+    name = f"export-{tag}-{timestamp}"
+    exitFunc1 = atexit.register(podman, "rm", name)
+    podman(
+        "run",
+        f"--name={name}",
+        "--privileged",
+        "--security-opt=label=disable",
+        "--volume=/run/podman/podman.sock:/run/podman/podman.sock",
+        f"system:{tag}",
+        "-c",
+        setup,
+    )
+    if os.path.exists("rootfs.tar"):
+        os.unlink("rootfs.tar")
+
+    podman("export", name, "--output", "rootfs.tar")
+    atexit.unregister(exitFunc1)
+    podman("rm", name)
+    os.makedirs("rootfs", exist_ok=True)
+    with tarfile.open("rootfs.tar", mode="r") as t:
+        t.extractall("rootfs", numeric_owner=True, filter="fully_trusted")
+
+    os.unlink("rootfs.tar")
+    os.chdir(cwd)
+
+
+TMPFILE_CONF = """
+d /var/home 0755 root root -
+d /var/lib 0755 root root -
+d /var/log/journal 0755 root root -
+d /var/media 0755 root root -
+d /var/mnt 0755 root root -
+d /var/opt 0755 root root -
+d /var/roothome 0755 root root -
+d /var/srv 0755 root root -
+d /var/userlocal 0755 root root -
+d /var/userlocal/bin 0755 root root -
+d /var/userlocal/etc 0755 root root -
+d /var/userlocal/games 0755 root root -
+d /var/userlocal/include 0755 root root -
+d /var/userlocal/lib 0755 root root -
+d /var/userlocal/man 0755 root root -
+d /var/userlocal/sbin 0755 root root -
+d /var/userlocal/share 0755 root root -
+d /var/userlocal/src 0755 root root -
+"""
+
+
+def prepare():
+    cwd = os.getcwd()
+    os.chdir(os.path.join(SYSTEM_PATH, "rootfs"))
+    _ = shutil.move("etc", "usr")
+
+    def var_link(name: str):
+        shutil.rmtree(name)
+        os.symlink(f"var/{name}", name)
+
+    var_link("home")
+    var_link("mnt")
+    var_link("opt")
+    shutil.rmtree("root")
+    os.symlink("roothome", "root")
+    var_link("srv")
+    os.mkdir("sysroot")
+    os.symlink("sysroot/ostree", "ostree")
+    shutil.rmtree("usr/local")
+    os.symlink("../var/userlocal", "usr/local")
+    with open("usr/lib/tmpfiles.d/ostree-0-integration.conf", "w") as f:
+        _ = f.write(TMPFILE_CONF)
+
+    _ = shutil.move("var/lib/pacman", "usr/lib")
+    execute(
+        "sed",
+        "-i",
+        "-e",
+        r"s|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g",
+        "-e",
+        r"s|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g",
+        "usr/etc/pacman.conf",
+    )
+    os.mkdir("usr/lib/pacmanlocal")
+    for path in iglob("var/*"):
+        if os.path.islink(path) or os.path.isfile(path):
+            os.unlink(path)
+
+        else:
+            shutil.rmtree(path)
+
+    os.chdir(cwd)
+
+
+def build() -> str:
+    podman(
+        "build",
+        "--force-rm",
+        "--tag=system:latest",
+        "--file=/etc/system/Systemfile",
+    )
+    timestamp = int(time())
+    podman("tag", "system:latest", f"system:{timestamp}")
+    return str(timestamp)
+
+
+def commit(branch: str = "system"):
+    ostree(
+        "commit",
+        f"--branch=atomic-arch/{branch}",
+        f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
+        os.path.join(SYSTEM_PATH, "rootfs"),
+    )
+
+
+def deploy(branch: str = "system", sysroot: str = "/"):
+    execute(
+        "ostree",
+        "admin",
+        "deploy",
+        f"--sysroot={sysroot}",
+        f"--karg=root=LABEL=SYS_ROOT {COMMAND_LINE} rw",
+        "--os=atomic-arch",
+        "--retain",
+        f"atomic-arch/{branch}",
+    )
+
+
+def revert():
+    ostree("admin", "undeploy", "--sysroot=/", "0")
+
+
+def prune(branch: str = "system"):
+    ostree(
+        "prune",
+        "--commit-only",
+        f"--retain-branch-depth={branch}={RETAIN}",
+        f"--only-branch=atomic-arch/{branch}",
+        '--keep-younger-than="1 second"',
+    )
+
+
+def install(branch: str = "system"):
+    if os.path.exists("/ostree"):
+        print("Cannot install on existing system")
+        sys.exit(1)
+
+    setattr(ostree, "repo", f"/mnt{getattr(ostree, 'repo')}")
+    global SYSTEM_PATH
+    SYSTEM_PATH = "/mnt/.system"
+
+    execute("mount", "--mkdir", DEV_SYS, "/mnt")
+    execute("mount", "--mkdir", DEV_BOOT, "/mnt/boot/efi")
+    os.mkdir(SYSTEM_PATH)
+    execute("ostree", "admin", "init-fs", "--sysroot=/mnt", "--modern", "/mnt")
+    execute("ostree", "admin", "stateroot-init", "--sysroot=/mnt", "atomic-arch")
+    ostree("init", "--mode=bare")
+    ostree("config", "set", "sysroot.bootprefix", "1")
+    tag = build()
+    export(tag)
+    prepare()
+    commit(branch)
+    deploy(branch, "/mnt")
+    execute(
+        "grub-install",
+        "--target=x86_64-efi",
+        "--efi-directory=/boot/efi",
+        "--boot-directory=/boot/efi/EFI",
+        "--bootloader-id=atomic-arch",
+        "--removable",
+        DEV_BOOT,
+    )
+    sysPath = [
+        x.path
+        for x in os.scandir("/mnt/ostree/deploy/atomic-arch/deploy")
+        if x.is_dir()
+    ][0]
+    for path in iglob(f"{sysPath}/boot/*"):
+        if os.path.islink(path) or os.path.isfile(path):
+            os.unlink(path)
+
+        else:
+            shutil.rmtree(path)
+
+    execute("mount", "--mkdir", "--rbind", "/mnt/boot", f"{sysPath}/boot")
+    execute("mount", "--mkdir", "--rbind", "/mnt/ostree", f"{sysPath}/sysroot/ostree")
+    for i in ["dev", "proc", "sys"]:
+        execute("mount", "-o", "bind", f"/{i}", f"{sysPath}/{i}")
+
+    execute(
+        "chroot",
+        sysPath,
+        "/bin/bash",
+        "-c",
+        "grub-mkconfig",
+        "-o",
+        "/boot/efi/EFI/grub/grub.cfg",
+    )
+    execute("umount", "--recursive", "/mnt")
+
+
+def upgrade(branch: str = "system"):
+    if not os.path.exists("/ostree"):
+        print("OSTree repo missing")
+        sys.exit(1)
+
+    tag = build()
+    export(tag)
+    prepare()
+    commit(branch)
+    prune(branch)
+    deploy(branch)
+
+
+def iso():
+    cwd = os.getcwd()
+    os.chdir(SYSTEM_PATH)
+    if os.path.exists("archiso"):
+        shutil.rmtree("archiso")
+
+    if os.path.exists("work"):
+        shutil.rmtree("work")
+
+    uuid = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-00")
+    with open("/etc/system/Systemfile", "r") as f:
+        buildImage = [
+            x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")
+        ][0]
+
+    os.chdir("/etc/system")
+    podman(
+        "build",
+        f"--build-arg=UUID={uuid}",
+        f"--build-arg=BASE_IMAGE={buildImage}",
+        "--force-rm",
+        f"--tag=system:iso-{uuid}",
+        "--file=/etc/system/Isofile",
+    )
+    os.chdir(SYSTEM_PATH)
+    exitFunc1 = atexit.register(podman, "rmi", f"system:iso-{uuid}")
+    export(f"iso-{uuid}", f"podman --remote save {buildImage} | podman load")
+    atexit.unregister(exitFunc1)
+    podman("rmi", f"system:iso-{uuid}")
+
+    _ = shutil.copytree("rootfs/etc/system/archiso", "archiso")
+    for path in [
+        "loader/entries/01-archiso-x86_64-linux.conf",
+        "grub/grub.cfg",
+        "syslinux/syslinux-linux.cfg",
+    ]:
+        with open(os.path.join("archiso", path), "r+") as f:
+            content = f.read()
+            _ = f.seek(0)
+            _ = f.truncate()
+            _ = f.write(content.replace("%UUID%", uuid))
+
+    execute("truncate -s 32M efiboot.img")
+    execute("mkfs.vfat efiboot.img")
+    execute("mmd -i efiboot.img EFI EFI/boot")
+    # fmt: off
+    execute(
+        "grub-mkstandalone",
+        "--format=x86_64-efi",
+        '--themes=""',
+        "--sbat=/usr/share/grub/sbat.csv",
+        "--disable-shim-lock",
+        "--output=BOOTx64.EFI",
+        "boot/grub/grub.cfg=./grub.cfg",
+    )
+    # fmt: on
+    execute("mcopy", "-i", "efiboot.img", "BOOTx64.EFI", "::EFI/boot")
+    os.unlink("BOOTx64.EFI")
+    # fmt: off
+    execute(
+        "grub-mkimage",
+        "--output=core.img",
+        "--prefix=/boot/grub",
+        "--format=i386-pc",
+        "all_video",
+        "at_keyboard",
+        "boot",
+        "btrfs",
+        "biosdisk",
+        "iso9660",
+        "multiboot",
+        "configfile",
+        "echo",
+        "halt",
+        "reboot",
+        "exfat",
+        "ext2",
+        "linux",
+        "ntfs",
+        "usb",
+        "sleep",
+        "xfs",
+        "zstd",
+    )
+    # fmt: on
+    os.makedirs("archiso/boot/grub", exist_ok=True)
+    with open("archiso/boot/grub/eltorito.img", "wb") as f1:
+        with open("rootfs/usr/lib/grub/i386-pc/cdboot.img", "rb") as f2:
+            _ = f1.write(f2.read())
+
+        with open("core.img", "rb") as f2:
+            _ = f1.write(f2.read())
+
+    os.unlink("core.img")
+    os.makedirs("archiso/atomic/x86_64", exist_ok=True)
+    _ = shutil.copy2("rootfs/boot/vmlinuz-linux-zen", "archiso/atomic/x86_64")
+    _ = shutil.copy2("rootfs/boot/initramfs-linux-zen.img", "archiso/atomic/x86_64")
+    execute("mksquashfs", "rootfs", "archiso/atomic/x86_64/airootfs.sfs")
+    shutil.rmtree("rootfs")
+
+    name = f"atomic-arch-{uuid}.iso"
+    # fmt: off
+    execute(
+        "xorriso",
+        "-volume_date", "uuid", uuid.replace("-", ""),
+        "-as", "mkisofs",
+        "-iso-level", "3",
+        "-partition_offset", "16",
+        "--mbr-force-bootable",
+        "-append_partition", "2", "0xEF", "efiboot.img",
+        "-appended_part_as_gpt",
+        "-c", "/boot.catalog",
+        "-b", "boot/grub/eltorito.img",
+        "-no-emul-boot",
+        "-boot-load-size", "4",
+        "-boot-info-table",
+        "--grub2-boot-info",
+        "-eltorito-alt-boot",
+        "-e", "--interval:appended_partition_2:all::",
+        "-no-emul-boot",
+        "-o", name,
+        "archiso",
+    )
+    # fmt: on
+    os.unlink("efiboot.img")
+    shutil.rmtree("archiso")
+    os.chdir(cwd)
+    return name
+
+
+if len(sys.argv) != 2:
+    print("Usage: os <command>")
+    sys.exit(1)
+
+# TODO - locking
+action = sys.argv[1]
+
+if action == "build":
+    image = build()
+    print(f"Built system:{image}")
+
+elif action == "iso":
+    name = iso()
+    print(f"ISO Created: {name}")
+
+elif action == "install":
+    install()
+
+elif action == "upgrade":
+    upgrade()
+
+elif action == "revert":
+    revert()
+
+else:
+    print("Invalid command")
+    sys.exit(1)

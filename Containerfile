@@ -83,10 +83,12 @@ RUN <<EOT
     podman \
     efibootmgr \
     grub \
-    squashfs-tools \
+    flatpak \
+    ostree \
     xorriso \
     dosfstools \
-    flatpak
+    mtools \
+    squashfs-tools
   yes | pacman -Scc
   rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
 EOT
@@ -107,18 +109,36 @@ RUN <<EOT
   echo 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf
   echo "kernel.unprivileged_userns_clone=1" > /usr/lib/sysctl.d/99-podman.conf
   echo "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/wheel
-  systemctl enable NetworkManager bluetooth podman
-  mkdir /etc/system
+  systemctl enable \
+    NetworkManager \
+    bluetooth \
+    podman
+  mkdir -p \
+    /etc/system \
+    /var/lib/system
 EOT
 
 RUN <<EOF cat > /etc/system/Systemfile
 FROM atomic-arch:base
 
-RUN echo "BUILD_ID=$(date +'%Y-%m-%d')" >> /etc/os-release
+ARG TIMEZONE=Canada/Mountain
+ARG KEYMAP=us
+ARG FONT=ter-124n
+ARG LANGUAGE=en_CA.UTF-8
+
+RUN <<EOT
+  set -e
+  echo "BUILD_ID=$(date +'%Y-%m-%d')" >> /etc/os-release
+  ln -sf "/usr/share/zoneinfo/%{TIMEZONE}" /etc/localtime
+  echo "KEYMAP=${KEYMAP}" > /etc/vconsole.conf
+  echo "FONT=${FONT}" >> /etc/vconsole.conf
+  echo "LANG=${LANGUAGE}" > /etc/locale.conf
+  echo "${LANGUAGE}" > /etc/locale.gen
+  locale-gen
+EOT
 EOF
 
-COPY os /usr/bin
-COPY Isofile /etc/system
+COPY overlay /
 
 FROM base AS gnome
 

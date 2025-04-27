@@ -1,0 +1,66 @@
+ARG BASE_IMAGE=atomic-arch:base
+
+FROM ${BASE_IMAGE}
+
+ARG UUID
+
+RUN <<EOT
+  set -e
+  mkdir -p \
+    /etc/systemd/system/getty@tty1.service.d \
+    /etc/mkinitcpio.conf.d \
+    /etc/mkinitcpio.d
+  useradd -m live
+  passwd -d live
+  echo "live ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers.d/live
+  if [ -f /usr/bin/gdm ]; then
+    mkdir -p /etc/gdm
+    echo "[daemon]" > /etc/gdm/custom.conf
+    echo "AutomaticLoginEnable=True" >> /etc/gdm/custom.conf
+    echo "AutomaticLogin=live" >> /etc/gdm/custom.conf
+  fi
+EOT
+
+RUN <<EOF cat > /etc/mkinitcpio.conf.d/archiso.conf
+MODULES=(virtio virtio_blk virtio_pci virtio_net)
+BINARIES=()
+FILES=()
+HOOKS=(base udev microcode modconf kms memdisk archiso archiso_loop_mnt archiso_pxe_common archiso_pxe_nbd archiso_pxe_http archiso_pxe_nfs block filesystems keyboard)
+COMPRESSION="xz"
+COMPRESSION_OPTIONS=(-9e)
+EOF
+
+RUN <<EOF cat > /etc/mkinitcpio.d/linux-zen.preset
+# mkinitcpio preset file for the 'linux' package on archiso
+PRESETS=('archiso')
+
+ALL_kver='/boot/vmlinuz-linux-zen'
+archiso_config='/etc/mkinitcpio.conf.d/archiso.conf'
+archiso_image="/boot/initramfs-linux-zen.img"
+EOF
+
+RUN <<EOF cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '-p -f -- \\u' --noclear --autologin live %I linux
+EOF
+
+RUN <<EOT
+  set -e
+  pacman-key --init
+  pacman-key --populate archlinux
+  pacman -Syu --needed --noconfirm \
+    syslinux \
+    mkinitcpio-archiso \
+    memtest86+ \
+    memtest86+-efi \
+    grub \
+    qemu-guest-agent \
+    man-db \
+    man-pages \
+    edk2-shell
+  yes | pacman -Scc
+  rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
+EOT
+
+RUN touch /etc/system/archiso/${UUID}.uuid
