@@ -68,6 +68,20 @@ VARIANT=Base
 VARIANT_ID=base
 EOF
 
+RUN mkdir -p /etc/mkinitcpio.conf.d /etc/mkinitcpio.d
+
+RUN <<EOF cat > /etc/mkinitcpio.conf.d/ostree.conf
+HOOKS=(base systemd ostree autodetect modconf kms keyboard keymap consolefont block filesystems fsck)
+EOF
+
+RUN <<EOF cat > /etc/mkinitcpio.d/linux-zen.preset
+PRESETS=('ostree')
+
+ALL_kver='/boot/vmlinuz-linux-zen'
+ostree_config='/etc/mkinitcpio.conf.d/ostree.conf'
+ostree_image="/boot/initramfs-linux-zen.img"
+EOF
+
 RUN <<EOT
   set -e
   pacman-key --init
@@ -86,8 +100,6 @@ RUN <<EOT
     flatpak \
     ostree \
     xorriso \
-    dosfstools \
-    mtools \
     squashfs-tools
   yes | pacman -Scc
   rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
@@ -139,6 +151,11 @@ EOT
 EOF
 
 COPY overlay /
+
+RUN <<EOT
+  set -e
+  systemctl enable ostree-rollback-to-rescue
+EOT
 
 FROM base AS gnome
 

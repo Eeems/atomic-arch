@@ -50,17 +50,65 @@ RUN <<EOT
   pacman-key --init
   pacman-key --populate archlinux
   pacman -Syu --needed --noconfirm \
-    syslinux \
-    mkinitcpio-archiso \
-    memtest86+ \
-    memtest86+-efi \
+    arch-install-scripts \
+    dosfstools \
+    edk2-shell \
     grub \
-    qemu-guest-agent \
     man-db \
     man-pages \
-    edk2-shell
+    memtest86+ \
+    memtest86+-efi \
+    mkinitcpio-archiso \
+    mtools \
+    qemu-guest-agent \
+    syslinux
   yes | pacman -Scc
   rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
 EOT
 
-RUN touch /etc/system/archiso/${UUID}.uuid
+RUN <<EOT
+  set -e
+  touch /etc/system/archiso/${UUID}.uuid
+  truncate -s 32MB /etc/system/efiboot.img
+  mkfs.vfat /etc/system/efiboot.img
+  mmd -i /etc/system/efiboot.img EFI EFI/boot
+  grub-mkstandalone \
+    --format=x86_64-efi \
+    --themes="" \
+    --sbat=/usr/share/grub/sbat.csv \
+    --disable-shim-lock \
+    --output=BOOTx64.EFI \
+    boot/grub/grub.cfg=./grub.cfg
+  mcopy -i /etc/system/efiboot.img BOOTx64.EFI ::EFI/boot
+  rm BOOTx64.EFI
+  grub-mkimage \
+    --output=core.img \
+    --prefix=/boot/grub \
+    --format=i386-pc \
+    all_video \
+    at_keyboard \
+    boot \
+    btrfs \
+    biosdisk \
+    iso9660 \
+    multiboot \
+    configfile \
+    echo \
+    halt \
+    reboot \
+    exfat \
+    ext2 \
+    linux \
+    ntfs \
+    usb \
+    sleep \
+    xfs \
+    zstd
+  mkdir -p \
+    /etc/system/archiso/boot/grub \
+    /etc/system/archiso/atomic/x86_64
+  cat /usr/lib/grub/i386-pc/cdboot.img core.img > /etc/system/archiso/boot/grub/eltorito.img
+  rm core.img
+  cp -a /boot/vmlinuz-linux-zen /etc/system/archiso/atomic/x86_64
+  cp -a /boot/initramfs-linux-zen.img /etc/system/archiso/atomic/x86_64
+EOT

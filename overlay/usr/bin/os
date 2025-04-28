@@ -1,21 +1,22 @@
 #!/usr/bin/python
+import argparse
 import atexit
+from getpass import getpass
 import os
+import shlex
 import shutil
 import subprocess
 import sys
 import tarfile
-import shlex
 
 from time import time
 from glob import iglob
 from datetime import datetime
+from typing import Callable, cast
 
 
 SYSTEM_PATH = "/var/lib/system"
 RETAIN = 5
-DEV_BOOT = ""
-DEV_SYS = ""
 COMMAND_LINE = ""
 
 
@@ -51,12 +52,20 @@ def ostree(*args: str):
 setattr(ostree, "repo", "/ostree/repo")
 
 
-def export(tag: str = "latest", setup: str = ""):
-    cwd = os.getcwd()
-    os.chdir(SYSTEM_PATH)
-    if os.path.exists("rootfs"):
-        shutil.rmtree("rootfs")
+def export(
+    tag: str = "latest",
+    setup: str = "",
+    rootfs: str | None = None,
+    workingDir: str | None = None,
+):
+    if workingDir is None:
+        workingDir = SYSTEM_PATH
 
+    if rootfs is None:
+        rootfs = os.path.join(workingDir, "rootfs")
+
+    cwd = os.getcwd()
+    os.chdir(workingDir)
     timestamp = int(time())
     name = f"export-{tag}-{timestamp}"
     exitFunc1 = atexit.register(podman, "rm", name)
@@ -76,9 +85,9 @@ def export(tag: str = "latest", setup: str = ""):
     podman("export", name, "--output", "rootfs.tar")
     atexit.unregister(exitFunc1)
     podman("rm", name)
-    os.makedirs("rootfs", exist_ok=True)
+    os.makedirs(rootfs, exist_ok=True)
     with tarfile.open("rootfs.tar", mode="r") as t:
-        t.extractall("rootfs", numeric_owner=True, filter="fully_trusted")
+        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
 
     os.unlink("rootfs.tar")
     os.chdir(cwd)
@@ -106,9 +115,12 @@ d /var/userlocal/src 0755 root root -
 """
 
 
-def prepare():
+def prepare(rootfs: str, kernelCommandline: str = ""):
     cwd = os.getcwd()
-    os.chdir(os.path.join(SYSTEM_PATH, "rootfs"))
+    os.chdir(rootfs)
+    with open("etc/system/commandline", "w") as f:
+        _ = f.write(kernelCommandline)
+
     _ = shutil.move("etc", "usr")
 
     def var_link(name: str):
@@ -119,7 +131,7 @@ def prepare():
     var_link("mnt")
     var_link("opt")
     shutil.rmtree("root")
-    os.symlink("roothome", "root")
+    os.symlink("var/roothome", "root")
     var_link("srv")
     os.mkdir("sysroot")
     os.symlink("sysroot/ostree", "ostree")
@@ -146,6 +158,9 @@ def prepare():
         else:
             shutil.rmtree(path)
 
+    os.unlink("boot/vmlinuz-linux-zen")
+    modulePath = [*iglob("usr/lib/modules/*")][0]
+    os.rename("boot/initramfs-linux-zen.img", f"{modulePath}/initramfs.img")
     os.chdir(cwd)
 
 
@@ -161,22 +176,25 @@ def build() -> str:
     return str(timestamp)
 
 
-def commit(branch: str = "system"):
+def commit(branch: str = "system", rootfs: str | None = None):
+    if rootfs is None:
+        rootfs = os.path.join(SYSTEM_PATH, "rootfs")
+
     ostree(
         "commit",
         f"--branch=atomic-arch/{branch}",
         f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
-        os.path.join(SYSTEM_PATH, "rootfs"),
+        f"--tree=dir={rootfs}",
     )
 
 
-def deploy(branch: str = "system", sysroot: str = "/"):
+def deploy(branch: str = "system", sysroot: str = "/", kernelCommandline: str = ""):
     execute(
         "ostree",
         "admin",
         "deploy",
         f"--sysroot={sysroot}",
-        f"--karg=root=LABEL=SYS_ROOT {COMMAND_LINE} rw",
+        f"--karg=root=LABEL=SYS_ROOT {kernelCommandline} rw",
         "--os=atomic-arch",
         "--retain",
         f"atomic-arch/{branch}",
@@ -193,43 +211,102 @@ def prune(branch: str = "system"):
         "--commit-only",
         f"--retain-branch-depth={branch}={RETAIN}",
         f"--only-branch=atomic-arch/{branch}",
-        '--keep-younger-than="1 second"',
+        "--keep-younger-than=1 second",
     )
 
 
-def install(branch: str = "system"):
+def install(
+    branch: str = "system",
+    sysroot: str = "/mnt",
+    dev_sys: str | None = None,
+    dev_boot: str | None = None,
+    kernelCommandline: str = "",
+    formatPartitions: bool = False,
+    password: str | None = None,
+):
     if os.path.exists("/ostree"):
         print("Cannot install on existing system")
         sys.exit(1)
 
-    setattr(ostree, "repo", f"/mnt{getattr(ostree, 'repo')}")
-    global SYSTEM_PATH
-    SYSTEM_PATH = "/mnt/.system"
+    if password is None:
+        password = os.environ.get("ROOT_PASSWORD", None)
+        if password is None and sys.stdout.isatty():
+            # TODO - confirm password
+            password = getpass("New root password: ")
 
-    execute("mount", "--mkdir", DEV_SYS, "/mnt")
-    execute("mount", "--mkdir", DEV_BOOT, "/mnt/boot/efi")
-    os.mkdir(SYSTEM_PATH)
-    execute("ostree", "admin", "init-fs", "--sysroot=/mnt", "--modern", "/mnt")
-    execute("ostree", "admin", "stateroot-init", "--sysroot=/mnt", "atomic-arch")
+        if password is None:
+            print("A new root password must be provided")
+            sys.exit(1)
+
+    if dev_sys is None:
+        print("System partition must be specified")
+        sys.exit(1)
+
+    if dev_boot is None:
+        print("Boot partition must be specified")
+        sys.exit(1)
+
+    setattr(ostree, "repo", f"/mnt{getattr(ostree, 'repo')}")
+    if os.path.ismount(sysroot):
+        execute("umount", "--recursive", sysroot)
+
+    if formatPartitions:
+        execute("mkfs.vfat", "-n", "SYS_BOOT", "-F", "32", dev_boot)
+        execute("mkfs.ext4", "-L", "SYS_ROOT", "-F", dev_sys)
+
+    execute("mount", "--mkdir", dev_sys, sysroot)
+    execute("mount", "--mkdir", dev_boot, os.path.join(sysroot, "boot/efi"))
+    systemDir = os.path.join(sysroot, ".system")
+    os.mkdir(systemDir)
+    execute("ostree", "admin", "init-fs", f"--sysroot={sysroot}", "--modern", sysroot)
+    execute("ostree", "admin", "stateroot-init", f"--sysroot={sysroot}", "atomic-arch")
     ostree("init", "--mode=bare")
     ostree("config", "set", "sysroot.bootprefix", "1")
     tag = build()
-    export(tag)
-    prepare()
-    commit(branch)
-    deploy(branch, "/mnt")
+
+    export(tag, workingDir=systemDir)
+    rootfs = os.path.join(systemDir, "rootfs")
+    prepare(rootfs)
+
+    with open("/etc/system/Systemfile", "r") as f:
+        buildImage = [
+            x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")
+        ][0]
+
+    tmp = os.path.join(sysroot, ".tmp")
+    os.mkdir(tmp)
+    execute("mount", "-o", "bind", tmp, "/var/tmp")
+    exitFunc1 = atexit.register(execute, "umount", "/var/tmp")
+    os.mkdir(os.path.join(rootfs, "var/tmp"))
+    execute(
+        "systemd-nspawn",
+        f"--directory={rootfs}",
+        "--bind=/run/podman/podman.sock:/run/podman/podman.sock",
+        f"--bind={os.path.join(rootfs, 'usr/etc')}:/etc",
+        "/bin/bash",
+        "-c",
+        f"podman --remote save --multi-image-archive system:latest system:{tag} {buildImage} | podman load",
+    )
+    _ = shutil.rmtree(os.path.join(rootfs, "var/tmp"))
+    atexit.unregister(exitFunc1)
+    execute("umount", "/var/tmp")
+    os.rmdir(tmp)
+
+    commit(branch, rootfs)
+    shutil.rmtree(systemDir)
+    deploy(branch, sysroot, kernelCommandline)
     execute(
         "grub-install",
         "--target=x86_64-efi",
-        "--efi-directory=/boot/efi",
-        "--boot-directory=/boot/efi/EFI",
+        f"--efi-directory={sysroot}/boot/efi",
+        f"--boot-directory={sysroot}/boot/efi/EFI",
         "--bootloader-id=atomic-arch",
         "--removable",
-        DEV_BOOT,
+        dev_boot,
     )
     sysPath = [
         x.path
-        for x in os.scandir("/mnt/ostree/deploy/atomic-arch/deploy")
+        for x in os.scandir(os.path.join(sysroot, "ostree/deploy/atomic-arch/deploy"))
         if x.is_dir()
     ][0]
     for path in iglob(f"{sysPath}/boot/*"):
@@ -239,21 +316,44 @@ def install(branch: str = "system"):
         else:
             shutil.rmtree(path)
 
-    execute("mount", "--mkdir", "--rbind", "/mnt/boot", f"{sysPath}/boot")
-    execute("mount", "--mkdir", "--rbind", "/mnt/ostree", f"{sysPath}/sysroot/ostree")
+    os.makedirs(
+        os.path.join(sysroot, "ostree/deploy/atomic-arch/var/home"), exist_ok=True
+    )
+    execute(
+        "bash", "-c", f"genfstab -U {sysroot} >> {os.path.join(sysPath, 'etc/fstab')}"
+    )
+    execute(
+        "mount",
+        "--mkdir",
+        "--rbind",
+        os.path.join(sysroot, "boot"),
+        os.path.join(sysPath, "boot"),
+    )
+    execute(
+        "mount",
+        "--mkdir",
+        "--rbind",
+        os.path.join(sysroot, "ostree"),
+        os.path.join(sysPath, "sysroot/ostree"),
+    )
     for i in ["dev", "proc", "sys"]:
-        execute("mount", "-o", "bind", f"/{i}", f"{sysPath}/{i}")
+        execute("mount", "-o", "bind", f"/{i}", os.path.join(sysPath, i))
 
     execute(
         "chroot",
         sysPath,
         "/bin/bash",
         "-c",
-        "grub-mkconfig",
-        "-o",
-        "/boot/efi/EFI/grub/grub.cfg",
+        "grub-mkconfig -o /boot/efi/EFI/grub/grub.cfg",
     )
-    execute("umount", "--recursive", "/mnt")
+    execute(
+        "chroot",
+        sysPath,
+        "/bin/bash",
+        "-c",
+        shlex.join(["echo", f"root:{password}"]) + " | chpasswd",
+    )
+    execute("umount", "--recursive", sysroot)
 
 
 def upgrade(branch: str = "system"):
@@ -261,12 +361,27 @@ def upgrade(branch: str = "system"):
         print("OSTree repo missing")
         sys.exit(1)
 
+    if not os.path.exists(SYSTEM_PATH):
+        os.makedirs(SYSTEM_PATH, exist_ok=True)
+
     tag = build()
-    export(tag)
-    prepare()
-    commit(branch)
+    rootfs = os.path.join(SYSTEM_PATH, "rootfs")
+    if os.path.exists(rootfs):
+        shutil.rmtree(rootfs)
+
+    export(tag, rootfs=rootfs, workingDir=SYSTEM_PATH)
+    if os.path.exists("/etc/system/commandline"):
+        with open("/etc/system/commandline", "r") as f:
+            kernelCommandline = f.read()
+
+    else:
+        kernelCommandline = ""
+
+    prepare(rootfs, kernelCommandline)
+    commit(branch, rootfs)
     prune(branch)
-    deploy(branch)
+    deploy(branch, "/", kernelCommandline)
+    execute("grub-mkconfig -o /boot/efi/EFI/grub/grub.cfg")
 
 
 def iso():
@@ -295,7 +410,16 @@ def iso():
     )
     os.chdir(SYSTEM_PATH)
     exitFunc1 = atexit.register(podman, "rmi", f"system:iso-{uuid}")
-    export(f"iso-{uuid}", f"podman --remote save {buildImage} | podman load")
+    rootfs = os.path.join(SYSTEM_PATH, "rootfs")
+    if os.path.exists(rootfs):
+        shutil.rmtree(rootfs)
+
+    export(
+        f"iso-{uuid}",
+        f"podman --remote save {buildImage} | podman load",
+        rootfs=rootfs,
+        workingDir=SYSTEM_PATH,
+    )
     atexit.unregister(exitFunc1)
     podman("rmi", f"system:iso-{uuid}")
 
@@ -311,62 +435,8 @@ def iso():
             _ = f.truncate()
             _ = f.write(content.replace("%UUID%", uuid))
 
-    execute("truncate -s 32M efiboot.img")
-    execute("mkfs.vfat efiboot.img")
-    execute("mmd -i efiboot.img EFI EFI/boot")
-    # fmt: off
-    execute(
-        "grub-mkstandalone",
-        "--format=x86_64-efi",
-        '--themes=""',
-        "--sbat=/usr/share/grub/sbat.csv",
-        "--disable-shim-lock",
-        "--output=BOOTx64.EFI",
-        "boot/grub/grub.cfg=./grub.cfg",
-    )
-    # fmt: on
-    execute("mcopy", "-i", "efiboot.img", "BOOTx64.EFI", "::EFI/boot")
-    os.unlink("BOOTx64.EFI")
-    # fmt: off
-    execute(
-        "grub-mkimage",
-        "--output=core.img",
-        "--prefix=/boot/grub",
-        "--format=i386-pc",
-        "all_video",
-        "at_keyboard",
-        "boot",
-        "btrfs",
-        "biosdisk",
-        "iso9660",
-        "multiboot",
-        "configfile",
-        "echo",
-        "halt",
-        "reboot",
-        "exfat",
-        "ext2",
-        "linux",
-        "ntfs",
-        "usb",
-        "sleep",
-        "xfs",
-        "zstd",
-    )
-    # fmt: on
-    os.makedirs("archiso/boot/grub", exist_ok=True)
-    with open("archiso/boot/grub/eltorito.img", "wb") as f1:
-        with open("rootfs/usr/lib/grub/i386-pc/cdboot.img", "rb") as f2:
-            _ = f1.write(f2.read())
-
-        with open("core.img", "rb") as f2:
-            _ = f1.write(f2.read())
-
-    os.unlink("core.img")
-    os.makedirs("archiso/atomic/x86_64", exist_ok=True)
-    _ = shutil.copy2("rootfs/boot/vmlinuz-linux-zen", "archiso/atomic/x86_64")
-    _ = shutil.copy2("rootfs/boot/initramfs-linux-zen.img", "archiso/atomic/x86_64")
     execute("mksquashfs", "rootfs", "archiso/atomic/x86_64/airootfs.sfs")
+    _ = shutil.copy2("rootfs/etc/system/efiboot.img", "efiboot.img")
     shutil.rmtree("rootfs")
 
     name = f"atomic-arch-{uuid}.iso"
@@ -399,30 +469,180 @@ def iso():
     return name
 
 
-if len(sys.argv) != 2:
-    print("Usage: os <command>")
-    sys.exit(1)
-
-# TODO - locking
-action = sys.argv[1]
-
-if action == "build":
+def do_build(_: argparse.Namespace):
     image = build()
     print(f"Built system:{image}")
 
-elif action == "iso":
+
+def do_iso(_: argparse.Namespace):
     name = iso()
     print(f"ISO Created: {name}")
 
-elif action == "install":
-    install()
 
-elif action == "upgrade":
-    upgrade()
+def do_install(args: argparse.Namespace):
+    install(
+        cast(str, args.branch),
+        cast(str, args.sysroot),
+        cast(str | None, args.dev_sys),
+        cast(str | None, args.dev_boot),
+        cast(str, args.kernelCommandline),
+        cast(bool, args.formatPartitions),
+        cast(str, args.password),
+    )
 
-elif action == "revert":
+
+def do_upgrade(args: argparse.Namespace):
+    upgrade(cast(str, args.branch))
+
+
+def do_revert(_: argparse.Namespace):
     revert()
 
-else:
-    print("Invalid command")
-    sys.exit(1)
+
+def do_export(args: argparse.Namespace):
+    export(
+        cast(str, args.tag),
+        cast(str, args.setup),
+        cast(str, args.rootfs),
+        cast(str, args.workingDir),
+    )
+
+
+def do_prune(args: argparse.Namespace):
+    prune(cast(str, args.branch))
+
+
+def do_deploy(args: argparse.Namespace):
+    deploy(cast(str, args.branch))
+
+
+def do_prepare(args: argparse.Namespace):
+    prepare(cast(str, args.rootfs), cast(str, args.kernelCommandline))
+
+
+def do_commit(args: argparse.Namespace):
+    commit(cast(str, args.branch), cast(str, args.rootfs))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog="os", description="Manage your operating system", add_help=True
+    )
+    subparsers = parser.add_subparsers(help="Action to run")
+
+    subparser = subparsers.add_parser("build", help="Build your system image")
+    subparser.set_defaults(func=do_build)
+
+    subparser = subparsers.add_parser(
+        "iso", help="Build a bootable ISO image to install your system"
+    )
+    subparser.set_defaults(func=do_iso)
+
+    subparser = subparsers.add_parser(
+        "install", help="When in install media, install your system"
+    )
+    _ = subparser.add_argument(
+        "--branch", default="system", help="System branch to prune"
+    )
+    _ = subparser.add_argument(
+        "--sysroot", default="/mnt", help="Location to use for mounting target install"
+    )
+    _ = subparser.add_argument(
+        "--kernel-commandline",
+        default="",
+        help="Kernel command line arguments",
+        dest="kernelCommandline",
+    )
+    _ = subparser.add_argument(
+        "--system-partition",
+        default=None,
+        help="Partition to install the system to",
+        dest="dev_sys",
+    )
+    _ = subparser.add_argument(
+        "--boot-partition",
+        default=None,
+        help="Partition to install the bootloader to",
+        dest="dev_boot",
+    )
+    _ = subparser.add_argument(
+        "--format-partitions",
+        action="store_true",
+        dest="formatPartitions",
+        help="Format the partitions before installing",
+    )
+    _ = subparser.add_argument("--password", default=None, help="New root password")
+    subparser.set_defaults(func=do_install)
+
+    subparser = subparsers.add_parser("upgrade", help="Perform a system upgrade")
+    _ = subparser.add_argument(
+        "--branch", default="system", help="System branch to prune"
+    )
+    subparser.set_defaults(func=do_upgrade)
+
+    subparser = subparsers.add_parser("revert", help="Revert the last system upgrade")
+    subparser.set_defaults(func=do_revert)
+
+    subparser = subparsers.add_parser(
+        "export", help="Export your current system image to a folder"
+    )
+    _ = subparser.add_argument(
+        "--tag", default="latest", help="System image version to export"
+    )
+    _ = subparser.add_argument(
+        "--rootfs", default=SYSTEM_PATH, help="Directory to export to"
+    )
+    _ = subparser.add_argument(
+        "--workingDir",
+        default=SYSTEM_PATH,
+        help="Working directory to use while exporting",
+    )
+    _ = subparser.add_argument(
+        "--setup",
+        default="",
+        help="Script to run against the system image before exproting it",
+    )
+    subparser.set_defaults(func=do_export)
+
+    subparser = subparsers.add_parser("prune", help="Prune the system ostree")
+    _ = subparser.add_argument(
+        "--branch", default="system", help="System branch to prune"
+    )
+    subparser.set_defaults(func=do_prune)
+
+    subparser = subparsers.add_parser("deploy", help="deploy the system ostree")
+    _ = subparser.add_argument(
+        "--branch", default="system", help="System branch to deploy"
+    )
+    _ = subparser.add_argument(
+        "--sysroot", default="/", help="Root of the filesystem that contains ostree"
+    )
+    subparser.set_defaults(func=do_deploy)
+
+    subparser = subparsers.add_parser(
+        "prepare", help="Prepare an exported rootfs from a system image"
+    )
+    _ = subparser.add_argument(
+        "--kernel-commandline",
+        default="",
+        help="Kernel command line arguments",
+        dest="kernelCommandline",
+    )
+    _ = subparser.add_argument(
+        "--rootfs", default="/", help="Exported rootfs to prepare"
+    )
+    subparser.set_defaults(func=do_deploy)
+
+    subparser = subparsers.add_parser("commit", help="Commit to the system ostree")
+    _ = subparser.add_argument(
+        "--branch", default="system", help="System branch to commit"
+    )
+    _ = subparser.add_argument("--rootfs", default="/", help="Rootfs to commit")
+    subparser.set_defaults(func=do_deploy)
+
+    args = parser.parse_args()
+    if not hasattr(args, "func"):
+        parser.print_help()
+        sys.exit(1)
+
+    cast(Callable[[argparse.Namespace], None], args.func)(args)
