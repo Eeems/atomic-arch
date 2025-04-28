@@ -66,25 +66,42 @@ RUN <<EOT
   rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
 EOT
 
+RUN <<EOF cat > /etc/system/grub.cfg
+search --file --set=root /${UUID}.uuid
+set prefix=(\$root)'/grub'
+configfile \$prefix/grub.cfg
+EOF
+
 RUN <<EOT
   set -e
   touch /etc/system/archiso/${UUID}.uuid
   truncate -s 32MB /etc/system/efiboot.img
   mkfs.vfat /etc/system/efiboot.img
   mmd -i /etc/system/efiboot.img EFI EFI/boot
+  modules=( \
+    all_video at_keyboard boot btrfs cat chain configfile echo efifwsetup \
+    efinet exfat ext2 f2fs fat font gfxmenu gfxterm gzio halt hfsplus iso9660 \
+    jpeg keylayouts linux loadenv loopback lsefi lsefimmap minicmd normal ntfs \
+    ntfscomp part_apple part_gpt part_msdos png read reboot regexp search \
+    search_fs_file search_fs_uuid search_label serial sleep tpm udf usb \
+    usbserial_common usbserial_ftdi usbserial_pl2303 usbserial_usbdebug video \
+    xfs zstd \
+  )
   grub-mkstandalone \
     --format=x86_64-efi \
     --themes="" \
     --sbat=/usr/share/grub/sbat.csv \
     --disable-shim-lock \
     --output=BOOTx64.EFI \
-    boot/grub/grub.cfg=./grub.cfg
+    --modules="${modules[*]}" \
+    boot/grub/grub.cfg=/etc/system/grub.cfg
   mcopy -i /etc/system/efiboot.img BOOTx64.EFI ::EFI/boot
   rm BOOTx64.EFI
   grub-mkimage \
     --output=core.img \
-    --prefix=/boot/grub \
     --format=i386-pc \
+    --prefix=/boot/grub \
+    --config=/etc/system/grub.cfg \
     all_video \
     at_keyboard \
     boot \
@@ -103,7 +120,8 @@ RUN <<EOT
     usb \
     sleep \
     xfs \
-    zstd
+    zstd \
+    search
   mkdir -p \
     /etc/system/archiso/boot/grub \
     /etc/system/archiso/atomic/x86_64
@@ -111,4 +129,6 @@ RUN <<EOT
   rm core.img
   cp -a /boot/vmlinuz-linux-zen /etc/system/archiso/atomic/x86_64
   cp -a /boot/initramfs-linux-zen.img /etc/system/archiso/atomic/x86_64
+  cp -a /usr/share/edk2-shell/x64/Shell.efi /etc/system/archiso/shellx64.efi
+  cp -ar /boot/memtest86+ /etc/system/archiso
 EOT
