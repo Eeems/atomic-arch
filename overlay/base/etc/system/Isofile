@@ -1,0 +1,25 @@
+ARG BASE_IMAGE=atomic-arch:base
+
+FROM ${BASE_IMAGE}
+
+ARG UUID
+
+RUN /usr/lib/system/setup_live_user
+COPY mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf
+COPY linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset
+
+RUN /usr/lib/system/install_packages \
+  arch-install-scripts \
+  dosfstools \
+  edk2-shell \
+  grub \
+  man-db \
+  man-pages \
+  memtest86+ \
+  memtest86+-efi \
+  mkinitcpio-archiso \
+  mtools \
+  qemu-guest-agent \
+  syslinux
+
+RUN /usr/lib/system/create_live_bootloader

@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+pacman-key --init
+pacman-key --populate archlinux
+pacman -Syu --needed --noconfirm "$@"
+yes | pacman -Scc
+rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*

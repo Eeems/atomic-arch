@@ -164,16 +164,14 @@ def prepare(rootfs: str, kernelCommandline: str = ""):
     os.chdir(cwd)
 
 
-def build() -> str:
+def build():
     podman(
         "build",
         "--force-rm",
         "--tag=system:latest",
+        "--volume=/var/cache/pacman:/var/cache/pacman",
         "--file=/etc/system/Systemfile",
     )
-    timestamp = int(time())
-    podman("tag", "system:latest", f"system:{timestamp}")
-    return str(timestamp)
 
 
 def commit(branch: str = "system", rootfs: str | None = None):
@@ -262,9 +260,8 @@ def install(
     execute("ostree", "admin", "stateroot-init", f"--sysroot={sysroot}", "atomic-arch")
     ostree("init", "--mode=bare")
     ostree("config", "set", "sysroot.bootprefix", "1")
-    tag = build()
-
-    export(tag, workingDir=systemDir)
+    build()
+    export(workingDir=systemDir)
     rootfs = os.path.join(systemDir, "rootfs")
     prepare(rootfs)
 
@@ -285,7 +282,7 @@ def install(
         f"--bind={os.path.join(rootfs, 'usr/etc')}:/etc",
         "/bin/bash",
         "-c",
-        f"podman --remote save --multi-image-archive system:latest system:{tag} {buildImage} | podman load",
+        f"podman --remote save --multi-image-archive system:latest {buildImage} | podman load",
     )
     _ = shutil.rmtree(os.path.join(rootfs, "var/tmp"))
     atexit.unregister(exitFunc1)
@@ -364,12 +361,12 @@ def upgrade(branch: str = "system"):
     if not os.path.exists(SYSTEM_PATH):
         os.makedirs(SYSTEM_PATH, exist_ok=True)
 
-    tag = build()
+    build()
     rootfs = os.path.join(SYSTEM_PATH, "rootfs")
     if os.path.exists(rootfs):
         shutil.rmtree(rootfs)
 
-    export(tag, rootfs=rootfs, workingDir=SYSTEM_PATH)
+    export(rootfs=rootfs, workingDir=SYSTEM_PATH)
     if os.path.exists("/etc/system/commandline"):
         with open("/etc/system/commandline", "r") as f:
             kernelCommandline = f.read()
@@ -470,8 +467,7 @@ def iso():
 
 
 def do_build(_: argparse.Namespace):
-    image = build()
-    print(f"Built system:{image}")
+    build()
 
 
 def do_iso(_: argparse.Namespace):

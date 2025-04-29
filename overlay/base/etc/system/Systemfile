@@ -1,0 +1,17 @@
+FROM atomic-arch:base
+
+RUN \
+  HOSTNAME=atomic \
+  TIMEZONE=Canada/Mountain \
+  KEYMAP=us \
+  FONT=ter-124n \
+  LANGUAGE=en_CA \
+  ENCODING=UTF-8 \
+  /usr/lib/system/setup_machine
+
+RUN /usr/lib/system/install_packages \
+  man-pages \
+  man-db \
+  git
+
+RUN /usr/lib/system/set_build_id "$(date +'%Y-%m-%d')"

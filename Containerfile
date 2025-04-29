@@ -1,8 +1,8 @@
 #syntax=docker/dockerfile:1.4
 ARG ARCHIVE_YEAR=2025
 ARG ARCHIVE_MONTH=04
-ARG ARCHIVE_DAY=20
-ARG TAG_VERSION=0.338771
+ARG ARCHIVE_DAY=27
+ARG TAG_VERSION=0.341977
 
 FROM docker.io/library/archlinux:base-devel-${ARCHIVE_YEAR}${ARCHIVE_MONTH}${ARCHIVE_DAY}.${TAG_VERSION} AS pacstrap
 
@@ -14,43 +14,23 @@ RUN echo "Server = https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE
 RUN pacman-key --init
 RUN pacman -Sy --needed --noconfirm archlinux-keyring arch-install-scripts
 RUN mkdir /rootfs
-WORKDIR /rootfs
-RUN <<EOT
-  set -e
-  mkdir -m 0755 -p var/{cache/pacman/pkg,lib/pacman,log} dev run etc
-  mkdir -m 1777 tmp
-  mkdir -m 0555 sys proc
-  fakeroot pacman -r . -Sy --noconfirm base
-  cp -a {/,}etc/pacman.d/mirrorlist
-  cp -a {/,}etc/pacman.conf
-EOT
+COPY overlay/pacstrap /rootfs
 
-FROM scratch AS rootfs
+WORKDIR /rootfs
+
+RUN mkdir -m 0755 -p var/{cache/pacman/pkg,lib/pacman,log} dev run etc
+RUN mkdir -m 1777 tmp
+RUN mkdir -m 0555 sys proc
+RUN fakeroot pacman -r . -Sy --noconfirm base
+RUN cp -a {/,}etc/pacman.d/mirrorlist
+RUN cp -a {/,}etc/pacman.conf
+
+
+FROM scratch AS base
 
 WORKDIR /
-
 COPY --from=pacstrap /rootfs /
-
-RUN <<EOT
-  set -e
-  pacman-key --init
-  pacman-key --populate archlinux
-  pacman -Syu --needed --noconfirm \
-    base \
-    nano \
-    micro \
-    sudo \
-    tmux \
-    less \
-    htop \
-    fastfetch
-  yes | pacman -Scc
-  rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
-EOT
-
 ENTRYPOINT [ "/bin/bash" ]
-
-FROM rootfs AS base
 
 ARG ARCHIVE_YEAR
 ARG ARCHIVE_MONTH
@@ -68,124 +48,88 @@ VARIANT=Base
 VARIANT_ID=base
 EOF
 
-RUN mkdir -p /etc/mkinitcpio.conf.d /etc/mkinitcpio.d
+RUN /usr/lib/system/install_packages \
+  base \
+  nano \
+  micro \
+  sudo \
+  tmux \
+  less \
+  htop \
+  fastfetch \
+  bluez \
+  broadcom-wl-dkms \
+  linux-firmware \
+  linux-zen \
+  linux-zen-headers \
+  networkmanager \
+  fuse-overlayfs \
+  podman \
+  efibootmgr \
+  grub \
+  flatpak \
+  ostree \
+  xorriso \
+  squashfs-tools \
+  btrfs-progs \
+  e2fsprogs \
+  exfatprogs \
+  ntfs-3g \
+  xfsprogs \
+  nvidia-open-dkms \
+  nvidia-container-toolkit \
+  nvidia-utils
 
-RUN <<EOF cat > /etc/mkinitcpio.conf.d/ostree.conf
-HOOKS=(base systemd ostree autodetect modconf kms keyboard keymap consolefont block filesystems fsck)
-EOF
+RUN systemctl enable \
+  NetworkManager \
+  bluetooth \
+  podman
 
-RUN <<EOF cat > /etc/mkinitcpio.d/linux-zen.preset
-PRESETS=('ostree')
-
-ALL_kver='/boot/vmlinuz-linux-zen'
-ostree_config='/etc/mkinitcpio.conf.d/ostree.conf'
-ostree_image="/boot/initramfs-linux-zen.img"
-EOF
-
-RUN <<EOT
-  set -e
-  pacman-key --init
-  pacman-key --populate archlinux
-  pacman -Syu --needed --noconfirm \
-    bluez \
-    broadcom-wl-dkms \
-    linux-firmware \
-    linux-zen \
-    linux-zen-headers \
-    networkmanager \
-    fuse-overlayfs \
-    podman \
-    efibootmgr \
-    grub \
-    flatpak \
-    ostree \
-    xorriso \
-    squashfs-tools
-  yes | pacman -Scc
-  rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
-EOT
-
-RUN <<EOT
-  set -e
-  pacman-key --init
-  pacman-key --populate archlinux
-  pacman -Syu --needed --noconfirm \
-    nvidia-dkms \
-    nvidia-container-toolkit
-  yes | pacman -Scc
-  rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
-EOT
-
-RUN <<EOT
-  set -e
-  echo 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf
-  echo "kernel.unprivileged_userns_clone=1" > /usr/lib/sysctl.d/99-podman.conf
-  echo "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/wheel
-  systemctl enable \
-    NetworkManager \
-    bluetooth \
-    podman
-  mkdir -p \
-    /etc/system \
-    /var/lib/system
-EOT
-
-RUN <<EOF cat > /etc/system/Systemfile
-FROM atomic-arch:base
-
-ARG TIMEZONE=Canada/Mountain
-ARG KEYMAP=us
-ARG FONT=ter-124n
-ARG LANGUAGE=en_CA.UTF-8
-
-RUN <<EOT
-  set -e
-  echo "BUILD_ID=$(date +'%Y-%m-%d')" >> /etc/os-release
-  ln -sf "/usr/share/zoneinfo/%{TIMEZONE}" /etc/localtime
-  echo "KEYMAP=${KEYMAP}" > /etc/vconsole.conf
-  echo "FONT=${FONT}" >> /etc/vconsole.conf
-  echo "LANG=${LANGUAGE}" > /etc/locale.conf
-  echo "${LANGUAGE}" > /etc/locale.gen
-  locale-gen
-EOT
-EOF
-
-COPY overlay /
-
-RUN <<EOT
-  set -e
-  systemctl enable ostree-rollback-to-rescue
-EOT
+RUN mkdir -p /var/lib/system
+COPY overlay/base /
+RUN systemctl enable ostree-rollback-to-rescue
 
 FROM base AS gnome
 
-RUN <<EOT
-  set -e
-  sed -i '/FROM atomic-arch:/ s|base|gnome|' /etc/system/{System,Iso}file
-  sed -i '/Variant=/ s|Base|Gnome|' /etc/os-release
-  sed -i '/Variant_id=/ s|base|gnome|' /etc/os-release
-EOT
+RUN /usr/lib/system/set_variant gnome Gnome
 
-RUN <<EOT
-  set -e
-  pacman-key --init
-  pacman-key --populate archlinux
-  pacman -Syu --needed --noconfirm \
-    gdm \
-    gnome-shell \
-    ghostty \
-    xorg-server \
-    gnome-software \
-    flatpak-xdg-utils \
-    gnome-packagekit \
-    fwupd \
-    gnome-tweaks \
-    gnome-control-center
-  yes | pacman -Scc
-  rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
-EOT
+RUN /usr/lib/system/install_packages \
+  gdm \
+  gnome-shell \
+  ghostty \
+  xorg-server \
+  gnome-software \
+  flatpak-xdg-utils \
+  gnome-packagekit \
+  fwupd \
+  gnome-tweaks \
+  gnome-control-center
 
-RUN <<EOT
-  set -e
-  systemctl enable gdm
-EOT
+RUN systemctl enable gdm
+COPY overlay/gnome /
+
+FROM base as atomic
+
+RUN /usr/lib/system/set_variant atomic Atomic
+
+RUN /usr/lib/system/install_packages \
+  ghostty \
+  gnome-software \
+  flatpak-xdg-utils \
+  gnome-packagekit \
+  fwupd \
+  lemurs \
+  niri \
+  mako \
+  waybar \
+  xdg-desktop-portal-gnome \
+  swaybg \
+  swayidle \
+  swaylock \
+  xwayland-satellite \
+  fuzzel \
+  gnome-keyring \
+  nautilus
+
+RUN systemctl enable lemurs.service
+COPY overlay/atomic /

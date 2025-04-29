@@ -26,6 +26,7 @@ podman build \
   --target "${TAG}" \
   --tag "atomic-arch:${TAG}" \
   --force-rm \
+  --volume /var/cache/pacman:/var/cache/pacman \
   .
 podman run \
   --rm \
@@ -34,6 +35,7 @@ podman run \
   --volume "/run/podman/podman.sock:/run/podman/podman.sock" \
   --volume "${SYSTEM_PATH}:/var/lib/system" \
   --volume "${OSTREE_PATH}:/ostree" \
+  --volume /var/cache/pacman:/var/cache/pacman \
   --entrypoint /usr/bin/os \
   "atomic-arch:${TAG}" \
   build
@@ -44,6 +46,7 @@ podman run \
   --volume "/run/podman/podman.sock:/run/podman/podman.sock" \
   --volume "${SYSTEM_PATH}:/var/lib/system" \
   --volume "${OSTREE_PATH}:/ostree" \
+  --volume /var/cache/pacman:/var/cache/pacman \
   --entrypoint /usr/bin/os \
   "atomic-arch:${TAG}" \
   iso

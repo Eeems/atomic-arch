@@ -1,0 +1,16 @@
+spawn-at-startup "swaybg" "-m" "fill" "-i" "~/.config/background.png"
+spawn-at-startup "waybar"
+spawn-at-startup "swayidle" "-w" "timeout" "601" "niri msg action power-off-monitors" "timeout" "600" "swaylock -f" "before-sleep" "swaylock -f"
+
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+window-rule {
+    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
+    default-floating-position x=10 y=10 relative-to="bottom-right"
+}
+environment {
+    ELECTRON_OZONE_PLATFORM_HINT "auto"
+}
+debug {
+    render-drm-device "/dev/dri/renderD128"
+}
