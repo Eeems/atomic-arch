@@ -81,7 +81,8 @@ RUN /usr/lib/system/install_packages \
   git \
   fakeroot \
   debugedit \
-  terminus-font
+  terminus-font \
+  pv
 
 RUN systemctl enable \
   NetworkManager \
