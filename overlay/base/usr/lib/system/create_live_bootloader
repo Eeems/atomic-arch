@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 UUID="${1:-$(date +"%Y-%m-%d-%H-%M-%S-00")}"
+echo "[system] Creating live bootloader"
 
 cat >/etc/system/grub.cfg <<EOF
 search --file --set=root /${UUID}.uuid
@@ -10,8 +11,8 @@ EOF
 
 touch "/etc/system/archiso/${UUID}.uuid"
 truncate -s 32MB /etc/system/efiboot.img
-mkfs.vfat /etc/system/efiboot.img
-mmd -i /etc/system/efiboot.img EFI EFI/boot
+chronic mkfs.vfat /etc/system/efiboot.img
+chronic mmd -i /etc/system/efiboot.img EFI EFI/boot
 
 modules=(
   all_video at_keyboard boot btrfs cat chain configfile echo efifwsetup
@@ -23,7 +24,7 @@ modules=(
   xfs zstd
 )
 
-grub-mkstandalone \
+chronic grub-mkstandalone \
   --format=x86_64-efi \
   --themes="" \
   --sbat=/usr/share/grub/sbat.csv \
@@ -32,9 +33,9 @@ grub-mkstandalone \
   --modules="${modules[*]}" \
   boot/grub/grub.cfg=/etc/system/grub.cfg
 
-mcopy -i /etc/system/efiboot.img BOOTx64.EFI ::EFI/boot
+chronic mcopy -i /etc/system/efiboot.img BOOTx64.EFI ::EFI/boot
 rm BOOTx64.EFI
-grub-mkimage \
+chronic grub-mkimage \
   --output=core.img \
   --format=i386-pc \
   --prefix=/boot/grub \

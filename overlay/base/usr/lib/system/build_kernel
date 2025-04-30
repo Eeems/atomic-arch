@@ -1,0 +1,117 @@
+#!/bin/bash
+set -e
+
+echo "[system] Building kernel"
+
+install_preset() {
+  local pkgbase="$1" preset="$2" kernelbase="$3"
+
+  if [[ ! -e "$preset" ]]; then
+    if [[ -e "$preset.pacsave" ]]; then
+      # move the pacsave to the template
+      mv -- "${preset}.pacsave" "$preset"
+    else
+      # create the preset from the template
+      sed "s|%KERNELBASE%|${kernelbase}|g" /usr/share/mkinitcpio/hook.preset |
+        install -Dm644 /dev/stdin "$preset"
+    fi
+  fi
+}
+# is_kernelcopy checks whether a `*_kver` value from a .preset file is a
+# filename that the .preset expects us to copy the kernel file to.
+is_kernelcopy() {
+  local preset_kver="$1"
+
+  # Check that this is a filepath (e.g. "/boot/vmlinuz-${pkgbase}") rather
+  # than a version number (e.g. "6.5.2-arch-1").
+  #
+  # mkinitcpio:resolve_kernver() does this by checking whether the string
+  # starts with a "/", so do the same check here.
+  if [[ "${preset_kver}" != /* ]]; then
+    return 1
+  fi
+
+  # Check that this isn't the filepath of the original
+  # "/usr/lib/modules/${kver}-${pkgbase}/vmlinuz" file that we'd be copying
+  # from... or really any other file that is actually owned by a package.
+  if pacman -Qoq -- "${preset_kver}" &>/dev/null; then
+    return 1
+  fi
+
+  return 0
+}
+read_preset() {
+  local pkgbase="$1" p preset_image preset_uki preset_kver
+  local unsorted_filelist=() unsorted_kernellist=()
+
+  if [[ -v PRESETS ]]; then
+    for p in "${PRESETS[@]}"; do
+      declare -n preset_image="${p}_image" preset_uki="${p}_uki" preset_kver="${p}_kver"
+
+      if [[ -v preset_image ]]; then
+        unsorted_filelist+=("${preset_image}")
+      elif [[ -v ALL_image ]]; then
+        unsorted_filelist+=("${ALL_image}")
+      fi
+      if [[ -v preset_uki ]]; then
+        unsorted_filelist+=("${preset_uki}")
+      elif [[ -v ALL_uki ]]; then
+        unsorted_filelist+=("${ALL_uki}")
+      fi
+      if [[ -v preset_kver ]]; then
+        if is_kernelcopy "${preset_kver}"; then
+          unsorted_filelist+=("${preset_kver}")
+        fi
+        unsorted_kernellist+=("${preset_kver}")
+      elif [[ -v ALL_kver ]]; then
+        if is_kernelcopy "${ALL_kver}"; then
+          unsorted_filelist+=("${ALL_kver}")
+        fi
+        unsorted_kernellist+=("${ALL_kver}")
+      fi
+    done
+  else
+    unsorted_filelist+=("/boot/vmlinuz-${pkgbase}"
+      "/boot/initramfs-${pkgbase}.img"
+      "/boot/initramfs-${pkgbase}-fallback.img"
+      "/efi/EFI/Linux/manjaro-${pkgbase}.efi"
+      "/efi/EFI/Linux/manjaro-${pkgbase}-fallback.efi")
+    unsorted_kernellist+=("/boot/vmlinuz-${pkgbase}")
+  fi
+
+  # Deduplicate file lists
+  filelist=()
+  while IFS='' read -r -d '' arrayelement; do
+    filelist+=("$arrayelement")
+  done < <(printf '%s\0' "${unsorted_filelist[@]}" | LC_ALL=C.UTF-8 sort -uz)
+  kernellist=()
+  while IFS='' read -r -d '' arrayelement; do
+    kernellist+=("$arrayelement")
+  done < <(printf '%s\0' "${unsorted_kernellist[@]}" | LC_ALL=C.UTF-8 sort -uz)
+}
+install_kernel() {
+  local pkgbase="$1"
+  local kernel preset="/etc/mkinitcpio.d/${pkgbase}.preset"
+
+  install_preset "$pkgbase" "$preset" "$kernelbase"
+  (
+    # source the preset to get the kernel and image locations
+    # shellcheck disable=SC1090
+    [[ -s "$preset" ]] && . "$preset"
+    read_preset "$pkgbase"
+
+    # always install the kernel
+    for kernel in "${kernellist[@]}"; do
+      if is_kernelcopy "${kernel}"; then
+        install -Dm644 -- "${line}" "${kernel}"
+      fi
+    done
+  )
+
+  # compound args for each kernel
+  args+=(-p "$pkgbase")
+}
+ls /usr/lib/modules/*/vmlinuz | while read -r line; do
+  install_kernel linux-zen
+done
+chronic mkinitcpio -P

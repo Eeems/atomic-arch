@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+/usr/lib/system/initialize_pacman
+
+echo "[system] Installing git fakeroot debugedit"
+chronic pacman -Syu --needed --noconfirm git fakeroot debugedit
+chronic useradd -m aur
+chronic passwd -d aur
+echo "aur ALL=(ALL:ALL) NOPASSWD: ALL" >/etc/sudoers.d/aur
+
+for pkgref in "$@"; do
+  echo "[system] Installing $pkgref"
+  package=$(echo $pkgref | awk -F '=' '{print $1}')
+  ref=$(echo $pkgref | awk -F '=' '{print $2}')
+  if [[ "$ref" != "" ]]; then
+    chronic sudo -u aur git clone \
+      --depth=1 \
+      --branch="$ref" \
+      "https://aur.archlinux.org/${package}.git" \
+      /tmp/src
+  else
+    chronic sudo -u aur git clone \
+      --depth=1 \
+      "https://aur.archlinux.org/${package}.git" \
+      /tmp/src
+  fi
+  cd /tmp/src
+  sudo -u aur chronic makepkg \
+    --noconfirm \
+    --needed \
+    --syncdeps \
+    --install
+  cd ..
+  chronic rm -r src
+done
+
+chronic rm /etc/sudoers.d/aur
+chronic userdel aur
+chronic rm -r /home/aur
+
+/usr/lib/system/remove_unused_packages
+/usr/lib/system/remove_pacman_files

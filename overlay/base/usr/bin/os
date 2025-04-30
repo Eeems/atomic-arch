@@ -3,6 +3,7 @@ import argparse
 import atexit
 from getpass import getpass
 import os
+from re import sub
 import shlex
 import shutil
 import subprocess
@@ -18,6 +19,7 @@ from typing import Callable, cast
 SYSTEM_PATH = "/var/lib/system"
 RETAIN = 5
 COMMAND_LINE = ""
+NVIDIA_PACKAGES = ["nvidia-open-dkms", "nvidia-container-toolkit", "nvidia-utils"]
 
 
 def _execute(cmd: str):
@@ -37,12 +39,15 @@ def execute(cmd: str | list[str], *args: str):
         raise subprocess.CalledProcessError(ret, cmd, None, None)
 
 
-def podman(*args: str):
+def podman_cmd(*args: str):
     if _execute("systemd-detect-virt --quiet --container") == 0:
-        execute("podman", "--remote", *args)
+        return ["podman", "--remote", *args]
 
-    else:
-        execute("podman", *args)
+    return ["podman", *args]
+
+
+def podman(*args: str):
+    execute(*podman_cmd(*args))
 
 
 def ostree(*args: str):
@@ -64,6 +69,9 @@ def export(
     if rootfs is None:
         rootfs = os.path.join(workingDir, "rootfs")
 
+    if os.path.exists(rootfs):
+        shutil.rmtree(rootfs)
+
     cwd = os.getcwd()
     os.chdir(workingDir)
     timestamp = int(time())
@@ -79,17 +87,20 @@ def export(
         "-c",
         setup,
     )
-    if os.path.exists("rootfs.tar"):
-        os.unlink("rootfs.tar")
-
-    podman("export", name, "--output", "rootfs.tar")
-    atexit.unregister(exitFunc1)
-    podman("rm", name)
     os.makedirs(rootfs, exist_ok=True)
-    with tarfile.open("rootfs.tar", mode="r") as t:
+    cmd = podman_cmd("export", name)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    assert process.stdout is not None
+    with tarfile.open(fileobj=process.stdout, mode="r|*") as t:
         t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
 
-    os.unlink("rootfs.tar")
+    process.stdout.close()
+    _ = process.wait()
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(process.returncode, cmd, None, None)
+
+    atexit.unregister(exitFunc1)
+    podman("rm", name)
     os.chdir(cwd)
 
 
@@ -164,13 +175,13 @@ def prepare(rootfs: str, kernelCommandline: str = ""):
     os.chdir(cwd)
 
 
-def build():
+def build(systemfile: str = "/etc/system/Systemfile"):
     podman(
         "build",
         "--force-rm",
         "--tag=system:latest",
         "--volume=/var/cache/pacman:/var/cache/pacman",
-        "--file=/etc/system/Systemfile",
+        f"--file={systemfile}",
     )
 
 
@@ -221,6 +232,7 @@ def install(
     kernelCommandline: str = "",
     formatPartitions: bool = False,
     password: str | None = None,
+    extraPackages: list[str] | None = None,
 ):
     if os.path.exists("/ostree"):
         print("Cannot install on existing system")
@@ -260,7 +272,39 @@ def install(
     execute("ostree", "admin", "stateroot-init", f"--sysroot={sysroot}", "atomic-arch")
     ostree("init", "--mode=bare")
     ostree("config", "set", "sysroot.bootprefix", "1")
-    build()
+    systemfile = "/tmp/Systemfile"
+    if os.path.exists(systemfile):
+        os.unlink(systemfile)
+
+    _ = shutil.copy2("/etc/system/Systemfile", systemfile)
+    found_build_kernel = False
+    with open(systemfile, "r+") as f:
+        lines = f.readlines()
+        _ = f.seek(0)
+        statement: list[str] = []
+        for line in lines:
+            statement += line
+            if line.endswith("\\"):
+                continue
+
+            if statement[0].startswith("RUN /usr/lib/system/build_kernel"):
+                found_build_kernel = True
+                _ = f.write(
+                    "\n".join(
+                        [
+                            "RUN /usr/lib/system/install_packages \\",
+                            *[f"  {x} \\" for x in extraPackages or []],
+                        ]
+                    )
+                )
+
+            _ = f.write("\n".join(statement))
+
+    if not found_build_kernel:
+        raise Exception("Unable to find build_kernel call")
+
+    build(systemfile)
+    os.unlink(systemfile)
     export(workingDir=systemDir)
     rootfs = os.path.join(systemDir, "rootfs")
     prepare(rootfs)
@@ -476,6 +520,13 @@ def do_iso(_: argparse.Namespace):
 
 
 def do_install(args: argparse.Namespace):
+    packages = cast(list[str], args.package)
+    if not packages:
+        packages += ["man-pages", "man-db", "git"]
+
+    if cast(bool, args.nvidia):
+        packages += NVIDIA_PACKAGES
+
     install(
         cast(str, args.branch),
         cast(str, args.sysroot),
@@ -484,6 +535,7 @@ def do_install(args: argparse.Namespace):
         cast(str, args.kernelCommandline),
         cast(bool, args.formatPartitions),
         cast(str, args.password),
+        packages,
     )
 
 
@@ -568,6 +620,12 @@ if __name__ == "__main__":
         help="Format the partitions before installing",
     )
     _ = subparser.add_argument("--password", default=None, help="New root password")
+    _ = subparser.add_argument(
+        "--package", action="append", help="Extra package to install"
+    )
+    _ = subparser.add_argument(
+        "--nvidia", action="store_true", help="Install nvidia packages"
+    )
     subparser.set_defaults(func=do_install)
 
     subparser = subparsers.add_parser("upgrade", help="Perform a system upgrade")

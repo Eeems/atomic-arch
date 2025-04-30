@@ -20,6 +20,10 @@ RUN /usr/lib/system/install_packages \
   mkinitcpio-archiso \
   mtools \
   qemu-guest-agent \
-  syslinux
+  syslinux \
+  nvidia-open-dkms \
+  nvidia-container-toolkit \
+  nvidia-utils
 
+RUN /usr/lib/system/build_kernel
 RUN /usr/lib/system/create_live_bootloader

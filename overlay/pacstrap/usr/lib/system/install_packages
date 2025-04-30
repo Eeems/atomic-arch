@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
-pacman-key --init
-pacman-key --populate archlinux
-pacman -Syu --needed --noconfirm "$@"
-yes | pacman -Scc
-rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
+/usr/lib/system/initialize_pacman
+echo "[system] Installing" "$@"
+chronic pacman -Syu --needed --noconfirm "$@"
+/usr/lib/system/remove_unused_packages
+/usr/lib/system/remove_pacman_files

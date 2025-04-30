@@ -2,6 +2,7 @@
 set -e
 variant=${1:-base}
 name=${2:-Base}
+echo "[system] Variant: $name"
 sed -i "/FROM atomic-arch:/ s|base|$variant|" /etc/system/{System,Iso}file
 sed -i "/VARIANT=/ s|Base|$name|" /etc/os-release
 sed -i "/VARIANT_ID=/ s|base|$variant|" /etc/os-release

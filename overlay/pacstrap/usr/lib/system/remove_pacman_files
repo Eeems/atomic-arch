@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+echo "[system] Cleaning up pacman cache and keyring"
+chronic bash -c 'yes | pacman -Scc'
+rm -rf etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*

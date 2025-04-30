@@ -2,6 +2,7 @@
 set -e
 buildid="${1}"
 
+echo "[system] Build ID: ${buildid}"
 if grep -Fq "BUILD_ID="; then
   sed -i "/BUILD_ID=/ s|.*|$buildid|" /etc/os-release
 else

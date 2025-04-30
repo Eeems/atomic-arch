@@ -1,16 +1,15 @@
 #!/bin/bash
 set -e
+echo "[system] Hostname: $HOSTNAME"
+echo "[system] Timezone: $TIMEZONE"
+echo "[system] Keymap: $KEYMAP"
+echo "[system] Font: $FONT"
+echo "[system] Language: $LANGUAGE"
+echo "[system] Encoding: $ENCODING"
 echo "${HOSTNAME:-atomic}" >/etc/hostname
 ln -sf "/usr/share/zoneinfo/%{TIMEZONE:-UTC}" /etc/localtime
 echo "KEYMAP=${KEYMAP:-us}" >/etc/vconsole.conf
 echo "FONT=${FONT:-ter-124n}" >>/etc/vconsole.conf
 echo "LANG=${LANGUAGE:-en_US}.${ENCODING:-UTF-8}" >/etc/locale.conf
 echo "${LANGUAGE:-en_US}.${ENCODING:-UTF-8} ${ENCODING:-UTF-8}" >/etc/locale.gen
-locale-gen
-
-if [ -f /usr/bin/gdm ]; then
-  cat >/etc/gdm/custom.conf <<EOF
-[daemon]
-InitialSetupEnable=True
-EOF
-fi
+chronic locale-gen

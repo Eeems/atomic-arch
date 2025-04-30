@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+echo "[system] Initializing keyring"
+chronic pacman-key --init
+chronic pacman-key --populate archlinux

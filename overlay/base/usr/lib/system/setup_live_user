@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
-useradd -m live
-passwd -d live
+echo "[system] Setting up live user"
+chronic useradd -m live
+chronic passwd -d live
 echo "live ALL=(ALL:ALL) NOPASSWD: ALL" >/etc/sudoers.d/live
 
 if [ -f /usr/bin/gdm ]; then

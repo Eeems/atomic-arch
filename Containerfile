@@ -15,24 +15,23 @@ RUN echo "Server = https://america.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${
 RUN echo "Server = https://asia.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
 RUN echo "Server = https://europe.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
 RUN pacman-key --init
-RUN pacman -Sy --needed --noconfirm archlinux-keyring arch-install-scripts
+RUN pacman -Sy --needed --noconfirm archlinux-keyring moreutils
 RUN mkdir /rootfs
-COPY overlay/pacstrap /rootfs
-
 WORKDIR /rootfs
-
 RUN mkdir -m 0755 -p var/{cache/pacman/pkg,lib/pacman,log} dev run etc
 RUN mkdir -m 1777 tmp
 RUN mkdir -m 0555 sys proc
-RUN fakeroot pacman -r . -Sy --noconfirm base
+RUN chronic fakeroot pacman -r . -Sy --noconfirm base mkinitcpio moreutils
+RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook
+RUN rm usr/share/libalpm/hooks/90-mkinitcpio-install.hook
 RUN cp -a {/,}etc/pacman.d/mirrorlist
 RUN cp -a {/,}etc/pacman.conf
-
 
 FROM scratch AS base
 
 WORKDIR /
 COPY --from=pacstrap /rootfs /
+COPY overlay/pacstrap /
 ENTRYPOINT [ "/bin/bash" ]
 
 ARG ARCHIVE_YEAR
@@ -79,9 +78,10 @@ RUN /usr/lib/system/install_packages \
   exfatprogs \
   ntfs-3g \
   xfsprogs \
-  nvidia-open-dkms \
-  nvidia-container-toolkit \
-  nvidia-utils
+  git \
+  fakeroot \
+  debugedit \
+  terminus-font
 
 RUN systemctl enable \
   NetworkManager \
@@ -123,8 +123,6 @@ RUN /usr/lib/system/install_packages \
   fwupd \
   lemurs \
   niri \
-  mako \
-  waybar \
   xdg-desktop-portal-gnome \
   swaybg \
   swayidle \
@@ -133,6 +131,31 @@ RUN /usr/lib/system/install_packages \
   fuzzel \
   gnome-keyring \
   nautilus
+
+RUN /usr/lib/system/install_aur_packages \
+  libastal-io-git \
+  libastal-git \
+  libastal-gjs-git \
+  libastal-4-git \
+  libastal-apps-git \
+  libastal-auth-git \
+  libastal-battery-git \
+  libastal-bluetooth-git \
+  libcava \
+  libastal-cava-git \
+  libastal-greetd-git \
+  libastal-hyprland-git \
+  libastal-mpris-git \
+  libastal-network-git \
+  libastal-notifd-git \
+  libastal-powerprofiles-git \
+  libastal-river-git \
+  appmenu-glib-translator-git \
+  libastal-tray-git \
+  libastal-wireplumber-git \
+  libastal-meta \
+  aylurs-gtk-shell-git \
+  ags-hyprpanel-git
 
 RUN systemctl enable lemurs.service
 COPY overlay/atomic /
