@@ -24,7 +24,11 @@ RUN /usr/lib/system/install_packages \
   swww \
   hyprlock \
   gamescope \
-  vulkan-swrast
+  vulkan-swrast \
+  ttf-font-awesome \
+  otf-font-awesome \
+  noto-fonts-emoji \
+  dex
 
 RUN /usr/lib/system/install_aur_packages \
   python-imageio \

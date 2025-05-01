@@ -252,6 +252,7 @@ spawn-at-startup "waypaper" "--restore" "--backend" "swaybg"
 spawn-at-startup "waybar"
 spawn-at-startup "hypridle"
 spawn-at-startup "xwayland-satellite"
+spawn-at-startup "dex" "--autostart"
 
 // Uncomment this line to ask the clients to omit their client-side decorations if possible.
 // If the client will specifically ask for CSD, the request will be honored.
