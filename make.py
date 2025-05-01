@@ -68,7 +68,7 @@ def atomic_arch(*args: str, target: str | None = None):
 
 def do_build(args: argparse.Namespace):
     targets = cast(list[str], args.target)
-    if targets[0] != "base":
+    if "base" in targets and targets[0] != "base":
         targets.remove("base")
 
     if "base" not in targets:

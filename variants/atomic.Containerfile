@@ -22,7 +22,9 @@ RUN /usr/lib/system/install_packages \
   pipewire-audio \
   pipewire-pulse \
   swww \
-  hyprlock
+  hyprlock \
+  gamescope \
+  vulkan-swrast
 
 RUN /usr/lib/system/install_aur_packages \
   python-imageio \

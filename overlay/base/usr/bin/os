@@ -201,12 +201,16 @@ def commit(branch: str = "system", rootfs: str | None = None):
 
 
 def deploy(branch: str = "system", sysroot: str = "/", kernelCommandline: str = ""):
+    kargs = ["--karg=root=LABEL=SYS_ROOT", "--karg-append=rw"]
+    for karg in kernelCommandline.split():
+        kargs.append(f"--karg-append={karg}")
+
     execute(
         "ostree",
         "admin",
         "deploy",
         f"--sysroot={sysroot}",
-        f"--karg=root=LABEL=SYS_ROOT {kernelCommandline} rw",
+        *kargs,
         "--os=atomic-arch",
         "--retain",
         f"atomic-arch/{branch}",
