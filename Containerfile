@@ -10,22 +10,23 @@ ARG ARCHIVE_YEAR
 ARG ARCHIVE_MONTH
 ARG ARCHIVE_DAY
 
-RUN echo "Server = https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist
-RUN echo "Server = https://america.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
-RUN echo "Server = https://asia.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
-RUN echo "Server = https://europe.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
-RUN pacman-key --init
-RUN pacman -Sy --needed --noconfirm archlinux-keyring moreutils
+RUN \
+  echo "Server = https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist \
+  && echo "Server = https://america.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist \
+  && echo "Server = https://asia.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist \
+  && echo "Server = https://europe.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" >> /etc/pacman.d/mirrorlist
+RUN pacman-key --init \
+  && pacman -Sy --needed --noconfirm archlinux-keyring moreutils
 RUN mkdir /rootfs
 WORKDIR /rootfs
-RUN mkdir -m 0755 -p var/{cache/pacman/pkg,lib/pacman,log} dev run etc
-RUN mkdir -m 1777 tmp
-RUN mkdir -m 0555 sys proc
+RUN mkdir -m 0755 -p var/{cache/pacman/pkg,lib/pacman,log} dev run etc \
+  && mkdir -m 1777 tmp \
+  && mkdir -m 0555 sys proc
 RUN chronic fakeroot pacman -r . -Sy --noconfirm base mkinitcpio moreutils
-RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook
-RUN rm usr/share/libalpm/hooks/90-mkinitcpio-install.hook
-RUN cp -a {/,}etc/pacman.d/mirrorlist
-RUN cp -a {/,}etc/pacman.conf
+RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
+  && rm usr/share/libalpm/hooks/90-mkinitcpio-install.hook \
+  && cp -a {/,}etc/pacman.d/mirrorlist \
+  && cp -a {/,}etc/pacman.conf
 
 FROM scratch AS base
 
