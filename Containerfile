@@ -1,10 +1,10 @@
 #syntax=docker/dockerfile:1.4
 ARG ARCHIVE_YEAR=2025
 ARG ARCHIVE_MONTH=04
-ARG ARCHIVE_DAY=27
-ARG TAG_VERSION=0.341977
+ARG ARCHIVE_DAY=30
+ARG PACSTRAP_TAG=20250427.0.341977
 
-FROM docker.io/library/archlinux:base-devel-${ARCHIVE_YEAR}${ARCHIVE_MONTH}${ARCHIVE_DAY}.${TAG_VERSION} AS pacstrap
+FROM docker.io/library/archlinux:base-devel-${PACSTRAP_TAG} AS pacstrap
 
 ARG ARCHIVE_YEAR
 ARG ARCHIVE_MONTH
@@ -82,7 +82,8 @@ RUN /usr/lib/system/install_packages \
   fakeroot \
   debugedit \
   terminus-font \
-  pv
+  pv \
+  run-parts
 
 RUN systemctl enable \
   NetworkManager \
@@ -120,43 +121,53 @@ RUN /usr/lib/system/install_packages \
   ghostty \
   gnome-software \
   flatpak-xdg-utils \
-  gnome-packagekit \
   fwupd \
-  lemurs \
+  greetd-tuigreet \
   niri \
   xdg-desktop-portal-gnome \
-  swaybg \
-  swayidle \
-  swaylock \
   xwayland-satellite \
   fuzzel \
   gnome-keyring \
-  nautilus
+  nautilus \
+  power-profiles-daemon \
+  pavucontrol \
+  python-numpy \
+  waybar \
+  pipewire-audio \
+  pipewire-pulse \
+  swww \
+  hyprlock
 
 RUN /usr/lib/system/install_aur_packages \
-  libastal-io-git \
-  libastal-git \
-  libastal-gjs-git \
-  libastal-4-git \
-  libastal-apps-git \
-  libastal-auth-git \
-  libastal-battery-git \
-  libastal-bluetooth-git \
-  libcava \
-  libastal-cava-git \
-  libastal-greetd-git \
-  libastal-hyprland-git \
-  libastal-mpris-git \
-  libastal-network-git \
-  libastal-notifd-git \
-  libastal-powerprofiles-git \
-  libastal-river-git \
-  appmenu-glib-translator-git \
-  libastal-tray-git \
-  libastal-wireplumber-git \
-  libastal-meta \
-  aylurs-gtk-shell-git \
-  ags-hyprpanel-git
+  python-imageio \
+  python-imageio-ffmpeg \
+  python-screeninfo \
+  waypaper
 
-RUN systemctl enable lemurs.service
+# RUN /usr/lib/system/install_aur_packages \
+#   libastal-io-git \
+#   libastal-git \
+#   libastal-gjs-git \
+#   libastal-4-git \
+#   libastal-apps-git \
+#   libastal-auth-git \
+#   libastal-battery-git \
+#   libastal-bluetooth-git \
+#   libcava \
+#   libastal-cava-git \
+#   libastal-greetd-git \
+#   libastal-hyprland-git \
+#   libastal-mpris-git \
+#   libastal-network-git \
+#   libastal-notifd-git \
+#   libastal-powerprofiles-git \
+#   libastal-river-git \
+#   appmenu-glib-translator-git \
+#   libastal-tray-git \
+#   libastal-wireplumber-git \
+#   libastal-meta \
+#   aylurs-gtk-shell-git \
+#   ags-hyprpanel-git
+
+RUN systemctl enable greetd
 COPY overlay/atomic /

@@ -4,20 +4,4 @@ echo "[system] Setting up live user"
 chronic useradd -m live
 chronic passwd -d live
 echo "live ALL=(ALL:ALL) NOPASSWD: ALL" >/etc/sudoers.d/live
-
-if [ -f /usr/bin/gdm ]; then
-  mkdir -p /etc/gdm
-  echo "[daemon]" >/etc/gdm/custom.conf
-  echo "AutomaticLoginEnable=True" >>/etc/gdm/custom.conf
-  echo "AutomaticLogin=live" >>/etc/gdm/custom.conf
-elif [ -f /usr/bin/niri ]; then
-  true
-else
-  mkdir -p /etc/systemd/system/getty@tty1.service.d
-  cat >/etc/systemd/system/getty@tty1.service.d/autologin.conf <<EOF
-[Service]
-User=live
-ExecStart=
-ExecStart=-/sbin/agetty -o '-p -f -- \\u' --noclear --autologin live %I linux
-EOF
-fi
+run-parts /usr/lib/system/setup_live_user.d

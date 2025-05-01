@@ -278,27 +278,30 @@ def install(
 
     _ = shutil.copy2("/etc/system/Systemfile", systemfile)
     found_build_kernel = False
-    with open(systemfile, "r+") as f:
+    with open(systemfile, "r") as f:
         lines = f.readlines()
-        _ = f.seek(0)
+
+    with open(systemfile, "w") as f:
         statement: list[str] = []
         for line in lines:
-            statement += line
+            statement.append(line)
             if line.endswith("\\"):
                 continue
 
             if statement[0].startswith("RUN /usr/lib/system/build_kernel"):
                 found_build_kernel = True
                 _ = f.write(
-                    "\n".join(
+                    " \\\n".join(
                         [
-                            "RUN /usr/lib/system/install_packages \\",
-                            *[f"  {x} \\" for x in extraPackages or []],
+                            "RUN /usr/lib/system/install_packages",
+                            *[f"  {x}" for x in extraPackages or []],
                         ]
                     )
+                    + "\n"
                 )
 
-            _ = f.write("\n".join(statement))
+            _ = f.write("".join(statement))
+            statement = []
 
     if not found_build_kernel:
         raise Exception("Unable to find build_kernel call")
@@ -621,7 +624,7 @@ if __name__ == "__main__":
     )
     _ = subparser.add_argument("--password", default=None, help="New root password")
     _ = subparser.add_argument(
-        "--package", action="append", help="Extra package to install"
+        "--package", action="append", help="Extra package to install", default=[]
     )
     _ = subparser.add_argument(
         "--nvidia", action="store_true", help="Install nvidia packages"

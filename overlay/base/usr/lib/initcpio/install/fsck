@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+build() {
+  add_fsck() {
+    case "$" in
+    ext[234])
+      add_binary e2fsck
+      add_symlink /usr/bin/fsck.ext2 e2fsck
+      add_symlink /usr/bin/fsck.ext3 e2fsck
+      add_symlink /usr/bin/fsck.ext4 e2fsck
+      ;;
+    xfs)
+      add_binary fsck.xfs
+      add_binary xfs_repair
+      ;;
+    *)
+      add_binary "fsck.$1"
+      ;;
+    esac
+  }
+  for fsck in $(compgen -c fsck.); do
+    add_fsck "${fsck#fsck.}"
+  done
+  add_binary fsck
+}
