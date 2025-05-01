@@ -3,7 +3,6 @@ import argparse
 import atexit
 from getpass import getpass
 import os
-from re import sub
 import shlex
 import shutil
 import subprocess
@@ -20,6 +19,10 @@ SYSTEM_PATH = "/var/lib/system"
 RETAIN = 5
 COMMAND_LINE = ""
 NVIDIA_PACKAGES = ["nvidia-open-dkms", "nvidia-container-toolkit", "nvidia-utils"]
+
+
+def is_root() -> bool:
+    return os.geteuid() == 0
 
 
 def _execute(cmd: str):
@@ -483,7 +486,9 @@ def iso():
     _ = shutil.copy2("rootfs/etc/system/efiboot.img", "efiboot.img")
     shutil.rmtree("rootfs")
 
-    name = f"atomic-arch-{uuid}.iso"
+    parts = buildImage.split(":")
+    variant = parts[-1] if len(parts) == 2 else "latest"
+    name = f"atomic-arch-{variant}-{uuid}.iso"
     # fmt: off
     execute(
         "xorriso",
@@ -700,6 +705,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not hasattr(args, "func"):
         parser.print_help()
+        sys.exit(1)
+
+    if not is_root():
+        print("Must be run as root")
         sys.exit(1)
 
     cast(Callable[[argparse.Namespace], None], args.func)(args)
