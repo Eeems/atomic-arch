@@ -2,9 +2,8 @@
 set -e
 cat >/etc/greetd/config.toml <<EOT
 [terminal]
-vt = 1
+vt = 2
 [default_session]
 user = "live"
 command = "niri-session"
 EOT
-rm /usr/lib/system/setup_live_user.d/99-getty

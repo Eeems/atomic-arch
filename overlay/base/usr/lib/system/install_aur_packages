@@ -2,8 +2,8 @@
 set -e
 /usr/lib/system/initialize_pacman
 
-echo "[system] Installing git fakeroot debugedit"
-chronic pacman -Syu --needed --noconfirm git fakeroot debugedit
+echo "[system] Installing fakeroot debugedit pkg-config"
+chronic pacman -Syu --needed --noconfirm fakeroot debugedit pkg-config
 chronic useradd -m aur
 chronic passwd -d aur
 echo "aur ALL=(ALL:ALL) NOPASSWD: ALL" >/etc/sudoers.d/aur

@@ -12,13 +12,11 @@ RUN /usr/lib/system/install_packages \
   niri \
   xdg-desktop-portal-gnome \
   xwayland-satellite \
-  fuzzel \
   gnome-keyring \
   nautilus \
   power-profiles-daemon \
   pavucontrol \
   python-numpy \
-  waybar \
   pipewire-audio \
   pipewire-pulse \
   swww \
@@ -28,13 +26,29 @@ RUN /usr/lib/system/install_packages \
   ttf-font-awesome \
   otf-font-awesome \
   noto-fonts-emoji \
-  dex
+  dex \
+  swaync \
+  nwg-clipman \
+  libnotify \
+  waybar \
+  fuzzel \
+  nm-connection-editor \
+  switchboard \
+  switchboard-plug-network \
+  switchboard-plug-bluetooth \
+  switchboard-plug-mouse-touchpad \
+  switchboard-plug-display \
+  switchboard-plug-wacom \
+  switchboard-plug-printers \
+  switchboard-plug-applications \
+  elementary-icon-theme
 
 RUN /usr/lib/system/install_aur_packages \
   python-imageio \
   python-imageio-ffmpeg \
   python-screeninfo \
-  waypaper
+  waypaper \
+  syshud
 
 # RUN /usr/lib/system/install_aur_packages \
 #   libastal-io-git \

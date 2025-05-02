@@ -1,18 +1,20 @@
 #!/usr/bin/python
 import argparse
 import atexit
-from getpass import getpass
+import base64
 import os
 import shlex
 import shutil
 import subprocess
 import sys
 import tarfile
+import json
 
 from time import time
 from glob import iglob
 from datetime import datetime
 from typing import Callable, cast
+from getpass import getpass
 
 
 SYSTEM_PATH = "/var/lib/system"
@@ -58,6 +60,13 @@ def ostree(*args: str):
 
 
 setattr(ostree, "repo", "/ostree/repo")
+
+
+def build_image() -> str:
+    with open("/etc/system/Systemfile", "r") as f:
+        return [x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")][
+            0
+        ]
 
 
 def export(
@@ -318,12 +327,7 @@ def install(
     export(workingDir=systemDir)
     rootfs = os.path.join(systemDir, "rootfs")
     prepare(rootfs)
-
-    with open("/etc/system/Systemfile", "r") as f:
-        buildImage = [
-            x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")
-        ][0]
-
+    buildImage = build_image()
     tmp = os.path.join(sysroot, ".tmp")
     os.mkdir(tmp)
     execute("mount", "-o", "bind", tmp, "/var/tmp")
@@ -522,6 +526,44 @@ def iso():
     return name
 
 
+def updatecheck(baseImage: str | None = None) -> bool:
+    if baseImage is None:
+        baseImage = build_image()
+
+    digests = (
+        subprocess.check_output(
+            podman_cmd(
+                "image",
+                "ls",
+                "--all",
+                "--digests",
+                "--format={{ .Digest }}",
+                "--no-trunc",
+                f"--filter=reference={baseImage}",
+            )
+        )
+        .decode("utf-8")
+        .split("\n", 1)
+    )
+    if not digests:
+        return True
+
+    layers = subprocess.check_output(
+        podman_cmd(
+            "image",
+            "inspect",
+            f"{baseImage}@{digests[0]}",
+            "--format={{ json .RootFS.Layers}}",
+        )
+    )
+    local_layers = cast(list[str], json.loads(layers))
+    layers = subprocess.check_output(
+        podman_cmd("image", "inspect", baseImage, "--format={{ json .RootFS.Layers }}")
+    )
+    remote_layers = cast(list[str], json.loads(layers))
+    return remote_layers != local_layers
+
+
 def do_build(_: argparse.Namespace):
     build()
 
@@ -582,6 +624,14 @@ def do_prepare(args: argparse.Namespace):
 
 def do_commit(args: argparse.Namespace):
     commit(cast(str, args.branch), cast(str, args.rootfs))
+
+
+def do_updatecheck(args: argparse.Namespace):
+    if updatecheck(cast(str, args.baseImage)):
+        print("Updates are available")
+        sys.exit(1)
+
+    print("No updates found")
 
 
 if __name__ == "__main__":
@@ -704,7 +754,15 @@ if __name__ == "__main__":
         "--branch", default="system", help="System branch to commit"
     )
     _ = subparser.add_argument("--rootfs", default="/", help="Rootfs to commit")
-    subparser.set_defaults(func=do_deploy)
+    subparser.set_defaults(func=do_commit)
+
+    subparser = subparsers.add_parser(
+        "updatecheck", help="Checks for updates to the system"
+    )
+    _ = subparser.add_argument(
+        "--base-image", default=None, help="Base image to check", dest="baseImage"
+    )
+    subparser.set_defaults(func=do_updatecheck)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

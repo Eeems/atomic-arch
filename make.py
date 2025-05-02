@@ -59,14 +59,15 @@ def atomic_arch(*args: str, target: str | None = None):
         "--security-opt=label=disable",
         "--volume=/run/podman/podman.sock:/run/podman/podman.sock",
         "--volume=/var/lib/system:/var/lib/system",
-        f"--volume={_ostree}:/ostree--volume=/var/cache/pacman:/var/cache/pacman",
+        f"--volume={_ostree}:/ostree",
+        "--volume=/var/cache/pacman:/var/cache/pacman",
         "--entrypoint=/usr/bin/os",
         f"atomic-arch:{target}",
         *args,
     )
 
 
-def do_build(args: argparse.Namespace):
+def build_targets(args: argparse.Namespace) -> list[str]:
     targets = cast(list[str], args.target)
     if "base" in targets and targets[0] != "base":
         targets.remove("base")
@@ -74,18 +75,20 @@ def do_build(args: argparse.Namespace):
     if "base" not in targets:
         targets = ["base"] + targets
 
-    for target in targets:
+    return targets
+
+
+def do_build(args: argparse.Namespace):
+    for target in build_targets(args):
         build(target)
 
 
 def do_iso(args: argparse.Namespace):
-    targets = cast(list[str], args.target)
-    if not targets:
-        targets.append("base")
-
-    for target in targets:
+    for target in build_targets(args):
         build(target)
         atomic_arch("build", target=target)
+
+    for target in cast(list[str], args.target):
         atomic_arch("iso", target=target)
 
 

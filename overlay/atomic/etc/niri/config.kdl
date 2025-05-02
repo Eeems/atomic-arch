@@ -248,8 +248,13 @@ layout {
 // which may be more convenient to use.
 // See the binds section below for more spawn examples.
 
+spawn-at-startup "dconf" "update"
 spawn-at-startup "waypaper" "--restore" "--backend" "swaybg"
 spawn-at-startup "waybar"
+spawn-at-startup "swaync"
+spawn-at-startup "syshud"
+spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
+spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
 spawn-at-startup "hypridle"
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "dex" "--autostart"
