@@ -25,6 +25,7 @@ RUN /usr/lib/system/install_packages \
   vulkan-swrast \
   ttf-font-awesome \
   otf-font-awesome \
+  ttf-font-nerd \
   noto-fonts-emoji \
   dex \
   swaync \
