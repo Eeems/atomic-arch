@@ -9,5 +9,6 @@ RUN \
   ENCODING=UTF-8 \
   /usr/lib/system/setup_machine
 
+RUN fc-cache -f
 RUN /usr/lib/system/build_kernel
 RUN /usr/lib/system/set_build_id "$(date +'%Y-%m-%d')"

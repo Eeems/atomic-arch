@@ -1,6 +1,6 @@
 // -*- mode: jsonc -*-
 {
-    "height": 30,
+    "height": 32,
     "spacing": 4,
     "modules-left": [
         "custom/appmenu",
@@ -12,10 +12,9 @@
         "custom/media",
         "pulseaudio",
         "network",
-        "power-profiles-daemon",
-        "backlight",
         "battery",
         "clock",
+        "custom/notifications",
         "custom/power"
     ],
     "custom/appmenu": {
@@ -23,40 +22,30 @@
         "tooltip": false,
         "on-click": "fuzzel"
     },
+    "custom/notifications": {
+    	"format": " {icon} ",
+        "format-icons": {
+        	"none": "",
+        	"notification": "",
+        	"dnd-none": " ",
+       		"dnd-notification": " "
+        },
+    	"exec": "swaync-client --subscribe-waybar",
+    	"return-type": "json",
+    	"tooltip": true,
+    	"on-click": "swaync-client --toggle-panel"
+    },
     "wlr/taskbar": {
         "icon-size": 24,
-        "on-click": "activate"
-    },
-    "keyboard-state": {
-        "numlock": true,
-        "capslock": true,
-        "format": "{name} {icon}",
-        "format-icons": {
-            "locked": "",
-            "unlocked": ""
-        }
+        "on-click": "activate",
+        "active-first": true
     },
     "tray": {
         "spacing": 10
     },
     "clock": {
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-        "format-alt": "{:%Y-%m-%d}",
-        "on-click": "swaync-client --open-panel"
-    },
-    "backlight": {
-        "format": "{percent}% {icon}",
-        "format-icons": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
-        ]
+        "format": "{:%a %b %d, %I:%M %p}"
     },
     "battery": {
         "states": {
@@ -64,36 +53,27 @@
             "warning": 30,
             "critical": 15
         },
-        "format": "{capacity}% {icon}",
+        "format": "{time} {capacity}% {icon}",
+        "format-time": "{H}:{m}",
         "format-full": "{capacity}% {icon}",
         "format-charging": "{capacity}% ",
         "format-plugged": "{capacity}% ",
-        "format-alt": "{time} {icon}",
         "format-icons": [
             "",
             "",
             "",
             "",
             ""
-        ]
-    },
-    "power-profiles-daemon": {
-        "format": "{icon}",
-        "tooltip-format": "Power profile: {profile}\nDriver: {driver}",
-        "tooltip": true,
-        "format-icons": {
-            "default": "",
-            "performance": "",
-            "balanced": "",
-            "power-saver": ""
-        }
+        ],
+        "tooltip": false
     },
     "network": {
         "format-wifi": "{essid} ",
         "format-ethernet": "",
         "tooltip-format": "{ifname} via {gwaddr}",
         "format-linked": "",
-        "format-disconnected": "󰈂"
+        "format-disconnected": "󰈂",
+        "on-click": "nm-connection-editor"
     },
     "pulseaudio": {
         // "scroll-step": 1, // %, can be a float

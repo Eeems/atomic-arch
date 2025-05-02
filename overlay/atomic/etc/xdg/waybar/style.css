@@ -168,22 +168,6 @@ label:focus {
     background-color: #000000;
 }
 
-#cpu {
-    background-color: #2ecc71;
-    color: #000000;
-}
-
-#memory {
-    background-color: #9b59b6;
-}
-
-#disk {
-    background-color: #964B00;
-}
-
-#backlight {
-    background-color: #90b1b1;
-}
 
 #network {
     background-color: #2980b9;
@@ -324,4 +308,9 @@ label:focus {
 
 #privacy-item.audio-out {
     background-color: #0069d4;
+}
+
+#custom-notifications.notification:not(.cc-open),
+#custom-notifications.dnd-notification:not(.cc-open) {
+	color: #f1c40f;
 }

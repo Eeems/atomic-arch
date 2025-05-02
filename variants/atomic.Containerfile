@@ -25,7 +25,7 @@ RUN /usr/lib/system/install_packages \
   vulkan-swrast \
   ttf-font-awesome \
   otf-font-awesome \
-  ttf-font-nerd \
+  nerd-fonts \
   noto-fonts-emoji \
   dex \
   swaync \
@@ -41,8 +41,7 @@ RUN /usr/lib/system/install_packages \
   switchboard-plug-display \
   switchboard-plug-wacom \
   switchboard-plug-printers \
-  switchboard-plug-applications \
-  elementary-icon-theme
+  switchboard-plug-applications
 
 RUN /usr/lib/system/install_aur_packages \
   python-imageio \

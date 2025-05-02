@@ -25,7 +25,7 @@
       </object>
     </child>
     <child>
-      <object class="GtkSeparatorMenuItem" id="delimiter1"/>
+      <object class="GtkSeparatorMenuItem" id="delimiter2"/>
     </child>
     <child>
       <object class="GtkMenuItem" id="reboot">

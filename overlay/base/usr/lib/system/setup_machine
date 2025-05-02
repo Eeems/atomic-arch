@@ -7,6 +7,7 @@ echo "[system] Font: $FONT"
 echo "[system] Language: $LANGUAGE"
 echo "[system] Encoding: $ENCODING"
 echo "${HOSTNAME:-atomic}" >/etc/hostname
+chmod a+r /etc/hostname
 ln -sf "/usr/share/zoneinfo/%{TIMEZONE:-UTC}" /etc/localtime
 echo "KEYMAP=${KEYMAP:-us}" >/etc/vconsole.conf
 echo "FONT=${FONT:-ter-124n}" >>/etc/vconsole.conf
