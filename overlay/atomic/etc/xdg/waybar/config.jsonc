@@ -21,7 +21,7 @@
     "custom/appmenu": {
         "format": "  ",
         "tooltip": false,
-        "on-click": "syspower"
+        "on-click": "fuzzel"
     },
     "wlr/taskbar": {
         "icon-size": 24,
@@ -37,7 +37,7 @@
         }
     },
     "tray": {
-        "spacing": 10,
+        "spacing": 10
     },
     "clock": {
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
