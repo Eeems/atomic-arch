@@ -19,6 +19,13 @@ layout {
         color "#0007"
     }
 }
+input {
+	touchpad {
+		tap
+		natural-scroll
+		tap-button-map "left-right-middle"
+	}
+}
 
 spawn-at-startup "dconf" "update"
 spawn-at-startup "waypaper" "--restore" "--backend" "swaybg"
