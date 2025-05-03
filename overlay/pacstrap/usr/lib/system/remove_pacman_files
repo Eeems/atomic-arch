@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 echo "[system] Cleaning up pacman keyring"
-rm -rf /etc/pacman.d/gnupg/{openpgp-revocs.d/,private-keys-v1.d/,pubring.gpg~,gnupg.S.}*
+rm -rf /etc/pacman.d/gnupg/*

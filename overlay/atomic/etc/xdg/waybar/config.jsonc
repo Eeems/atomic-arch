@@ -8,11 +8,12 @@
     ],
     "modules-center": [],
     "modules-right": [
-        "tray",
         "custom/media",
+        "tray",
         "pulseaudio",
         "network",
         "battery",
+        "custom/weather",
         "clock",
         "privacy",
         "custom/notifications",
@@ -99,8 +100,15 @@
         },
         "on-click": "pavucontrol"
     },
+    "privacy": {
+    	"modules": [
+    		{ "type": "screenshare" },
+    		{ "type": "audio-out" },
+    		{ "type": "audio-in" }
+    	]
+    },
     "custom/media": {
-        "format": "{icon}{}",
+        "format": "{icon}{text}",
         "return-type": "json",
         "format-icons": {
             "Playing": " ",
@@ -122,5 +130,10 @@
             "hibernate": "systemctl hibernate",
             "logout": "niri msg action quit --skip-confirmation"
         }
+    },
+    "custom/weather": {
+    	"exec": "curl wttr.in?format=%c%t",
+    	"exec-if": "ping -c 1 wttr.in",
+    	"interval": 300
     }
 }
