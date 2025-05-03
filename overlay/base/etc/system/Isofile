@@ -6,8 +6,9 @@ ARG UUID
 
 RUN /usr/lib/system/setup_live_user
 RUN \
-  cp -lf /etc/system/mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf \
-  cp -lf /etc/system/linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset
+  mkdir -p /etc/mkinitcpio{,.conf}.d \
+  && cp -lf /etc/system/mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf \
+  && cp -lf /etc/system/linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset
 
 RUN /usr/lib/system/install_packages \
   arch-install-scripts \

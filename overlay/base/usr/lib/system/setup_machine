@@ -14,3 +14,6 @@ echo "FONT=${FONT:-ter-124n}" >>/etc/vconsole.conf
 echo "LANG=${LANGUAGE:-en_US}.${ENCODING:-UTF-8}" >/etc/locale.conf
 echo "${LANGUAGE:-en_US}.${ENCODING:-UTF-8} ${ENCODING:-UTF-8}" >/etc/locale.gen
 chronic locale-gen
+rankmirrors /etc/pacman.d/mirrorlist | tail -n +2 >/etc/pacman.d/mirrorlist.new
+rm /etc/pacman.d/mirrorlist
+mv /etc/pacman.d/mirrorlist.new /etc/pacman.d/mirrorlist

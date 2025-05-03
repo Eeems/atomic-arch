@@ -39,7 +39,9 @@ RUN /usr/lib/system/install_packages \
   debugedit \
   terminus-font \
   pv \
-  run-parts
+  run-parts \
+  skopeo \
+  pacman-contrib
 
 RUN systemctl enable \
   NetworkManager \

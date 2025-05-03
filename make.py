@@ -24,8 +24,11 @@ def import_from_file(path: str):
 
 _os = import_from_file("overlay/base/usr/bin/os")
 podman = cast(Callable[..., None], _os.podman)
+execute = cast(Callable[..., None], _os.execute)
+_execute = cast(Callable[..., None], _os._execute)
 ostree = cast(Callable[..., None], _os.ostree)
 is_root = cast(Callable[[], bool], _os.is_root)
+in_system = cast(Callable[..., int], _os.in_system)
 IMAGE = cast(str, _os.IMAGE)
 SYSTEM_PATH = cast(str, _os.SYSTEM_PATH)
 
@@ -38,36 +41,6 @@ def build(target: str):
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file=variants/{target}.Containerfile",
         ".",
-    )
-
-
-def in_system(*args: str, target: str | None = None, entrypoint: str = "/usr/bin/os"):
-    assert target is not None
-    if os.path.exists("/ostree") and os.path.isdir("/ostree"):
-        _ostree = "/ostree"
-        if not os.path.exists(f"{SYSTEM_PATH}/ostree"):
-            os.symlink("/ostree", f"{SYSTEM_PATH}/ostree")
-
-    else:
-        _ostree = f"{SYSTEM_PATH}/ostree"
-        os.makedirs(_ostree, exist_ok=True)
-        repo = os.path.join(_ostree, "repo")
-        setattr(ostree, "repo", repo)
-        if not os.path.exists(repo):
-            ostree("init")
-
-    podman(
-        "run",
-        "--rm",
-        "--privileged",
-        "--security-opt=label=disable",
-        "--volume=/run/podman/podman.sock:/run/podman/podman.sock",
-        f"--volume={SYSTEM_PATH}:{SYSTEM_PATH}",
-        f"--volume={_ostree}:/ostree",
-        "--volume=/var/cache/pacman:/var/cache/pacman",
-        f"--entrypoint={entrypoint}",
-        f"{IMAGE}:{target}",
-        *args,
     )
 
 
@@ -86,6 +59,8 @@ def do_build(args: argparse.Namespace):
 
     for target in cast(list[str], args.target):
         build(target)
+        if cast(bool, args.push):
+            push(target)
 
 
 def do_iso(args: argparse.Namespace):
@@ -94,10 +69,10 @@ def do_iso(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        in_system("build", target=target)
+        _ = in_system("build", target=f"{IMAGE}:{target}", check=True)
 
     for target in cast(list[str], args.target):
-        in_system("iso", target=target)
+        _ = in_system("iso", target=f"{IMAGE}:{target}", check=True)
 
 
 def do_rootfs(args: argparse.Namespace):
@@ -161,12 +136,14 @@ def do_run(args: argparse.Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    in_system(
+    ret = in_system(
         "-c",
         shlex.join(cast(list[str], args.arg)),
-        target=cast(str, args.target),
+        target=f"{IMAGE}:{cast(str, args.target)}",
         entrypoint="/bin/bash",
     )
+    if ret:
+        sys.exit(ret)
 
 
 def do_pull(args: argparse.Namespace):
@@ -178,11 +155,18 @@ def do_pull(args: argparse.Namespace):
         pull(target)
 
 
+def do_os(args: argparse.Namespace):
+    ret = _execute(shlex.join(["overlay/base/usr/bin/os", *cast(list[str], args.arg)]))
+    if ret:
+        sys.exit(ret)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers()
 
     subparser = subparsers.add_parser("build")
+    _ = subparser.add_argument("--push", action="store_true")
     _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
     subparser.set_defaults(func=do_build)
 
@@ -211,6 +195,11 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--target", default="base")
     _ = subparser.add_argument("arg", action="extend", nargs="*", type=str)
     subparser.set_defaults(func=do_run)
+
+    subparser = subparsers.add_parser("os")
+    _ = subparser.add_argument("--target", default="base")
+    _ = subparser.add_argument("arg", action="extend", nargs="*", type=str)
+    subparser.set_defaults(func=do_os)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
