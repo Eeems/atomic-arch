@@ -38,6 +38,7 @@ RUN /usr/lib/system/install_packages \
   libnotify \
   waybar \
   fuzzel \
+  brightnessctl \
   nm-connection-editor \
   switchboard \
   switchboard-plug-network \
