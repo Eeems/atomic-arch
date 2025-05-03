@@ -1,12 +1,17 @@
 #syntax=docker/dockerfile:1.4
-FROM eeems/atomic-arch:base as atomic
+ARG VARIANT="Atomic"
+ARG VARIANT_ID="atomic"
+ARG VERSION_ID=$(uuidgen --time-v7 | cut -c-8)
+
+FROM eeems/atomic-arch:base as  ${VARIANT_ID}
 
 LABEL \
-  os-release.VARIANT="Atomic" \
-  os-release.VARIANT_ID="atomic" \
-  org.opencontainers.image.ref.name="gnome"
+  os-release.VARIANT="$(VARIANT)" \
+  os-release.VARIANT_ID="$(VARIANT_ID)" \
+  os-release.VERSION_ID="${VERSION_ID}" \
+  org.opencontainers.image.ref.name="${VARIANT_ID}"
 
-RUN /usr/lib/system/set_variant atomic Atomic
+RUN /usr/lib/system/set_variant
 
 RUN /usr/lib/system/install_packages \
   ghostty \

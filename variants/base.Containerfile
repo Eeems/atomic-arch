@@ -1,10 +1,17 @@
 #syntax=docker/dockerfile:1.4
-FROM eeems/atomic-arch:rootfs as base
+ARG VARIANT="Base"
+ARG VARIANT_ID="base"
+ARG VERSION_ID=$(uuidgen --time-v7 | cut -c-8)
+
+FROM eeems/atomic-arch:rootfs as ${VARIANT_ID}
 
 LABEL \
-  os-release.VARIANT="Base" \
-  os-release.VARIANT_ID="base" \
-  org.opencontainers.image.ref.name="base"
+    os-release.VARIANT="$(VARIANT)" \
+    os-release.VARIANT_ID="$(VARIANT_ID)" \
+    os-release.VERSION_ID="${VERSION_ID}" \
+    org.opencontainers.image.ref.name="${VARIANT_ID}"
+
+RUN /usr/lib/system/set_variant
 
 RUN /usr/lib/system/install_packages \
   base \

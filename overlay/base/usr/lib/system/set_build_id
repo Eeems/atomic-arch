@@ -1,10 +1,8 @@
 #!/bin/bash
 set -e
-buildid="${1}"
-
-echo "[system] Build ID: ${buildid}"
+echo "[system] Build ID: ${BUILD_ID}"
 if grep -Fq "BUILD_ID="; then
-  sed -i "/BUILD_ID=/ s|.*|$buildid|" /etc/os-release
+  sed -i "/BUILD_ID=/ s|.*|$BUILD_ID|" /etc/os-release
 else
-  echo "BUILD_ID=${buildid}" >>/etc/os-release
+  echo "BUILD_ID=${BUILD_ID}" >>/etc/os-release
 fi

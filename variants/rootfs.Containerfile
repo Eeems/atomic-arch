@@ -41,6 +41,7 @@ LABEL \
   os-release.ID="atomic-arch" \
   os-release.HOME_URL="https://github.com/Eeems/atomic-arch" \
   os-release.BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues" \
+  os-release.VERSION="${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" \
   os-release.VERSION_ID="${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" \
   org.opencontainers.image.authors="eeems@eeems.email" \
   org.opencontainers.image.source="https://github.com/Eeems/atomic-arch" \
@@ -48,7 +49,7 @@ LABEL \
 
 WORKDIR /
 COPY --from=pacstrap /rootfs /
-COPY overlay/pacstrap /
+COPY overlay/rootfs /
 
 RUN <<EOF cat > /etc/os-release
 NAME="Atomic Arch"
@@ -57,6 +58,7 @@ ID=atomic-arch
 HOME_URL="https://github.com/Eeems/atomic-arch"
 SUPPORT_URL="https://github.com/Eeems/atomic-arch/issues"
 BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues"
+VERSION=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}
 VERSION_ID=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}
 VARIANT=Base
 VARIANT_ID=base

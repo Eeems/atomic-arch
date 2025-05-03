@@ -13,4 +13,5 @@ RUN \
 
 RUN fc-cache -f
 RUN /usr/lib/system/build_kernel
-RUN /usr/lib/system/set_build_id "$(date +'%Y-%m-%d')"
+ARG BUILD_ID "$(date +'%Y-%m-%d')"
+RUN /usr/lib/system/set_build_id

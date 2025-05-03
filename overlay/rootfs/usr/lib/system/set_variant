@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+echo "[system] Variant: $VARIANT"
+if [ -f /etc/system/Isofile ];then
+  sed -i "/FROM eeems\/atomic-arch:/ s|base|$VARIANT_ID|" /etc/system/Isofile
+fi
+if [ -f /etc/system/Systemfile ];then
+  sed -i "/FROM eeems\/atomic-arch:/ s|base|$VARIANT_ID|" /etc/system/Systemfile
+fi
+sed -i "/VARIANT=/ s|Base|$VARIANT|" /etc/os-release
+sed -i "/VARIANT_ID=/ s|base|$VARIANT_ID|" /etc/os-release
+sed -i "/VERSION_ID=/ s|.*|VERSION_ID=$(uuidgen --time-v7 | cut -c-8)|" /etc/os-release
