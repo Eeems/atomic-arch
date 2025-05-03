@@ -670,8 +670,12 @@ def do_install(args: argparse.Namespace):
 def do_upgrade(args: argparse.Namespace):
     if not cast(bool, args.noPull):
         baseImage = build_image()
-        if checkupdates(baseImage):
-            podman("pull", baseImage)
+        try:
+            if checkupdates(baseImage):
+                podman("pull", baseImage)
+
+        except subprocess.CalledProcessError:
+            pass
 
     upgrade(cast(str, args.branch))
 
