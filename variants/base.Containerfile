@@ -1,5 +1,10 @@
 #syntax=docker/dockerfile:1.4
-FROM atomic-arch:rootfs as base
+FROM eeems/atomic-arch:rootfs as base
+
+LABEL \
+  os-release.VARIANT="Base" \
+  os-release.VARIANT_ID="base" \
+  org.opencontainers.image.ref.name="base"
 
 RUN /usr/lib/system/install_packages \
   base \

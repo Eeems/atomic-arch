@@ -1,12 +1,13 @@
-ARG BASE_IMAGE=atomic-arch:base
+ARG BASE_IMAGE=eeems/atomic-arch:base
 
 FROM ${BASE_IMAGE}
 
 ARG UUID
 
 RUN /usr/lib/system/setup_live_user
-COPY mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf
-COPY linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset
+RUN \
+  cp -lf /etc/system/mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf \
+  cp -lf /etc/system/linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset
 
 RUN /usr/lib/system/install_packages \
   arch-install-scripts \

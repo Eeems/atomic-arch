@@ -1,5 +1,10 @@
 #syntax=docker/dockerfile:1.4
-FROM atomic-arch:base as atomic
+FROM eeems/atomic-arch:base as atomic
+
+LABEL \
+  os-release.VARIANT="Atomic" \
+  os-release.VARIANT_ID="atomic" \
+  org.opencontainers.image.ref.name="gnome"
 
 RUN /usr/lib/system/set_variant atomic Atomic
 
@@ -23,9 +28,8 @@ RUN /usr/lib/system/install_packages \
   hyprlock \
   gamescope \
   vulkan-swrast \
-  ttf-font-awesome \
   otf-font-awesome \
-  nerd-fonts \
+  ttf-roboto-mono-nerd \
   noto-fonts-emoji \
   dex \
   swaync \

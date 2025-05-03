@@ -30,6 +30,22 @@ RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
 
 FROM scratch AS rootfs
 
+ARG ARCHIVE_YEAR
+ARG ARCHIVE_MONTH
+ARG ARCHIVE_DAY
+ARG PACSTRAP_TAG
+
+LABEL \
+  os-release.NAME="Atomic Arch" \
+  os-release.PRETTY_NAME="Atomic Arch Linux" \
+  os-release.ID="atomic-arch" \
+  os-release.HOME_URL="https://github.com/Eeems/atomic-arch" \
+  os-release.BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues" \
+  os-release.VERSION_ID="${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" \
+  org.opencontainers.image.authors="eeems@eeems.email" \
+  org.opencontainers.image.source="https://github.com/Eeems/atomic-arch" \
+  org.opencontainers.image.ref.name="rootfs"
+
 WORKDIR /
 COPY --from=pacstrap /rootfs /
 COPY overlay/pacstrap /

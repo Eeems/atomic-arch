@@ -1,5 +1,10 @@
 #syntax=docker/dockerfile:1.4
-FROM atomic-arch:base as gnome
+FROM eeeems/atomic-arch:base as gnome
+
+LABEL \
+  os-release.VARIANT="Gnome" \
+  os-release.VARIANT_ID="gnome" \
+  org.opencontainers.image.ref.name="gnome"
 
 RUN /usr/lib/system/set_variant gnome Gnome
 

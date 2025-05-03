@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
-import atexit
 import sys
+import shlex
 import os
 
 from typing import cast
@@ -23,15 +23,17 @@ def import_from_file(path: str):
 
 
 _os = import_from_file("overlay/base/usr/bin/os")
-podman = _os.podman
-ostree = _os.ostree
-is_root = _os.is_root
+podman = cast(Callable[..., None], _os.podman)
+ostree = cast(Callable[..., None], _os.ostree)
+is_root = cast(Callable[[], bool], _os.is_root)
+IMAGE = cast(str, _os.IMAGE)
+SYSTEM_PATH = cast(str, _os.SYSTEM_PATH)
 
 
-def build(target):
+def build(target: str):
     podman(
         "build",
-        f"--tag=atomic-arch:{target}",
+        f"--tag=docker.io/{IMAGE}:{target}",
         "--force-rm",
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file=variants/{target}.Containerfile",
@@ -39,18 +41,18 @@ def build(target):
     )
 
 
-def atomic_arch(*args: str, target: str | None = None):
+def in_system(*args: str, target: str | None = None, entrypoint: str = "/usr/bin/os"):
     assert target is not None
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
         _ostree = "/ostree"
-        if not os.path.exists("/var/lib/system/ostree"):
-            os.symlink("/ostree", "/var/lib/system/ostree")
+        if not os.path.exists(f"{SYSTEM_PATH}/ostree"):
+            os.symlink("/ostree", f"{SYSTEM_PATH}/ostree")
 
     else:
-        _ostree = "/var/lib/system/ostree"
+        _ostree = f"{SYSTEM_PATH}/ostree"
         os.makedirs(_ostree, exist_ok=True)
         repo = os.path.join(_ostree, "repo")
-        setattr(ostree, "repo", repo)  # pyright:ignore [reportAny]
+        setattr(ostree, "repo", repo)
         if not os.path.exists(repo):
             ostree("init")
 
@@ -60,20 +62,22 @@ def atomic_arch(*args: str, target: str | None = None):
         "--privileged",
         "--security-opt=label=disable",
         "--volume=/run/podman/podman.sock:/run/podman/podman.sock",
-        "--volume=/var/lib/system:/var/lib/system",
+        f"--volume={SYSTEM_PATH}:{SYSTEM_PATH}",
         f"--volume={_ostree}:/ostree",
         "--volume=/var/cache/pacman:/var/cache/pacman",
-        "--entrypoint=/usr/bin/os",
-        f"atomic-arch:{target}",
+        f"--entrypoint={entrypoint}",
+        f"{IMAGE}:{target}",
         *args,
     )
 
+
 def push(target: str):
-    tag = f"atomic-arch:{target}"
-    remote_tag = f"eeems/{tag}"
-    podman("tag", tag, remote_tag)
-    _ = atexit.register(podman, "rmi", remote_tag)
-    podman("push", remote_tag)
+    podman("push", f"{IMAGE}:{target}")
+
+
+def pull(target: str):
+    podman("pull", f"{IMAGE}:{target}")
+
 
 def do_build(args: argparse.Namespace):
     if not is_root():
@@ -90,11 +94,11 @@ def do_iso(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        build(target)
-        atomic_arch("build", target=target)
+        in_system("build", target=target)
 
     for target in cast(list[str], args.target):
-        atomic_arch("iso", target=target)
+        in_system("iso", target=target)
+
 
 def do_rootfs(args: argparse.Namespace):
     noBuild = cast(bool, args.noBuild)
@@ -108,8 +112,7 @@ def do_rootfs(args: argparse.Namespace):
 
     config = {
         x[0]: x[1]
-        for x in
-        [
+        for x in [
             x.rstrip().split(" ", 1)[1].split("=", 1)
             for x in lines
             if x.startswith("ARG ARCHIVE_YEAR=")
@@ -119,10 +122,10 @@ def do_rootfs(args: argparse.Namespace):
         ]
     }
 
-    year = cast(str|None, args.year) or config["ARCHIVE_YEAR"]
-    month = cast(str|None, args.month) or config["ARCHIVE_MONTH"]
-    day = cast(str|None, args.day) or config["ARCHIVE_DAY"]
-    tag = cast(str|None, args.tag) or config["PACSTRAP_TAG"]
+    year = cast(str | None, args.year) or config["ARCHIVE_YEAR"]
+    month = cast(str | None, args.month) or config["ARCHIVE_MONTH"]
+    day = cast(str | None, args.day) or config["ARCHIVE_DAY"]
+    tag = cast(str | None, args.tag) or config["PACSTRAP_TAG"]
 
     with open(containerfile, "w") as f:
         for line in lines:
@@ -138,10 +141,11 @@ def do_rootfs(args: argparse.Namespace):
             elif line.startswith("ARG PACSTRAP_TAG="):
                 line = f"ARG PACSTRAP_TAG={tag}\n"
 
-            f.write(line)
+            _ = f.write(line)
 
     if not noBuild:
         build("rootfs")
+
 
 def do_push(args: argparse.Namespace):
     if not is_root():
@@ -150,6 +154,29 @@ def do_push(args: argparse.Namespace):
 
     for target in cast(list[str], args.target):
         push(target)
+
+
+def do_run(args: argparse.Namespace):
+    if not is_root():
+        print("Must be run as root")
+        sys.exit(1)
+
+    in_system(
+        "-c",
+        shlex.join(cast(list[str], args.arg)),
+        target=cast(str, args.target),
+        entrypoint="/bin/bash",
+    )
+
+
+def do_pull(args: argparse.Namespace):
+    if not is_root():
+        print("Must be run as root")
+        sys.exit(1)
+
+    for target in cast(list[str], args.target):
+        pull(target)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
@@ -169,16 +196,21 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--month", default=now.strftime("%m"))
     _ = subparser.add_argument("--day", default=now.strftime("%d"))
     _ = subparser.add_argument("--tag", default=None)
-    _ = subparser.add_argument(
-        "--no-build",
-        action="store_true",
-        dest="noBuild"
-    )
+    _ = subparser.add_argument("--no-build", action="store_true", dest="noBuild")
     subparser.set_defaults(func=do_rootfs)
 
     subparser = subparsers.add_parser("push")
     _ = subparser.add_argument("target", action="extend", nargs="+", type=str)
     subparser.set_defaults(func=do_push)
+
+    subparser = subparsers.add_parser("pull")
+    _ = subparser.add_argument("target", action="extend", nargs="+", type=str)
+    subparser.set_defaults(func=do_pull)
+
+    subparser = subparsers.add_parser("run")
+    _ = subparser.add_argument("--target", default="base")
+    _ = subparser.add_argument("arg", action="extend", nargs="*", type=str)
+    subparser.set_defaults(func=do_run)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

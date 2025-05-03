@@ -14,6 +14,7 @@
         "network",
         "battery",
         "clock",
+        "privacy",
         "custom/notifications",
         "custom/power"
     ],
@@ -23,17 +24,17 @@
         "on-click": "fuzzel"
     },
     "custom/notifications": {
-    	"format": " {icon} ",
+        "format": " {icon} ",
         "format-icons": {
-        	"none": "",
-        	"notification": "",
-        	"dnd-none": " ",
-       		"dnd-notification": " "
+            "none": "",
+            "notification": "",
+            "dnd-none": " ",
+            "dnd-notification": " "
         },
-    	"exec": "swaync-client --subscribe-waybar",
-    	"return-type": "json",
-    	"tooltip": true,
-    	"on-click": "swaync-client --toggle-panel"
+        "exec": "swaync-client --subscribe-waybar",
+        "return-type": "json",
+        "tooltip": true,
+        "on-click": "swaync-client --toggle-panel"
     },
     "wlr/taskbar": {
         "icon-size": 24,

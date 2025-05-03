@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import argparse
 import atexit
-import base64
 import os
 import shlex
 import shutil
@@ -17,6 +16,8 @@ from typing import Callable, cast
 from getpass import getpass
 
 
+OS_NAME = "atomic-arch"
+IMAGE = f"eeems/{OS_NAME}"
 SYSTEM_PATH = "/var/lib/system"
 RETAIN = 5
 COMMAND_LINE = ""
@@ -203,7 +204,7 @@ def commit(branch: str = "system", rootfs: str | None = None):
 
     ostree(
         "commit",
-        f"--branch=atomic-arch/{branch}",
+        f"--branch={OS_NAME}/{branch}",
         f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
         f"--tree=dir={rootfs}",
     )
@@ -220,9 +221,9 @@ def deploy(branch: str = "system", sysroot: str = "/", kernelCommandline: str = 
         "deploy",
         f"--sysroot={sysroot}",
         *kargs,
-        "--os=atomic-arch",
+        f"--os={OS_NAME}",
         "--retain",
-        f"atomic-arch/{branch}",
+        f"{OS_NAME}/{branch}",
     )
 
 
@@ -235,7 +236,7 @@ def prune(branch: str = "system"):
         "prune",
         "--commit-only",
         f"--retain-branch-depth={branch}={RETAIN}",
-        f"--only-branch=atomic-arch/{branch}",
+        f"--only-branch={OS_NAME}/{branch}",
         "--keep-younger-than=1 second",
     )
 
@@ -285,7 +286,7 @@ def install(
     systemDir = os.path.join(sysroot, ".system")
     os.mkdir(systemDir)
     execute("ostree", "admin", "init-fs", f"--sysroot={sysroot}", "--modern", sysroot)
-    execute("ostree", "admin", "stateroot-init", f"--sysroot={sysroot}", "atomic-arch")
+    execute("ostree", "admin", "stateroot-init", f"--sysroot={sysroot}", OS_NAME)
     ostree("init", "--mode=bare")
     ostree("config", "set", "sysroot.bootprefix", "1")
     systemfile = "/tmp/Systemfile"
@@ -355,13 +356,13 @@ def install(
         "--target=x86_64-efi",
         f"--efi-directory={sysroot}/boot/efi",
         f"--boot-directory={sysroot}/boot/efi/EFI",
-        "--bootloader-id=atomic-arch",
+        f"--bootloader-id={OS_NAME}",
         "--removable",
         dev_boot,
     )
     sysPath = [
         x.path
-        for x in os.scandir(os.path.join(sysroot, "ostree/deploy/atomic-arch/deploy"))
+        for x in os.scandir(os.path.join(sysroot, f"ostree/deploy/{OS_NAME}/deploy"))
         if x.is_dir()
     ][0]
     for path in iglob(f"{sysPath}/boot/*"):
@@ -372,7 +373,7 @@ def install(
             shutil.rmtree(path)
 
     os.makedirs(
-        os.path.join(sysroot, "ostree/deploy/atomic-arch/var/home"), exist_ok=True
+        os.path.join(sysroot, f"ostree/deploy/{OS_NAME}/var/home"), exist_ok=True
     )
     execute(
         "bash", "-c", f"genfstab -U {sysroot} >> {os.path.join(sysPath, 'etc/fstab')}"
@@ -496,7 +497,7 @@ def iso():
 
     parts = buildImage.split(":")
     variant = parts[-1] if len(parts) == 2 else "latest"
-    name = f"atomic-arch-{variant}-{uuid}.iso"
+    name = f"{OS_NAME}-{variant}-{uuid}.iso"
     # fmt: off
     execute(
         "xorriso",
@@ -526,7 +527,7 @@ def iso():
     return name
 
 
-def updatecheck(baseImage: str | None = None) -> bool:
+def checkupdate(baseImage: str | None = None) -> bool:
     if baseImage is None:
         baseImage = build_image()
 
@@ -626,8 +627,8 @@ def do_commit(args: argparse.Namespace):
     commit(cast(str, args.branch), cast(str, args.rootfs))
 
 
-def do_updatecheck(args: argparse.Namespace):
-    if updatecheck(cast(str, args.baseImage)):
+def do_checkupdate(args: argparse.Namespace):
+    if checkupdate(cast(str, args.baseImage)):
         print("Updates are available")
         sys.exit(1)
 
@@ -757,12 +758,12 @@ if __name__ == "__main__":
     subparser.set_defaults(func=do_commit)
 
     subparser = subparsers.add_parser(
-        "updatecheck", help="Checks for updates to the system"
+        "checkupdate", help="Checks for updates to the system"
     )
     _ = subparser.add_argument(
         "--base-image", default=None, help="Base image to check", dest="baseImage"
     )
-    subparser.set_defaults(func=do_updatecheck)
+    subparser.set_defaults(func=do_checkupdate)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
