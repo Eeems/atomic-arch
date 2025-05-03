@@ -219,7 +219,7 @@ def commit(branch: str = "system", rootfs: str | None = None):
 def deploy(branch: str = "system", sysroot: str = "/", kernelCommandline: str = ""):
     kargs = ["--karg=root=LABEL=SYS_ROOT", "--karg=rw"]
     for karg in kernelCommandline.split():
-        kargs.append(f"--karg-append={karg.strip()}")
+        kargs.append(f"--karg={karg.strip()}")
 
     execute(
         "ostree",
