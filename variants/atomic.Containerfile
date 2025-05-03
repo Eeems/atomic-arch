@@ -81,5 +81,5 @@ RUN /usr/lib/system/install_aur_packages \
 #   aylurs-gtk-shell-git \
 #   ags-hyprpanel-git
 
-RUN systemctl enable greetd
+RUN systemctl enable greetd udisks2
 COPY overlay/atomic /
