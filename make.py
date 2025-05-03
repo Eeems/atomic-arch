@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import atexit
 import sys
 import os
 
@@ -67,6 +68,12 @@ def atomic_arch(*args: str, target: str | None = None):
         *args,
     )
 
+def push(target: str):
+    tag = f"atomic-arch:{target}"
+    remote_tag = f"eeems/{tag}"
+    podman("tag", tag, remote_tag)
+    _ = atexit.register(podman, "rmi", remote_tag)
+    podman("push", remote_tag)
 
 def do_build(args: argparse.Namespace):
     if not is_root():
@@ -136,6 +143,13 @@ def do_rootfs(args: argparse.Namespace):
     if not noBuild:
         build("rootfs")
 
+def do_push(args: argparse.Namespace):
+    if not is_root():
+        print("Must be run as root")
+        sys.exit(1)
+
+    for target in cast(list[str], args.target):
+        push(target)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
@@ -161,6 +175,10 @@ if __name__ == "__main__":
         dest="noBuild"
     )
     subparser.set_defaults(func=do_rootfs)
+
+    subparser = subparsers.add_parser("push")
+    _ = subparser.add_argument("target", action="extend", nargs="+", type=str)
+    subparser.set_defaults(func=do_push)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
