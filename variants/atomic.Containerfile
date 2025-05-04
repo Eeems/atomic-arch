@@ -49,21 +49,21 @@ RUN /usr/lib/system/install_packages \
   nm-connection-editor \
   gnome-power-manager \
   polkit-gnome \
+  bluez-utils \
   switchboard \
   switchboard-plug-network \
-  switchboard-plug-bluetooth \
   switchboard-plug-mouse-touchpad \
   switchboard-plug-display \
   switchboard-plug-wacom \
-  switchboard-plug-printers \
-  switchboard-plug-applications
+  switchboard-plug-printers
 
 RUN /usr/lib/system/install_aur_packages \
   python-imageio \
   python-imageio-ffmpeg \
   python-screeninfo \
   waypaper \
-  syshud
+  syshud \
+  overskride
 
 # RUN /usr/lib/system/install_aur_packages \
 #   libastal-io-git \

@@ -1,23 +1,24 @@
 // -*- mode: jsonc -*-
 {
     "height": 32,
-    "spacing": 4,
+    "spacing": 0,
     "modules-left": [
         "custom/appmenu",
         "wlr/taskbar"
     ],
     "modules-center": [],
     "modules-right": [
-        "custom/media",
         "tray",
-        "pulseaudio",
+        "custom/media",
+        "privacy",
         "custom/weather",
         "clock",
-        "privacy",
-        "custom/notifications",
+        "pulseaudio",
+        "bluetooth",
         "network",
          "battery",
         //"upower",
+        "custom/notifications",
         "custom/power"
     ],
     "custom/appmenu": {
@@ -26,7 +27,7 @@
         "on-click": "fuzzel"
     },
     "custom/notifications": {
-        "format": "  {icon}  ",
+        "format": "{icon}",
         "format-icons": {
             "none": "",
             "notification": "",
@@ -56,7 +57,7 @@
             "warning": 30,
             "critical": 15
         },
-        "format": "{icon} ",
+        "format": "{icon}",
         "tooltip-format": "{time} {capacity}%",
         "format-full": "{icon} ",
         "format-charging": "{icon} ",
@@ -72,28 +73,35 @@
     },
     "network": {
         "format-wifi": "{icon}",
-        "format-ethernet": " ",
-        "format-linked": " ",
-        "format-disconnected": "󰈂 ",
+        "format-ethernet": "",
+        "format-linked": "",
+        "format-disconnected": "󰈂",
         "tooltip-format-wifi": "Network: {essid}\nSignal: {signaldBm}dBm\nFrequency: {frequency}GHz\nIP: {ipaddr}/{cidr}\nGateway: {gwaddr}",
         "tooltip-format-ethernet": "Network: {ifname}\nIP: {ipaddr}/{cidr}\nGateway: {gwaddr}",
         "format-icons": [
-        	"󰤯 ",
-        	"󰤟 ",
-        	"󰤢 ",
-        	"󰤥 ",
-        	"󰤨 "
+        	"󰤯",
+        	"󰤟",
+        	"󰤢",
+        	"󰤥",
+        	"󰤨"
         ],
         "on-click": "nm-connection-editor"
     },
+    "bluetooth": {
+    	"format-disabled": "",
+    	"format-off": "󰂲",
+    	"format-on": "󰂯",
+    	"format-connected": "󰂱",
+    	"format-no-controller": "",
+    	"on-click": "overskride"
+    },
     "pulseaudio": {
-        // "scroll-step": 1, // %, can be a float
-        "format": "{volume}% {icon} {format_source}",
-        "format-bluetooth": "{volume}% {icon} {format_source}",
-        "format-bluetooth-muted": " {icon} {format_source}",
-        "format-muted": " {format_source}",
-        "format-source": "{volume}% ",
-        "format-source-muted": "",
+    	"format": "{icon}{format_source}",
+        "format-muted": "<span color=\"#90b1b1\"> </span>{format_source}",
+        "format-bluetooth": "{icon}{format_source}",
+        "format-bluetooth-muted": "<span color=\"#90b1b1\"> {icon}</span>{format_source}",
+        "format-source": " ",
+        "format-source-muted": " <span color=\"#90b1b1\"></span>",
         "format-icons": {
             "headphone": "",
             "hands-free": "",
@@ -107,9 +115,11 @@
                 ""
             ]
         },
+    	"tooltip": false,
         "on-click": "pavucontrol"
     },
     "privacy": {
+    	"icon-size": 24,
     	"modules": [
     		{ "type": "screenshare" },
     		{ "type": "audio-out" },
@@ -141,7 +151,7 @@
         }
     },
     "custom/weather": {
-    	"exec": "echo \"$(curl --silent wttr.in?format=%c%t)\n$(curl --silent wttr.in?format=%l:%20%C%0DWind:%20%w%0DPrecipitation:%20%p%0DPressure:%20󰷃%P%0DUV%Index:%20󱟾%20%u)\n\"",
+    	"exec": "echo \"$(curl --silent wttr.in?format=%t%c | xargs)\n$(curl --silent wttr.in?format=%l:%20%C%c%0DWind:%20%w%0DPrecipitation:%20%p%0DPressure:%20󰷃%P%0DUV%Index:%20󱟾%20%u)\n\"",
     	"exec-if": "ping -c 1 wttr.in",
     	"interval": 300,
     	"on-click": "${TERMINAL:-ghostty} -e 'curl wttr.in | less -R'"

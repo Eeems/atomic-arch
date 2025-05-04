@@ -1,5 +1,5 @@
 * {
-/*    font-family: FontAwesome, Roboto, Helvetica, Arial, sans-serif;*/
+    font-family: RobotoMono Nerd Font, Roboto, Helvetica, Arial, sans-serif;
     font-size: 13px;
 }
 
@@ -60,6 +60,7 @@ button:hover {
 #temperature,
 #backlight,
 #network,
+#bluetooth,
 #pulseaudio,
 #wireplumber,
 #custom-media,
@@ -71,6 +72,17 @@ button:hover {
 #mpd {
     padding: 0 10px;
     color: #ffffff;
+}
+#pulseaudio,
+#bluetooth,
+#network,
+#battery {
+	margin: 0;
+	padding: 0 5px;
+}
+#network,
+#battery {
+	padding-right: 10px;
 }
 
 #window,
@@ -86,18 +98,8 @@ button:hover {
     margin-right: 0;
 }
 
-#clock {
-    background-color: #64727D;
-}
-
-#battery {
-    background-color: #ffffff;
-    color: #000000;
-}
-
 #battery.charging, #battery.plugged {
-    color: #ffffff;
-    background-color: #26A65B;
+    color: #26A65B;
 }
 
 @keyframes blink {
@@ -122,22 +124,21 @@ label:focus {
 }
 
 #network {
-    background-color: #2980b9;
+    color: #2980b9;
 }
 #network.disconnected {
-    background-color: #f53c3c;
+    color: #f53c3c;
+}
+
+#bluetooth {
+    color: #2980b9;
+}
+#bluetooth.disconnected {
+    color: #f53c3c;
 }
 
 #pulseaudio {
-    background-color: #f1c40f;
-    color: #000000;
-}
-#pulseaudio:hover {
-    background-color: #a37800;
-}
-#pulseaudio.muted {
-    background-color: #90b1b1;
-    color: #2a5c45;
+    color: #f1c40f;
 }
 
 #wireplumber {
@@ -160,9 +161,6 @@ label:focus {
     background-color: #ffa000;
 }
 
-#tray {
-    background-color: #2980b9;
-}
 #tray > .passive {
     -gtk-icon-effect: dim;
 }
@@ -178,13 +176,10 @@ label:focus {
     background-color: transparent;
 }
 
-#privacy {
-    padding: 0;
-}
-
 #privacy-item {
     padding: 0 5px;
     color: white;
+    border-radius: 16px;
 }
 #privacy-item.screenshare {
     background-color: #cf5700;
@@ -195,8 +190,23 @@ label:focus {
 #privacy-item.audio-out {
     background-color: #0069d4;
 }
-
+#custom-notifications {
+	padding-right: 10px;
+}
 #custom-notifications.notification:not(.cc-open),
 #custom-notifications.dnd-notification:not(.cc-open) {
     color: #f1c40f;
+}
+
+@keyframes notification {
+    to {
+        color: @theme_base_color;
+    }
+}
+#custom-notifications.notification {
+	animation-name: notification;
+    animation-duration: 0.5s;
+    animation-timing-function: steps(12);
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
 }
