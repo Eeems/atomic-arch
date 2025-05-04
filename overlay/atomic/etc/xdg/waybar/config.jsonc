@@ -60,15 +60,20 @@
         },
         "format": "{icon}",
         "tooltip-format": "{time} {capacity}%",
-        "format-full": "{icon} ",
-        "format-charging": "{icon} ",
-        "format-plugged": "{icon} ",
+        "format-full": "{icon}",
+        "format-charging": "{icon}󱐋",
+        "format-plugged": "{icon}",
         "format-icons": [
-            "",
-            "",
-            "",
-            "",
-            ""
+            "󰁺",
+            "󰁻",
+            "󰁼",
+            "󰁽",
+            "󰁾",
+            "󰁿",
+            "󰂀",
+            "󰂁",
+            "󰂂",
+            "󰁹"
         ],
         "on-click": "gnome-power-statistics"
     },
@@ -98,22 +103,22 @@
     },
     "pulseaudio": {
     	"format": "{icon}{format_source}",
-        "format-muted": "<span color=\"#90b1b1\"> </span>{format_source}",
-        "format-bluetooth": "{icon}{format_source}",
-        "format-bluetooth-muted": "<span color=\"#90b1b1\"> {icon}</span>{format_source}",
-        "format-source": " ",
-        "format-source-muted": " <span color=\"#90b1b1\"></span>",
+        "format-muted": "<span color=\"#eba0ac\">󰝟</span>{format_source}",
+        "format-bluetooth": "<span color=\"#74c7ec\"></span>{icon}{format_source}",
+        "format-bluetooth-muted": "<span color=\"#eba0ac\">󰝟</span>{format_source}",
+        "format-source": "",
+        "format-source-muted": " <span color=\"#eba0ac\"></span>",
         "format-icons": {
             "headphone": "",
-            "hands-free": "",
-            "headset": "",
+            "hands-free": "󱡏",
+            "headset": "",
             "phone": "",
             "portable": "",
             "car": "",
             "default": [
                 "",
                 "",
-                ""
+                " "
             ]
         },
     	"tooltip": false,
@@ -139,7 +144,7 @@
         "on-click": "playerctl play-pause"
     },
     "custom/power": {
-        "format": "    ",
+        "format": "   ",
         "tooltip": false,
         "menu": "on-click",
         "menu-file": "/etc/xdg/waybar/power_menu.xml",

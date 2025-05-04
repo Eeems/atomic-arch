@@ -2,6 +2,10 @@
     font-family: RobotoMono Nerd Font, Roboto, Helvetica, Arial, sans-serif;
     font-size: 13px;
 }
+@define-color maroon #eba0ac;
+@define-color green #a6e3a1;
+@define-color yellow #f9e2af;
+@define-color sapphire #74c7ec;
 
 window#waybar {
     background: @theme_base_color;
@@ -62,7 +66,6 @@ button:hover {
 #network,
 #bluetooth,
 #pulseaudio,
-#wireplumber,
 #custom-media,
 #tray,
 #mode,
@@ -98,10 +101,6 @@ button:hover {
     margin-right: 0;
 }
 
-#battery.charging, #battery.plugged {
-    color: #26A65B;
-}
-
 @keyframes blink {
     to {
         background-color: #ffffff;
@@ -123,30 +122,15 @@ label:focus {
     background-color: #000000;
 }
 
-#network {
-    color: #2980b9;
-}
 #network.disconnected {
-    color: #f53c3c;
+    color: @maroon;
 }
 
-#bluetooth {
-    color: #2980b9;
-}
 #bluetooth.disconnected {
-    color: #f53c3c;
+    color: @maroon;
 }
-
-#pulseaudio {
-    color: #f1c40f;
-}
-
-#wireplumber {
-    background-color: #fff0f5;
-    color: #000000;
-}
-#wireplumber.muted {
-    background-color: #f53c3c;
+#bluetooth.connected {
+	color: @sapphire;
 }
 
 #custom-media {
@@ -193,9 +177,8 @@ label:focus {
 #custom-notifications {
 	padding-right: 10px;
 }
-#custom-notifications.notification:not(.cc-open),
-#custom-notifications.dnd-notification:not(.cc-open) {
-    color: #f1c40f;
+#custom-notifications.notification {
+    color: @yellow;
 }
 
 @keyframes notification {
@@ -203,7 +186,7 @@ label:focus {
         color: @theme_base_color;
     }
 }
-#custom-notifications.notification {
+#custom-notifications.notification:not(.cc-open) {
 	animation-name: notification;
     animation-duration: 0.5s;
     animation-timing-function: steps(12);
