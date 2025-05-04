@@ -141,8 +141,9 @@
         }
     },
     "custom/weather": {
-    	"exec": "curl wttr.in?format=%c%t",
+    	"exec": "echo \"$(curl --silent wttr.in?format=%c%t)\n$(curl --silent wttr.in?format=%l:%20%C%0DWind:%20%w%0DPrecipitation:%20%p%0DPressure:%20󰷃%P%0DUV%Index:%20󱟾%20%u)\n\"",
     	"exec-if": "ping -c 1 wttr.in",
-    	"interval": 300
+    	"interval": 300,
+    	"on-click": "${TERMINAL:-ghostty} -e 'curl wttr.in | less -R'"
     }
 }
