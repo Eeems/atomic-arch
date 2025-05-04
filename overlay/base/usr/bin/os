@@ -195,10 +195,16 @@ def build(systemfile: str = "/etc/system/Systemfile"):
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
+    uuid = subprocess.check_output([
+        "bash",
+        "-c",
+        "uuidgen --time-v7 | cut -c-8"
+    ]).decode("utf-8").strip()
     podman(
         "build",
         "--force-rm",
         "--tag=system:latest",
+        f"--build-arg=VERSION_ID={uuid}",
         f"--volume={cache}:{cache}",
         f"--file={systemfile}",
     )
@@ -596,22 +602,18 @@ def checkupdates(baseImage: str | None = None) -> bool:
     ]
     image_update = False
     if digests:
-        local_info = cast(
-            dict[str, object],
-            json.loads(
-                subprocess.check_output(
-                    [
-                        "skopeo",
-                        "inspect",
-                        f"docker://{baseImage.split(':', 1)[0]}@{digests[0]}",
-                    ]
-                )
-            ),
-        )
-        local_layers = cast(dict[str, list[str]], local_info)["Layers"]
-        local_version = cast(dict[str, dict[str, str]], local_info)["Labels"][
-            "os-release.VERSION_ID"
-        ]
+        with open("/etc/os-release", "r") as f:
+            local_info = {
+                x[0]: x[1]
+                for x in [
+                    x.strip().split("=",1)
+                    for x in f.readlines()
+                    if x.startswith("VERSION_ID=")
+                    or x.startswith("VERSION=")
+                ]
+            }
+
+        local_id = local_info.get("VERSION_ID", "0")
         remote_info = cast(
             dict[str, object],
             json.loads(
@@ -624,16 +626,12 @@ def checkupdates(baseImage: str | None = None) -> bool:
                 )
             ),
         )
-        remote_version = cast(dict[str, dict[str, str]], remote_info)["Labels"][
-            "os-release.VERSION_ID"
-        ]
-        remote_layers = cast(dict[str, list[str]], remote_info)["Layers"]
-        image_update = remote_layers != local_layers
-        if image_update:
-            print(f"{baseImage} {local_version} -> {remote_version}")
-            # local_digest = cast(dict[str, str], local_info)["Digest"]
-            # remote_digest = cast(dict[str, str], remote_info)["Digest"]
-            # print(f"{baseImage} {local_digest} -> {remote_digest}")
+        remote_labels = cast(dict[str, dict[str, str]], remote_info).get("Labels", {})
+        remote_id = remote_labels.get("os-release.VERSION_ID", "0")
+        if local_id != remote_id:
+            remote_version = remote_labels.get('os-release.VERSION', "0")
+            local_version = local_info.get("VERSION", "0")
+            print(f"{baseImage} {local_version}.{local_id} -> {remote_version}.{remote_id}")
 
     return in_system(entrypoint="/usr/bin/checkupdates") > 0 or image_update
 

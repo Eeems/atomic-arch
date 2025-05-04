@@ -9,4 +9,4 @@ if [ -f /etc/system/Systemfile ];then
 fi
 sed -i "/VARIANT=/ s|Base|$VARIANT|" /etc/os-release
 sed -i "/VARIANT_ID=/ s|base|$VARIANT_ID|" /etc/os-release
-sed -i "/VERSION_ID=/ s|.*|VERSION_ID=$(uuidgen --time-v7 | cut -c-8)|" /etc/os-release
+sed -i "/VERSION_ID=/ s|.*|VERSION_ID=$VERSION_ID|" /etc/os-release

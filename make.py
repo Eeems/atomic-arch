@@ -3,6 +3,7 @@ import argparse
 import sys
 import shlex
 import os
+import subprocess
 
 from typing import cast
 from datetime import datetime
@@ -34,9 +35,15 @@ SYSTEM_PATH = cast(str, _os.SYSTEM_PATH)
 
 
 def build(target: str):
+    uuid = subprocess.check_output([
+        "bash",
+        "-c",
+        "uuidgen --time-v7 | cut -c-8"
+    ]).decode("utf-8").strip()
     podman(
         "build",
         f"--tag=docker.io/{IMAGE}:{target}",
+        f"--build-arg=VERSION_ID={uuid}",
         "--force-rm",
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file=variants/{target}.Containerfile",

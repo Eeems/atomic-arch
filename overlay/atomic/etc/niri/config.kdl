@@ -57,6 +57,7 @@ window-rule {
 environment {
     ELECTRON_OZONE_PLATFORM_HINT "auto"
     DISPLAY ":0"
+    TERMINAL "ghostty"
 }
 
 binds {

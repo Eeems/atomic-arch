@@ -1,13 +1,16 @@
 #syntax=docker/dockerfile:1.4
 ARG VARIANT="Atomic"
 ARG VARIANT_ID="atomic"
-ARG VERSION_ID=$(uuidgen --time-v7 | cut -c-8)
 
 FROM eeems/atomic-arch:base as  ${VARIANT_ID}
 
+ARG VARIANT
+ARG VARIANT_ID
+ARG VERSION_ID
+
 LABEL \
-  os-release.VARIANT="$(VARIANT)" \
-  os-release.VARIANT_ID="$(VARIANT_ID)" \
+  os-release.VARIANT="${VARIANT}" \
+  os-release.VARIANT_ID="${VARIANT_ID}" \
   os-release.VERSION_ID="${VERSION_ID}" \
   org.opencontainers.image.ref.name="${VARIANT_ID}"
 
@@ -45,6 +48,7 @@ RUN /usr/lib/system/install_packages \
   fuzzel \
   brightnessctl \
   nm-connection-editor \
+  gnome-power-statistics \
   switchboard \
   switchboard-plug-network \
   switchboard-plug-bluetooth \
