@@ -48,6 +48,7 @@ RUN /usr/lib/system/install_packages \
   brightnessctl \
   nm-connection-editor \
   gnome-power-manager \
+  polkit-gnome \
   switchboard \
   switchboard-plug-network \
   switchboard-plug-bluetooth \
