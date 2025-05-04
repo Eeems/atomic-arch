@@ -59,8 +59,8 @@
         "format": "{icon} ",
         "tooltip-format": "{time} {capacity}%",
         "format-full": "{icon} ",
-        "format-charging": " ",
-        "format-plugged": " ",
+        "format-charging": "{icon} ",
+        "format-plugged": "{icon} ",
         "format-icons": [
             "",
             "",
