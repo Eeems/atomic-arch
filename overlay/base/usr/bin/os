@@ -448,6 +448,7 @@ def upgrade(branch: str = "system"):
 
     prepare(rootfs, kernelCommandline)
     commit(branch, rootfs)
+    _ = shutil.rmtree(rootfs)
     prune(branch)
     deploy(branch, "/", kernelCommandline)
     execute("grub-mkconfig -o /boot/efi/EFI/grub/grub.cfg")

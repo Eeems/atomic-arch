@@ -2,3 +2,4 @@
 set -e
 echo "[system] Cleaning up pacman keyring"
 rm -rf /etc/pacman.d/gnupg/*
+rm -f /var/lib/dkms/mok.key

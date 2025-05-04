@@ -167,6 +167,16 @@ def do_os(args: argparse.Namespace):
     if ret:
         sys.exit(ret)
 
+def do_scan(args: argparse.Namespace):
+    ret = in_system(
+        "-c",
+       "/usr/lib/system/install_packages trivy && trivy rootfs --skip-dirs=/ostree --skip-dirs=/var/lib/system /",
+        target=f"{IMAGE}:{cast(str, args.target)}",
+        entrypoint="/bin/bash",
+    )
+    if ret:
+        sys.exit(ret)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
@@ -207,6 +217,10 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--target", default="base")
     _ = subparser.add_argument("arg", action="extend", nargs="*", type=str)
     subparser.set_defaults(func=do_os)
+    
+    subparser = subparsers.add_parser("scan")
+    _ = subparser.add_argument("target")
+    subparser.set_defaults(func=do_scan)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
