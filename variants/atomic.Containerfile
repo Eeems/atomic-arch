@@ -48,7 +48,7 @@ RUN /usr/lib/system/install_packages \
   fuzzel \
   brightnessctl \
   nm-connection-editor \
-  gnome-power-statistics \
+  gnome-power-manager \
   switchboard \
   switchboard-plug-network \
   switchboard-plug-bluetooth \
