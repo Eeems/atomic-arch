@@ -11,11 +11,11 @@
         "custom/media",
         "tray",
         "pulseaudio",
-        "network",
         "custom/weather",
         "clock",
         "privacy",
         "custom/notifications",
+        "network",
          "battery",
         //"upower",
         "custom/power"
@@ -71,11 +71,19 @@
         "on-click": "gnome-power-statistics"
     },
     "network": {
-        "format-wifi": "{essid} ",
-        "format-ethernet": "",
-        "tooltip-format": "{ifname} via {gwaddr}",
-        "format-linked": "",
-        "format-disconnected": "󰈂",
+        "format-wifi": "{icon}",
+        "format-ethernet": " ",
+        "format-linked": " ",
+        "format-disconnected": "󰈂 ",
+        "tooltip-format-wifi": "Network: {essid}\nSignal: {signaldBm}dBm\nFrequency: {frequency}GHz\nIP: {ipaddr}/{cidr}\nGateway: {gwaddr}",
+        "tooltip-format-ethernet": "Network: {ifname}\nIP: {ipaddr}/{cidr}\nGateway: {gwaddr}",
+        "format-icons": [
+        	"󰤯 ",
+        	"󰤟 ",
+        	"󰤢 ",
+        	"󰤥 ",
+        	"󰤨 "
+        ],
         "on-click": "nm-connection-editor"
     },
     "pulseaudio": {
