@@ -36,7 +36,6 @@ RUN /usr/lib/system/install_packages \
   hyprlock \
   gamescope \
   vulkan-swrast \
-  otf-font-awesome \
   ttf-roboto-mono-nerd \
   noto-fonts-emoji \
   adw-gtk-theme \
