@@ -195,11 +195,11 @@ def build(systemfile: str = "/etc/system/Systemfile"):
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
-    uuid = subprocess.check_output([
-        "bash",
-        "-c",
-        "uuidgen --time-v7 | cut -c-8"
-    ]).decode("utf-8").strip()
+    uuid = (
+        subprocess.check_output(["bash", "-c", "uuidgen --time-v7 | cut -c-8"])
+        .decode("utf-8")
+        .strip()
+    )
     podman(
         "build",
         "--force-rm",
@@ -607,10 +607,9 @@ def checkupdates(baseImage: str | None = None) -> bool:
             local_info = {
                 x[0]: x[1]
                 for x in [
-                    x.strip().split("=",1)
+                    x.strip().split("=", 1)
                     for x in f.readlines()
-                    if x.startswith("VERSION_ID=")
-                    or x.startswith("VERSION=")
+                    if x.startswith("VERSION_ID=") or x.startswith("VERSION=")
                 ]
             }
 
@@ -630,9 +629,12 @@ def checkupdates(baseImage: str | None = None) -> bool:
         remote_labels = cast(dict[str, dict[str, str]], remote_info).get("Labels", {})
         remote_id = remote_labels.get("os-release.VERSION_ID", "0")
         if local_id != remote_id:
-            remote_version = remote_labels.get('os-release.VERSION', "0")
+            remote_version = remote_labels.get("os-release.VERSION", "0")
             local_version = local_info.get("VERSION", "0")
-            print(f"{baseImage} {local_version}.{local_id} -> {remote_version}.{remote_id}")
+            print(
+                f"{baseImage} {local_version}.{local_id} -> {remote_version}.{remote_id}"
+            )
+            image_update = True
 
     return in_system(entrypoint="/usr/bin/checkupdates") > 0 or image_update
 
@@ -709,13 +711,16 @@ def do_commit(args: argparse.Namespace):
 
 
 def do_checkupdates(args: argparse.Namespace):
+    updates = False
     try:
-        if not checkupdates(cast(str, args.baseImage)):
-            sys.exit(2)
+        updates = checkupdates(cast(str, args.baseImage))
 
     except BaseException:
         traceback.print_exc()
         sys.exit(1)
+
+    if updates:
+        sys.exit(2)
 
 
 if __name__ == "__main__":
