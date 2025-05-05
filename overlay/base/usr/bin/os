@@ -603,7 +603,7 @@ def checkupdates(baseImage: str | None = None) -> bool:
     ]
     image_update = False
     if digests:
-        with open("/etc/os-release", "r") as f:
+        with open("/usr/lib/os-release", "r") as f:
             local_info = {
                 x[0]: x[1]
                 for x in [
@@ -671,12 +671,13 @@ def do_install(args: argparse.Namespace):
 def do_upgrade(args: argparse.Namespace):
     if not cast(bool, args.noPull):
         baseImage = build_image()
-        try:
-            if checkupdates(baseImage):
+        updates = checkupdates(baseImage)
+        if updates:
+            try:
                 podman("pull", baseImage)
 
-        except subprocess.CalledProcessError:
-            pass
+            except subprocess.CalledProcessError:
+                traceback.print_exc()
 
     upgrade(cast(str, args.branch))
 

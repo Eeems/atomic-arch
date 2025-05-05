@@ -51,7 +51,7 @@ WORKDIR /
 COPY --from=pacstrap /rootfs /
 COPY overlay/rootfs /
 
-RUN <<EOF cat > /etc/os-release
+RUN <<EOF cat > /usr/lib/os-release
 NAME="Atomic Arch"
 PRETTY_NAME="Atomic Arch Linux"
 ID=atomic-arch
