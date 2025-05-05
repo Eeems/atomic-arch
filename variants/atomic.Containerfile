@@ -58,7 +58,6 @@ RUN /usr/lib/system/install_packages \
   switchboard-plug-printers
 
 RUN /usr/lib/system/install_aur_packages \
-  python-imageio \
   python-imageio-ffmpeg \
   python-screeninfo \
   waypaper \
