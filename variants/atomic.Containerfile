@@ -1,11 +1,8 @@
 #syntax=docker/dockerfile:1.4
+FROM eeems/atomic-arch:base
+
 ARG VARIANT="Atomic"
 ARG VARIANT_ID="atomic"
-
-FROM eeems/atomic-arch:base as  ${VARIANT_ID}
-
-ARG VARIANT
-ARG VARIANT_ID
 ARG VERSION_ID
 
 LABEL \
@@ -63,31 +60,6 @@ RUN /usr/lib/system/install_aur_packages \
   waypaper \
   syshud \
   overskride
-
-# RUN /usr/lib/system/install_aur_packages \
-#   libastal-io-git \
-#   libastal-git \
-#   libastal-gjs-git \
-#   libastal-4-git \
-#   libastal-apps-git \
-#   libastal-auth-git \
-#   libastal-battery-git \
-#   libastal-bluetooth-git \
-#   libcava \
-#   libastal-cava-git \
-#   libastal-greetd-git \
-#   libastal-hyprland-git \
-#   libastal-mpris-git \
-#   libastal-network-git \
-#   libastal-notifd-git \
-#   libastal-powerprofiles-git \
-#   libastal-river-git \
-#   appmenu-glib-translator-git \
-#   libastal-tray-git \
-#   libastal-wireplumber-git \
-#   libastal-meta \
-#   aylurs-gtk-shell-git \
-#   ags-hyprpanel-git
 
 RUN systemctl enable greetd udisks2
 COPY overlay/atomic /

@@ -1,11 +1,8 @@
 #syntax=docker/dockerfile:1.4
-ARG VARIANT="gNOME"
+FROM eeems/atomic-arch:base
+
+ARG VARIANT="gnome"
 ARG VARIANT_ID="GNOME"
-
-FROM eeems/atomic-arch:base as ${VARIANT_ID}
-
-ARG VARIANT
-ARG VARIANT_ID
 ARG VERSION_ID
 
 LABEL \
