@@ -16,7 +16,7 @@
         "pulseaudio",
         "bluetooth",
         "network",
-         "battery",
+        "battery",
         //"upower",
         "custom/notifications",
         "custom/power"
@@ -85,24 +85,24 @@
         "tooltip-format-wifi": "Network: {essid}\nSignal: {signaldBm}dBm\nFrequency: {frequency}GHz\nIP: {ipaddr}/{cidr}\nGateway: {gwaddr}",
         "tooltip-format-ethernet": "Network: {ifname}\nIP: {ipaddr}/{cidr}\nGateway: {gwaddr}",
         "format-icons": [
-        	"󰤯",
-        	"󰤟",
-        	"󰤢",
-        	"󰤥",
-        	"󰤨"
+            "󰤯",
+            "󰤟",
+            "󰤢",
+            "󰤥",
+            "󰤨"
         ],
         "on-click": "nm-connection-editor"
     },
     "bluetooth": {
-    	"format-disabled": "",
-    	"format-off": "󰂲",
-    	"format-on": "󰂯",
-    	"format-connected": "󰂱",
-    	"format-no-controller": "",
-    	"on-click": "overskride"
+        "format-disabled": "",
+        "format-off": "󰂲",
+        "format-on": "󰂯",
+        "format-connected": "󰂱",
+        "format-no-controller": "",
+        "on-click": "overskride"
     },
     "pulseaudio": {
-    	"format": "{icon}{format_source}",
+        "format": "{icon}{format_source}",
         "format-muted": "<span color=\"#eba0ac\">󰝟</span>{format_source}",
         "format-bluetooth": "<span color=\"#74c7ec\"></span>{icon}{format_source}",
         "format-bluetooth-muted": "<span color=\"#eba0ac\">󰝟</span>{format_source}",
@@ -121,16 +121,22 @@
                 " "
             ]
         },
-    	"tooltip": false,
+        "tooltip": false,
         "on-click": "pavucontrol"
     },
     "privacy": {
-    	"icon-size": 24,
-    	"modules": [
-    		{ "type": "screenshare" },
-    		{ "type": "audio-out" },
-    		{ "type": "audio-in" }
-    	]
+        "icon-size": 24,
+        "modules": [
+            {
+                "type": "screenshare"
+            },
+            {
+                "type": "audio-out"
+            },
+            {
+                "type": "audio-in"
+            }
+        ]
     },
     "custom/media": {
         "format": "{icon}{text}",
@@ -149,7 +155,7 @@
         "menu": "on-click",
         "menu-file": "/etc/xdg/waybar/power_menu.xml",
         "menu-actions": {
-            "shutdown": "shutdown",
+            "shutdown": "poweroff",
             "reboot": "reboot",
             "suspend": "systemctl suspend",
             "hibernate": "systemctl hibernate",
@@ -157,9 +163,9 @@
         }
     },
     "custom/weather": {
-    	"exec": "echo \"$(curl --silent wttr.in?format=%t%c | xargs)\n$(curl --silent wttr.in?format=%l:%20%C%c%0DWind:%20%w%0DPrecipitation:%20%p%0DPressure:%20󰷃%P%0DUV%Index:%20󱟾%20%u)\n\"",
-    	"exec-if": "ping -c 1 wttr.in",
-    	"interval": 300,
-    	"on-click": "${TERMINAL:-ghostty} -e 'curl wttr.in | less -R'"
+        "exec": "echo \"$(curl --silent wttr.in?format=%t%c | xargs)\n$(curl --silent wttr.in?format=%l:%20%C%c%0DWind:%20%w%0DPrecipitation:%20%p%0DPressure:%20󰷃%P%0DUV%Index:%20󱟾%20%u)\n\"",
+        "exec-if": "ping -c 1 wttr.in",
+        "interval": 300,
+        "on-click": "${TERMINAL:-ghostty} -e 'curl wttr.in | less -R'"
     }
 }
