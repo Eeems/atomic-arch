@@ -12,7 +12,6 @@ RUN \
 
 RUN /usr/lib/system/install_packages \
   arch-install-scripts \
-  dosfstools \
   edk2-shell \
   grub \
   man-db \

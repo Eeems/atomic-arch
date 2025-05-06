@@ -91,7 +91,7 @@
             "󰤥",
             "󰤨"
         ],
-        "on-click": "nm-connection-editor"
+        "on-click": "networkmanager_dmenu --config /etc/xdg/fuzzel/networkmanager-dmenu.ini"
     },
     "bluetooth": {
         "format-disabled": "",

@@ -41,6 +41,7 @@ RUN /usr/lib/system/install_packages \
   exfatprogs \
   ntfs-3g \
   xfsprogs \
+  dosfstools \
   git \
   fakeroot \
   debugedit \

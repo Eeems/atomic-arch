@@ -48,19 +48,19 @@ RUN /usr/lib/system/install_packages \
   gnome-power-manager \
   polkit-gnome \
   bluez-utils \
+  system-config-printer \
   switchboard \
-  switchboard-plug-network \
   switchboard-plug-mouse-touchpad \
   switchboard-plug-display \
-  switchboard-plug-wacom \
-  switchboard-plug-printers
+  switchboard-plug-wacom
 
 RUN /usr/lib/system/install_aur_packages \
   python-imageio-ffmpeg \
   python-screeninfo \
   waypaper \
   syshud \
-  overskride
+  overskride \
+  networkmanager-dmenu-git
 
 RUN systemctl enable greetd udisks2
 COPY overlay/atomic /
