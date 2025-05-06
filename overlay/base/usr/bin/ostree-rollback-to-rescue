@@ -1,7 +1,0 @@
-#!/usr/bin/bash
-
-set -euo pipefail
-
-if [ "$(ostree admin status -D)" = "not-default" ]; then
-  exec systemctl --no-block isolate rescue.target
-fi

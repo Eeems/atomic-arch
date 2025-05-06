@@ -6,10 +6,10 @@ ARG VARIANT_ID="base"
 ARG VERSION_ID
 
 LABEL \
-    os-release.VARIANT="${VARIANT}" \
-    os-release.VARIANT_ID="${VARIANT_ID}" \
-    os-release.VERSION_ID="${VERSION_ID}" \
-    org.opencontainers.image.ref.name="${VARIANT_ID}"
+  os-release.VARIANT="${VARIANT}" \
+  os-release.VARIANT_ID="${VARIANT_ID}" \
+  os-release.VERSION_ID="${VERSION_ID}" \
+  org.opencontainers.image.ref.name="${VARIANT_ID}"
 
 RUN /usr/lib/system/set_variant
 
@@ -57,4 +57,3 @@ RUN systemctl enable \
 
 RUN mkdir -p /var/lib/system
 COPY overlay/base /
-RUN systemctl enable ostree-rollback-to-rescue
