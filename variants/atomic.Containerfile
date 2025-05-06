@@ -31,6 +31,7 @@ RUN /usr/lib/system/install_packages \
   pipewire-pulse \
   swww \
   hyprlock \
+  hypridle \
   gamescope \
   vulkan-swrast \
   ttf-roboto-mono-nerd \
