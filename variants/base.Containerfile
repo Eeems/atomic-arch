@@ -57,3 +57,4 @@ RUN systemctl enable \
 
 RUN mkdir -p /var/lib/system
 COPY overlay/base /
+RUN systemctl enable ostree-state-overlay@opt.service
