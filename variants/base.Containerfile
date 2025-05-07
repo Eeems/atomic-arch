@@ -17,7 +17,7 @@ RUN /usr/lib/system/install_packages \
   base \
   nano \
   micro \
-  sudo \
+  sudo-rs \
   tmux \
   less \
   htop \
@@ -59,5 +59,11 @@ RUN systemctl enable \
 RUN mkdir -p /var/lib/system
 COPY overlay/base /
 RUN \
-	systemctl enable ostree-state-overlay@opt.service \
-	&& mkdir -pm=775 /var/ostree/state-overlays/opt/{work,upper}
+  systemctl enable ostree-state-overlay@opt.service \
+  && mkdir -pm=775 /var/ostree/state-overlays/opt/{work,upper} \
+  && rm /usr/bin/su \
+  && chmod 644 /etc/pam.d/sudo{,-i} \
+  && chmod 400 /etc/sudoers \
+  && ln -s /usr/bin/su{-rs,} \
+  && ln -s /usr/bin/sudo{-rs,} \
+  && ln -s /usr/bin/visudo{-rs,}
