@@ -57,7 +57,6 @@ def prepare(rootfs: str, kernelCommandline: str = ""):
         r"s|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g",
         "usr/etc/pacman.conf",
     )
-    os.mkdir("usr/lib/pacmanlocal")
     delete("var/*")
     os.unlink("boot/vmlinuz-linux-zen")
     modulePath = [*iglob("usr/lib/modules/*")][0]

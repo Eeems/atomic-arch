@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
+if [ -z BUILD_ID ];then
+  BUILD_ID="$(date +'%Y-%m-%d').${VERSION_ID}"
+fi
 echo "[system] Build ID: ${BUILD_ID}"
 if grep -Fq "BUILD_ID="; then
   sed -i "/BUILD_ID=/ s|.*|$BUILD_ID|" /usr/lib/os-release
