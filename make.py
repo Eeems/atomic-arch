@@ -2,44 +2,30 @@
 import argparse
 import sys
 import shlex
-import os
 import subprocess
 
 from typing import cast
 from datetime import datetime
-from importlib.util import spec_from_loader
-from importlib.util import module_from_spec
-from importlib.machinery import SourceFileLoader
 from collections.abc import Callable
 
 
-def import_from_file(path: str):
-    name = os.path.basename(path)
-    spec = spec_from_loader(name, SourceFileLoader(name, path))
-    assert spec is not None
-    module = module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(module)
-    return module
+sys.path.append("overlay/base/usr/lib/system")
+import _os  # noqa: E402 #pyright:ignore [reportMissingImports]
+import _os.checkupdates  # noqa: E402 #pyright:ignore [reportMissingImports]
 
-
-_os = import_from_file("overlay/base/usr/bin/os")
 podman = cast(Callable[..., None], _os.podman)
-execute = cast(Callable[..., None], _os.execute)
 _execute = cast(Callable[..., None], _os._execute)
-ostree = cast(Callable[..., None], _os.ostree)
 is_root = cast(Callable[[], bool], _os.is_root)
-in_system = cast(Callable[..., int], _os.in_system)
+in_system = cast(Callable[..., int], _os.checkupdates.in_system)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
-SYSTEM_PATH = cast(str, _os.SYSTEM_PATH)
 
 
 def build(target: str):
-    uuid = subprocess.check_output([
-        "bash",
-        "-c",
-        "uuidgen --time-v7 | cut -c-8"
-    ]).decode("utf-8").strip()
+    uuid = (
+        subprocess.check_output(["bash", "-c", "uuidgen --time-v7 | cut -c-8"])
+        .decode("utf-8")
+        .strip()
+    )
     podman(
         "build",
         f"--tag=docker.io/{IMAGE}:{target}",
@@ -167,10 +153,11 @@ def do_os(args: argparse.Namespace):
     if ret:
         sys.exit(ret)
 
+
 def do_scan(args: argparse.Namespace):
     ret = in_system(
         "-c",
-       "/usr/lib/system/install_packages trivy && trivy rootfs --skip-dirs=/ostree --skip-dirs=/var/lib/system /",
+        "/usr/lib/system/install_packages trivy && trivy rootfs --skip-dirs=/ostree --skip-dirs=/var/lib/system /",
         target=f"{IMAGE}:{cast(str, args.target)}",
         entrypoint="/bin/bash",
     )
@@ -217,7 +204,7 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--target", default="base")
     _ = subparser.add_argument("arg", action="extend", nargs="*", type=str)
     subparser.set_defaults(func=do_os)
-    
+
     subparser = subparsers.add_parser("scan")
     _ = subparser.add_argument("target")
     subparser.set_defaults(func=do_scan)
