@@ -10,6 +10,7 @@ from typing import cast
 from typing import Any
 from datetime import datetime
 
+
 from . import podman
 from . import SYSTEM_PATH
 from . import OS_NAME
@@ -20,6 +21,7 @@ from . import is_root
 from .prune import prune
 from .export import export
 from .checkupdates import checkupdates
+from .checkupdates import in_system
 from .build import build
 from .build import build_image
 
@@ -55,8 +57,6 @@ def command(args: Namespace):
 
 
 def upgrade(branch: str = "system"):
-    from .prepare import prepare
-
     if not os.path.exists("/ostree"):
         print("OSTree repo missing")
         sys.exit(1)
@@ -64,12 +64,6 @@ def upgrade(branch: str = "system"):
     if not os.path.exists(SYSTEM_PATH):
         os.makedirs(SYSTEM_PATH, exist_ok=True)
 
-    build()
-    rootfs = os.path.join(SYSTEM_PATH, "rootfs")
-    if os.path.exists(rootfs):
-        shutil.rmtree(rootfs)
-
-    export(rootfs=rootfs, workingDir=SYSTEM_PATH)
     if os.path.exists("/etc/system/commandline"):
         with open("/etc/system/commandline", "r") as f:
             kernelCommandline = f.read()
@@ -77,7 +71,13 @@ def upgrade(branch: str = "system"):
     else:
         kernelCommandline = ""
 
-    prepare(rootfs, kernelCommandline)
+    rootfs = os.path.join(SYSTEM_PATH, "rootfs")
+    if os.path.exists(rootfs):
+        shutil.rmtree(rootfs)
+
+    build()
+    export(rootfs=rootfs, workingDir=SYSTEM_PATH)
+    _ = in_system("prepare", rootfs, "--kargs", kernelCommandline, check=True)
     commit(branch, rootfs)
     _ = shutil.rmtree(rootfs)
     prune(branch)
