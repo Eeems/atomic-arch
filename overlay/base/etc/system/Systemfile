@@ -13,4 +13,5 @@ RUN \
 
 RUN fc-cache -f
 RUN /usr/lib/system/build_kernel
+ARG VERSION_ID
 RUN /usr/lib/system/set_build_id
