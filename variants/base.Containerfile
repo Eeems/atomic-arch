@@ -49,7 +49,8 @@ RUN /usr/lib/system/install_packages \
   pv \
   run-parts \
   skopeo \
-  pacman-contrib
+  pacman-contrib \
+  python-pyxattr
 
 RUN systemctl enable \
   NetworkManager \
@@ -59,8 +60,7 @@ RUN systemctl enable \
 RUN mkdir -p /var/lib/system
 COPY overlay/base /
 RUN \
-  systemctl enable ostree-state-overlay@opt.service \
-  && mkdir -pm=775 /var/ostree/state-overlays/opt/{work,upper} \
+  systemctl enable atomic-state-overlay \
   && rm /usr/bin/su \
   && chmod 644 /etc/pam.d/sudo{,-i} \
   && chmod 400 /etc/sudoers \

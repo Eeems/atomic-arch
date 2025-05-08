@@ -1,0 +1,16 @@
+[Unit]
+DefaultDependencies=no
+ConditionaKernelCommandLine=ostree
+After=var.mount boot.mount
+Before=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/os state-overlay
+StandardInput=null
+StandardOutput=journal
+StandardError=journal+console
+
+[Install]
+WantedBy=local-fs.target
