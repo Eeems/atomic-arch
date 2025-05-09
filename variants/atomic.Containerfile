@@ -48,11 +48,7 @@ RUN /usr/lib/system/install_packages \
   gnome-power-manager \
   polkit-gnome \
   bluez-utils \
-  system-config-printer \
-  switchboard \
-  switchboard-plug-mouse-touchpad \
-  switchboard-plug-display \
-  switchboard-plug-wacom
+  system-config-printer
 
 RUN /usr/lib/system/install_aur_packages \
   python-imageio-ffmpeg \

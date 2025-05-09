@@ -28,26 +28,10 @@ def command(args: Namespace):
 def prepare(rootfs: str, kernelCommandline: str = ""):
     cwd = os.getcwd()
     os.chdir(rootfs)
-    with open("etc/system/commandline", "w") as f:
+    _ = shutil.move("etc", "usr")
+    with open("usr/etc/system/commandline", "w") as f:
         _ = f.write(kernelCommandline)
 
-    _ = shutil.move("etc", "usr")
-
-    def var_link(name: str):
-        shutil.rmtree(name)
-        os.symlink(f"var/{name}", name)
-
-    var_link("home")
-    var_link("mnt")
-    shutil.rmtree("root")
-    delete("run/*")
-    os.symlink("var/roothome", "root")
-    var_link("srv")
-    os.mkdir("sysroot")
-    os.symlink("sysroot/ostree", "ostree")
-    shutil.rmtree("usr/local")
-    os.symlink("../var/userlocal", "usr/local")
-    _ = shutil.move("var/lib/pacman", "usr/lib")
     execute(
         "sed",
         "-i",
@@ -58,6 +42,8 @@ def prepare(rootfs: str, kernelCommandline: str = ""):
         "usr/etc/pacman.conf",
     )
     delete("var/*")
+    os.mkdir("sysroot")
+    os.symlink("sysroot/ostree", "ostree")
     os.unlink("boot/vmlinuz-linux-zen")
     modulePath = [*iglob("usr/lib/modules/*")][0]
     os.rename("boot/initramfs-linux-zen.img", f"{modulePath}/initramfs.img")
