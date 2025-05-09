@@ -15,6 +15,7 @@ from . import SYSTEM_PATH
 from . import is_root
 from . import _execute
 from . import ostree
+from . import OS_NAME
 
 from .build import build_image
 
@@ -136,6 +137,54 @@ def in_system(
         *args,
     )
     ret = _execute(shlex.join(cmd))
+    if ret and check:
+        raise subprocess.CalledProcessError(ret, cmd, None, None)
+
+    return ret
+
+
+def in_nspawn_system(*args: str, check: bool = False):
+    if os.path.exists("/ostree") and os.path.isdir("/ostree"):
+        _ostree = "/ostree"
+        if not os.path.exists(SYSTEM_PATH):
+            os.makedirs(SYSTEM_PATH, exist_ok=True)
+
+        if not os.path.exists(f"{SYSTEM_PATH}/ostree"):
+            os.symlink("/ostree", f"{SYSTEM_PATH}/ostree")
+
+    else:
+        _ostree = f"{SYSTEM_PATH}/ostree"
+        os.makedirs(_ostree, exist_ok=True)
+        repo = os.path.join(_ostree, "repo")
+        setattr(ostree, "repo", repo)
+        if not os.path.exists(repo):
+            ostree("init")
+
+    cache = "/var/cache/pacman"
+    if not os.path.exists(cache):
+        os.makedirs(cache, exist_ok=True)
+
+    checksum = (
+        subprocess.check_output(["bash", "-c", "ostree admin status | grep *"])
+        .decode("utf-8")
+        .split(" ")[3]
+    )
+    os.environ["SYSTEMD_NSPAWN_LOCK"] = "0"
+    ret = _execute(
+        shlex.join(
+            [
+                "systemd-nspawn",
+                "--volatile=state",
+                "--link-journal=try-guest",
+                "--directory=/sysroot",
+                f"--bind={SYSTEM_PATH}:{SYSTEM_PATH}",
+                "--bind=/boot:/boot",
+                f"--bind={cache}:{cache}",
+                f"--pivor-root={_ostree}/deploy/{OS_NAME}/deploy/{checksum}:/sysroot",
+                *args,
+            ]
+        )
+    )
     if ret and check:
         raise subprocess.CalledProcessError(ret, cmd, None, None)
 

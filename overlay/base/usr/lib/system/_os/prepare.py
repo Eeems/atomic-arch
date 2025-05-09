@@ -40,6 +40,7 @@ def prepare(rootfs: str, kernelCommandline: str = ""):
         r"s|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g",
         "usr/etc/pacman.conf",
     )
+    _ = shutil.move("var/lib/pacman", "usr/lib")
     delete("var/*")
     os.mkdir("sysroot")
     os.symlink("sysroot/ostree", "ostree")
