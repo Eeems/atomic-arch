@@ -44,9 +44,6 @@ def prepare(rootfs: str, kernelCommandline: str = ""):
     delete("var/*")
     os.mkdir("sysroot")
     os.symlink("sysroot/ostree", "ostree")
-    os.unlink("boot/vmlinuz-linux-zen")
-    modulePath = [*iglob("usr/lib/modules/*")][0]
-    os.rename("boot/initramfs-linux-zen.img", f"{modulePath}/initramfs.img")
     os.chdir(cwd)
 
 

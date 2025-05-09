@@ -129,7 +129,7 @@ def in_system(
         "--security-opt=label=disable",
         "--volume=/run/podman/podman.sock:/run/podman/podman.sock",
         f"--volume={SYSTEM_PATH}:{SYSTEM_PATH}",
-        f"--volume={_ostree}:/ostree",
+        f"--volume={_ostree}:/sysroot/ostree",
         f"--volume={cache}:{cache}",
         f"--entrypoint={entrypoint}",
         target,
