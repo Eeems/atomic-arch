@@ -4,7 +4,6 @@ import shutil
 
 from argparse import ArgumentParser
 from argparse import Namespace
-from glob import iglob
 from typing import cast
 
 from . import delete
