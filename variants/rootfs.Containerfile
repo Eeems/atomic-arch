@@ -26,7 +26,6 @@ RUN chronic fakeroot pacman -r . -Sy --noconfirm base mkinitcpio moreutils
 RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
   && rm usr/share/libalpm/hooks/90-mkinitcpio-install.hook \
   && cp -a {/,}etc/pacman.d/mirrorlist \
-  && cp -a {/,}etc/pacman.conf \
   && rm -rf home && ln -s var/home home \
   && rm -rf mnt && ln -s var/mnt mnt \
   && rm -rf root && ln -s var/roothome root \
