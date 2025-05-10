@@ -13,7 +13,7 @@ from typing import Any
 from . import podman_cmd
 from . import SYSTEM_PATH
 from . import is_root
-from . import _execute
+from . import _execute  # pyright:ignore [reportPrivateUsage]
 from . import ostree
 from . import OS_NAME
 
@@ -102,6 +102,7 @@ def in_system(
     target: str = "system:latest",
     entrypoint: str = "/usr/bin/os",
     check: bool = False,
+    mount_boot: bool = False,
 ) -> int:
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
         _ostree = "/ostree"
@@ -123,18 +124,24 @@ def in_system(
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
+    volumes: list[str] = [
+        "/run/podman/podman.sock:/run/podman/podman.sock",
+        "/usr/lib/pacman:/usr/lib/pacman:O",
+        "/etc/pacman.d/gnupg:/etc/pacman.d/gnupg:O",
+        f"{SYSTEM_PATH}:{SYSTEM_PATH}",
+        f"{_ostree}:/sysroot/ostree",
+        f"{_ostree}:/ostree",
+        f"{cache}:{cache}",
+    ]
+    if mount_boot:
+        volumes.append("/boot:/boot")
+
     cmd = podman_cmd(
         "run",
         "--rm",
         "--privileged",
         "--security-opt=label=disable",
-        "--volume=/run/podman/podman.sock:/run/podman/podman.sock",
-        "--volume=/usr/lib/pacman:/usr/lib/pacman:O",
-        "--volume=/etc/pacman.d/gnupg:/etc/pacman.d/gnupg:O",
-        "--volume=/var/lib/dkms/mok.key:/var/lib/dkms/mok.key:O",
-        f"--volume={SYSTEM_PATH}:{SYSTEM_PATH}",
-        f"--volume={_ostree}:/sysroot/ostree",
-        f"--volume={cache}:{cache}",
+        *[f"--volume={x}" for x in volumes],
         f"--entrypoint={entrypoint}",
         target,
         *args,

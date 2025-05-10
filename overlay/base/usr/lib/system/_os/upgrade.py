@@ -8,17 +8,12 @@ from argparse import ArgumentParser
 from argparse import Namespace
 from typing import cast
 from typing import Any
-from datetime import datetime
-
 
 from . import podman
-from . import SYSTEM_PATH
-from . import OS_NAME
 from . import execute
-from . import ostree
+from . import SYSTEM_PATH
 from . import is_root
 
-from .prune import prune
 from .export import export
 from .checkupdates import checkupdates
 from .checkupdates import in_system
@@ -78,42 +73,17 @@ def upgrade(branch: str = "system"):
     build()
     export(rootfs=rootfs, workingDir=SYSTEM_PATH)
     _ = in_system("prepare", rootfs, "--kargs", kernelCommandline, check=True)
-    commit(branch, rootfs)
-    _ = shutil.rmtree(rootfs)
-    prune(branch)
-    deploy(branch, "/", kernelCommandline)
-    execute("grub-mkconfig -o /boot/efi/EFI/grub/grub.cfg")
-
-
-def deploy(branch: str = "system", sysroot: str = "/", kernelCommandline: str = ""):
-    kargs = ["--karg=root=LABEL=SYS_ROOT", "--karg=rw"]
-    for karg in kernelCommandline.split():
-        kargs.append(f"--karg={karg.strip()}")
-
-    execute(
-        "ostree",
-        "admin",
+    _ = in_system("commit", f"--branch={branch}", rootfs, check=True)
+    # _ = in_system("prune", f"--branch={branch}", check=True)
+    _ = in_system(
         "deploy",
-        f"--sysroot={sysroot}",
-        *kargs,
-        f"--os={OS_NAME}",
-        "--retain",
-        f"{OS_NAME}/{branch}",
+        f"--branch={branch}",
+        "--sysroot=/",
+        f"--kargs={kernelCommandline}",
+        check=True,
     )
-
-
-def commit(branch: str = "system", rootfs: str | None = None):
-    if rootfs is None:
-        rootfs = os.path.join(SYSTEM_PATH, "rootfs")
-
-    ostree(
-        "commit",
-        "--generate-composefs-metadata",
-        "--generate-sizes",
-        f"--branch={OS_NAME}/{branch}",
-        f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
-        f"--tree=dir={rootfs}",
-    )
+    _ = shutil.rmtree(rootfs)
+    execute("/usr/bin/grub-mkconfig", "-o", "/boot/efi/EFI/grub/grub.cfg")
 
 
 if __name__ == "__main__":

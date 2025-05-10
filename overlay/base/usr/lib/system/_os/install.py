@@ -20,8 +20,8 @@ from .prepare import prepare
 from .build import build_image
 from .build import build
 from .export import export
-from .upgrade import deploy
-from .upgrade import commit
+from .deploy import deploy
+from .commit import commit
 
 NVIDIA_PACKAGES = ["nvidia-open-dkms", "nvidia-container-toolkit", "nvidia-utils"]
 

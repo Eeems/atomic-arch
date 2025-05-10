@@ -12,14 +12,14 @@ from . import is_root
 
 RETAIN = 5
 
-kwds = {"help": "Revert the last system upgrade"}
+kwds = {"help": "Prune unused data from the ostree"}
 
 
 def register(parser: ArgumentParser):
     _ = parser.add_argument("--branch", default="system", help="System branch to prune")
 
 
-def command(_: Namespace):
+def command(args: Namespace):
     if not is_root():
         print("Must be run as root")
         sys.exit(1)

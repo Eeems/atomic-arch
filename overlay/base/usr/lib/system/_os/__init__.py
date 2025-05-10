@@ -4,7 +4,6 @@ import importlib
 import os
 import shlex
 import shutil
-from sre_parse import SubPattern
 import subprocess
 import sys
 
