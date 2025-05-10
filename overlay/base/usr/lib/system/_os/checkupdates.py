@@ -129,6 +129,9 @@ def in_system(
         "--privileged",
         "--security-opt=label=disable",
         "--volume=/run/podman/podman.sock:/run/podman/podman.sock",
+        "--volume=/usr/lib/pacman:/usr/lib/pacman:O",
+        "--volume=/etc/pacman.d/gnupg:/etc/pacman.d/gnupg:O",
+        "--volume=/var/lib/dkms/mok.key:/var/lib/dkms/mok.key:O",
         f"--volume={SYSTEM_PATH}:{SYSTEM_PATH}",
         f"--volume={_ostree}:/sysroot/ostree",
         f"--volume={cache}:{cache}",
@@ -170,6 +173,7 @@ def in_nspawn_system(*args: str, check: bool = False):
         .split(" ")[3]
     )
     os.environ["SYSTEMD_NSPAWN_LOCK"] = "0"
+    # TODO overlay /usr/lib/pacman somehow
     cmd = [
         "systemd-nspawn",
         "--volatile=state",
@@ -178,7 +182,7 @@ def in_nspawn_system(*args: str, check: bool = False):
         f"--bind={SYSTEM_PATH}:{SYSTEM_PATH}",
         "--bind=/boot:/boot",
         f"--bind={cache}:{cache}",
-        f"--pivor-root={_ostree}/deploy/{OS_NAME}/deploy/{checksum}:/sysroot",
+        f"--pivot-root={_ostree}/deploy/{OS_NAME}/deploy/{checksum}:/sysroot",
         *args,
     ]
     ret = _execute(shlex.join(cmd))
