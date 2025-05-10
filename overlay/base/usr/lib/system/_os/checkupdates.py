@@ -95,7 +95,7 @@ def checkupdates(baseImage: str | None = None) -> bool:
             image_update = True
 
     return (
-        in_system(entrypoint="/usr/lib/system/check_for_updates") == 2 or image_update
+        in_system(entrypoint="/usr/lib/system/check_for_updates") == 0 or image_update
     )
 
 
@@ -172,21 +172,18 @@ def in_nspawn_system(*args: str, check: bool = False):
         .split(" ")[3]
     )
     os.environ["SYSTEMD_NSPAWN_LOCK"] = "0"
-    ret = _execute(
-        shlex.join(
-            [
-                "systemd-nspawn",
-                "--volatile=state",
-                "--link-journal=try-guest",
-                "--directory=/sysroot",
-                f"--bind={SYSTEM_PATH}:{SYSTEM_PATH}",
-                "--bind=/boot:/boot",
-                f"--bind={cache}:{cache}",
-                f"--pivor-root={_ostree}/deploy/{OS_NAME}/deploy/{checksum}:/sysroot",
-                *args,
-            ]
-        )
-    )
+    cmd = [
+        "systemd-nspawn",
+        "--volatile=state",
+        "--link-journal=try-guest",
+        "--directory=/sysroot",
+        f"--bind={SYSTEM_PATH}:{SYSTEM_PATH}",
+        "--bind=/boot:/boot",
+        f"--bind={cache}:{cache}",
+        f"--pivor-root={_ostree}/deploy/{OS_NAME}/deploy/{checksum}:/sysroot",
+        *args,
+    ]
+    ret = _execute(shlex.join(cmd))
     if ret and check:
         raise subprocess.CalledProcessError(ret, cmd, None, None)
 
