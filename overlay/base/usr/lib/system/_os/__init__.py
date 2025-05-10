@@ -4,6 +4,7 @@ import importlib
 import os
 import shlex
 import shutil
+from sre_parse import SubPattern
 import subprocess
 import sys
 
@@ -36,6 +37,24 @@ def execute(cmd: str | list[str], *args: str):
     ret = _execute(cmd)
     if ret:
         raise subprocess.CalledProcessError(ret, cmd, None, None)
+
+
+def chronic(cmd: str | list[str], *args: str):
+    argv: list[str] = []
+    if isinstance(cmd, str):
+        argv.append(cmd)
+
+    else:
+        argv += cmd
+
+    if args:
+        argv += args
+
+    try:
+        _ = subprocess.check_output(argv, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        print(e.output)  # pyright:ignore [reportAny]
+        raise
 
 
 def podman_cmd(*args: str):

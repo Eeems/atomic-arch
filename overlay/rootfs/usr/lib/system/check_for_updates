@@ -1,7 +1,0 @@
-#!/bin/bash
-set -e
-chronic /usr/lib/system/initialize_pacman
-if [ -d /usr/lib/system/check_for_updates.d ];then
-  run-parts /usr/lib/system/check_for_updates.d
-fi
-checkupdates

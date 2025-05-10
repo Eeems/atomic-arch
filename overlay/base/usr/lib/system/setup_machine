@@ -13,7 +13,10 @@ echo "KEYMAP=${KEYMAP:-us}" >/etc/vconsole.conf
 echo "FONT=${FONT:-ter-124n}" >>/etc/vconsole.conf
 echo "LANG=${LANGUAGE:-en_US}.${ENCODING:-UTF-8}" >/etc/locale.conf
 echo "${LANGUAGE:-en_US}.${ENCODING:-UTF-8} ${ENCODING:-UTF-8}" >/etc/locale.gen
+echo "[system] Generating locale"
 chronic locale-gen
+echo "[system] Ranking mirrorlist"
 rankmirrors /etc/pacman.d/mirrorlist | tail -n +2 >/etc/pacman.d/mirrorlist.new
 rm /etc/pacman.d/mirrorlist
 mv /etc/pacman.d/mirrorlist.new /etc/pacman.d/mirrorlist
+/usr/lib/system/initialize_pacman

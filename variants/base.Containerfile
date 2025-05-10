@@ -13,7 +13,8 @@ LABEL \
 
 RUN /usr/lib/system/set_variant
 
-RUN /usr/lib/system/install_packages \
+RUN /usr/lib/system/initialize_pacman \
+  && /usr/lib/system/install_packages \
   base \
   nano \
   micro \
@@ -50,7 +51,8 @@ RUN /usr/lib/system/install_packages \
   run-parts \
   skopeo \
   pacman-contrib \
-  python-pyxattr
+  python-pyxattr \
+  && /usr/lib/system/remove_pacman_files
 
 RUN systemctl enable \
   NetworkManager \

@@ -1,7 +1,5 @@
 #!/bin/bash
 set -e
-/usr/lib/system/initialize_pacman
 echo "[system] Installing" "$@"
 chronic pacman -Syu --needed --noconfirm "$@"
 /usr/lib/system/remove_unused_packages
-/usr/lib/system/remove_pacman_files

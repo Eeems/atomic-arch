@@ -1,7 +1,5 @@
 #!/bin/bash
 set -e
-/usr/lib/system/initialize_pacman
-
 echo "[system] Installing fakeroot debugedit pkg-config"
 chronic pacman -Syu --needed --noconfirm fakeroot debugedit pkg-config
 chronic useradd -m aur
@@ -39,4 +37,3 @@ chronic userdel aur
 chronic rm -r /home/aur
 
 /usr/lib/system/remove_unused_packages
-/usr/lib/system/remove_pacman_files

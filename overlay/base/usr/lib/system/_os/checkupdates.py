@@ -94,9 +94,7 @@ def checkupdates(baseImage: str | None = None) -> bool:
             )
             image_update = True
 
-    return (
-        in_system(entrypoint="/usr/lib/system/check_for_updates") == 0 or image_update
-    )
+    return in_system(entrypoint="/usr/bin/checkupdates") == 0 or image_update
 
 
 def in_system(

@@ -1,0 +1,46 @@
+#!/usr/bin/python
+import argparse
+
+from typing import cast
+
+from _os import execute  # pyright:ignore [ reportImplicitRelativeImport]
+from _os import chronic  # pyright:ignore [ reportImplicitRelativeImport]
+
+parser = argparse.ArgumentParser()
+_ = parser.add_argument("name", help="Name of repository")
+_ = parser.add_argument(
+    "--key",
+    help="Key to import that is used for signing packages in the repository",
+    default=None,
+)
+_ = parser.add_argument(
+    "--keyserver", help="Keyserver to get key from", default="keyserver.ubuntu.com"
+)
+_ = parser.add_argument(
+    "--server",
+    help="Server entry for the repository",
+    metavar="SERVER",
+    action="append",
+    dest="servers",
+)
+args = parser.parse_args()
+execute("/usr/lib/system/initialize_pacman")
+key = cast(str | None, args.key)
+if key is not None:
+    print("[system] Adding key")
+    chronic("pacman-key", "--recv", key, "--keyserver", cast(str, args.keyserver))
+    chronic("pacman-key", "--lsign", key)
+
+print("[system] Adding repository")
+name = cast(str, args.name)
+with open("/etc/pacman.conf", "a") as f:
+    _ = f.write("\n".join([f"[{name}]", f"Include = /etc/pacman.d/{name}.mirrorlist"]))
+    _ = f.write("\n")
+
+print("[system] Adding mirrors")
+with open(f"/etc/pacman.d/{name}.mirrorlist", "w") as f:
+    _ = f.write("\n".join([f"Server = {x}" for x in cast(list[str], args.servers)]))
+    _ = f.write("\n")
+
+print("[system] Updating database")
+chronic("pacman", "-Sy")

@@ -13,7 +13,8 @@ LABEL \
 
 RUN /usr/lib/system/set_variant
 
-RUN /usr/lib/system/install_packages \
+RUN /usr/lib/system/initialize_pacman \
+  && /usr/lib/system/install_packages \
   ghostty \
   gnome-software \
   flatpak-xdg-utils \
@@ -48,15 +49,15 @@ RUN /usr/lib/system/install_packages \
   gnome-power-manager \
   polkit-gnome \
   bluez-utils \
-  system-config-printer
-
-RUN /usr/lib/system/install_aur_packages \
+  system-config-printer \
+  && /usr/lib/system/install_aur_packages \
   python-imageio-ffmpeg \
   python-screeninfo \
   waypaper \
   syshud \
   overskride \
-  networkmanager-dmenu-git
+  networkmanager-dmenu-git \
+  && /usr/lib/system/remove_pacman_files
 
 RUN systemctl enable greetd udisks2
 COPY overlay/atomic /

@@ -12,7 +12,8 @@ LABEL \
 
 RUN /usr/lib/system/set_variant
 
-RUN /usr/lib/system/install_packages \
+RUN /usr/lib/system/initialize_pacman \
+  && /usr/lib/system/install_packages \
   gdm \
   gnome-shell \
   ghostty \
@@ -22,7 +23,8 @@ RUN /usr/lib/system/install_packages \
   gnome-packagekit \
   fwupd \
   gnome-tweaks \
-  gnome-control-center
+  gnome-control-center \
+  && /usr/lib/system/remove_pacman_files
 
 RUN systemctl enable gdm
 COPY overlay/gnome /
