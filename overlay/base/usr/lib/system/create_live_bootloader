@@ -67,7 +67,7 @@ cat /usr/lib/grub/i386-pc/cdboot.img core.img >/etc/system/archiso/boot/grub/elt
 
 rm core.img
 
-cp -a /boot/vmlinuz-linux-zen /etc/system/archiso/atomic/x86_64
-cp -a /boot/initramfs-linux-zen.img /etc/system/archiso/atomic/x86_64
+cp -a /usr/lib/modules/*/vmlinuz /etc/system/archiso/atomic/x86_64
+cp -a /usr/lib/modules/*/initramfs.img /etc/system/archiso/atomic/x86_64
 cp -a /usr/share/edk2-shell/x64/Shell.efi /etc/system/archiso/shellx64.efi
 cp -ar /boot/memtest86+ /etc/system/archiso

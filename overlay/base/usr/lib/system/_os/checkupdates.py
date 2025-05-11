@@ -124,9 +124,13 @@ def in_system(
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
+    pacman = "/usr/lib/pacman"
+    if not os.path.exists(pacman):
+        pacman = "/var/lib/pacman"
+
     volumes: list[str] = [
         "/run/podman/podman.sock:/run/podman/podman.sock",
-        "/usr/lib/pacman:/usr/lib/pacman:O",
+        f"{pacman}:/usr/lib/pacman:O",
         "/etc/pacman.d/gnupg:/etc/pacman.d/gnupg:O",
         f"{SYSTEM_PATH}:{SYSTEM_PATH}",
         f"{_ostree}:/sysroot/ostree",

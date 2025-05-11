@@ -18,8 +18,10 @@ from .export import export
 from .checkupdates import checkupdates
 from .checkupdates import in_system
 from .deploy import deploy
+from .prune import prune
 from .build import build
 from .build import build_image
+from .commit import commit
 
 kwds = {"help": "Perform a system upgrade"}
 
@@ -74,8 +76,8 @@ def upgrade(branch: str = "system"):
     build()
     export(rootfs=rootfs, workingDir=SYSTEM_PATH)
     _ = in_system("prepare", rootfs, "--kargs", kernelCommandline, check=True)
-    _ = in_system("commit", f"--branch={branch}", rootfs, check=True)
-    _ = in_system("prune", f"--branch={branch}", check=True)
+    commit(branch, rootfs)
+    prune(branch)
     deploy(branch, "/", kernelCommandline)
     _ = shutil.rmtree(rootfs)
     execute("/usr/bin/grub-mkconfig", "-o", "/boot/efi/EFI/grub/grub.cfg")

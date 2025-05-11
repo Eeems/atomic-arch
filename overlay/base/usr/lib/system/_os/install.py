@@ -66,7 +66,7 @@ def register(parser: ArgumentParser):
     )
 
 
-def command(_: Namespace):
+def command(args: Namespace):
     if not is_root():
         print("Must be run as root")
         sys.exit(1)

@@ -10,7 +10,8 @@ RUN \
   && cp -lf /etc/system/mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf \
   && cp -lf /etc/system/linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset
 
-RUN /usr/lib/system/install_packages \
+RUN /usr/lib/system/initialize_pacman \
+  && /usr/lib/system/install_packages \
   arch-install-scripts \
   edk2-shell \
   grub \
