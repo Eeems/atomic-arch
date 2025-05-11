@@ -1,0 +1,13 @@
+[Unit]
+Description=Populate dconf configuration on boot
+Before=graphical-session.target
+After=dbus.socket
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/bin/dconf update
+
+[Install]
+WantedBy=multi-user.target

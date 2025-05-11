@@ -27,7 +27,6 @@ input {
 	}
 }
 
-spawn-at-startup "dconf" "update"
 spawn-at-startup "waypaper" "--restore" "--backend" "swaybg"
 spawn-at-startup "waybar"
 spawn-at-startup "swaync"

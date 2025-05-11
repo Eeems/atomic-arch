@@ -59,5 +59,9 @@ RUN /usr/lib/system/initialize_pacman \
   networkmanager-dmenu-git \
   && /usr/lib/system/remove_pacman_files
 
-RUN systemctl enable greetd udisks2
+RUN systemctl enable \
+  greetd \
+  udisks2 \
+  dconf
+
 COPY overlay/atomic /
