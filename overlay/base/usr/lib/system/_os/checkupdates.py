@@ -130,7 +130,6 @@ def in_system(
         "/etc/pacman.d/gnupg:/etc/pacman.d/gnupg:O",
         f"{SYSTEM_PATH}:{SYSTEM_PATH}",
         f"{_ostree}:/sysroot/ostree",
-        f"{_ostree}:/ostree",
         f"{cache}:{cache}",
     ]
     if mount_boot:
