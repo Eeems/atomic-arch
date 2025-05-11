@@ -102,7 +102,7 @@ def in_system(
     target: str = "system:latest",
     entrypoint: str = "/usr/bin/os",
     check: bool = False,
-    mount_boot: bool = False,
+    volumes: list[str] | None = None,
 ) -> int:
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
         _ostree = "/ostree"
@@ -128,7 +128,7 @@ def in_system(
     if not os.path.exists(pacman):
         pacman = "/var/lib/pacman"
 
-    volumes: list[str] = [
+    volume_args: list[str] = [
         "/run/podman/podman.sock:/run/podman/podman.sock",
         f"{pacman}:/usr/lib/pacman:O",
         "/etc/pacman.d/gnupg:/etc/pacman.d/gnupg:O",
@@ -136,15 +136,15 @@ def in_system(
         f"{_ostree}:/sysroot/ostree",
         f"{cache}:{cache}",
     ]
-    if mount_boot:
-        volumes.append("/boot:/boot")
+    if volumes is not None:
+        volume_args += volumes
 
     cmd = podman_cmd(
         "run",
         "--rm",
         "--privileged",
         "--security-opt=label=disable",
-        *[f"--volume={x}" for x in volumes],
+        *[f"--volume={x}" for x in volume_args],
         f"--entrypoint={entrypoint}",
         target,
         *args,
