@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "[system] Populating /etc/system/commandline"
+echo "${KARGS}" > /etc/system/commandline
 echo "[system] Building kernel"
 find /usr/lib/modules -name vmlinuz | while read -r vmlinuz; do
   ln -s "$vmlinuz" /boot/vmlinuz-linux-zen

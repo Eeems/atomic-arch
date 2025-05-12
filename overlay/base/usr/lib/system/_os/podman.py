@@ -83,7 +83,9 @@ def in_system(
     return ret
 
 
-def build(systemfile: str = "/etc/system/Systemfile"):
+def build(
+    systemfile: str = "/etc/system/Systemfile", buildArgs: list[str] | None = None
+):
     cache = "/var/cache/pacman"
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
@@ -93,11 +95,15 @@ def build(systemfile: str = "/etc/system/Systemfile"):
         .decode("utf-8")
         .strip()
     )
+    _buildArgs = [f"VERSION_ID={uuid}"]
+    if buildArgs is not None:
+        _buildArgs += buildArgs
+
     podman(
         "build",
         "--force-rm",
         "--tag=system:latest",
-        f"--build-arg=VERSION_ID={uuid}",
+        *[f"--build-arg={x}" for x in _buildArgs],
         f"--volume={cache}:{cache}",
         f"--file={systemfile}",
     )

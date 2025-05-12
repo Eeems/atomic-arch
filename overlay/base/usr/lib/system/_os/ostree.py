@@ -2,6 +2,8 @@ import os
 import shutil
 
 from datetime import datetime
+from sre_parse import SubPattern
+import subprocess
 
 from . import SYSTEM_PATH
 from . import OS_NAME
@@ -11,8 +13,12 @@ from .system import execute
 RETAIN = 5
 
 
+def ostree_cmd(*args: str) -> list[str]:
+    return ["ostree", f"--repo={getattr(ostree, 'repo')}", *args]
+
+
 def ostree(*args: str):
-    execute("ostree", f"--repo={getattr(ostree, 'repo')}", *args)
+    execute(*ostree_cmd(*args))
 
 
 setattr(ostree, "repo", "/ostree/repo")
@@ -32,10 +38,21 @@ def commit(branch: str = "system", rootfs: str | None = None):
     )
 
 
-def deploy(branch: str = "system", sysroot: str = "/", kernelCommandline: str = ""):
+def deploy(branch: str = "system", sysroot: str = "/"):
     kargs = ["--karg=root=LABEL=SYS_ROOT", "--karg=rw"]
-    for karg in kernelCommandline.split():
-        kargs.append(f"--karg={karg.strip()}")
+    revision = f"{OS_NAME}/{branch}"
+    if b"/usr/etc/system/commandline" in subprocess.check_output(
+        ostree_cmd("ls", revision, "/usr/etc/system")
+    ):
+        kernelCommandline = (
+            subprocess.check_output(
+                ostree_cmd("cat", revision, "/usr/etc/system/commandline")
+            )
+            .strip()
+            .decode("UTF-8")
+        )
+        for karg in kernelCommandline.split():
+            kargs.append(f"--karg={karg.strip()}")
 
     execute(
         "ostree",
@@ -45,17 +62,14 @@ def deploy(branch: str = "system", sysroot: str = "/", kernelCommandline: str = 
         *kargs,
         f"--os={OS_NAME}",
         "--retain",
-        f"{OS_NAME}/{branch}",
+        revision,
     )
 
 
-def prepare(rootfs: str, kernelCommandline: str = ""):
+def prepare(rootfs: str):
     cwd = os.getcwd()
     os.chdir(rootfs)
     _ = shutil.move("etc", "usr")
-    with open("usr/etc/system/commandline", "w") as f:
-        _ = f.write(kernelCommandline)
-
     execute(
         "sed",
         "-i",

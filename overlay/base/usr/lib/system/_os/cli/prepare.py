@@ -9,7 +9,6 @@ from ..ostree import prepare
 
 
 def register(parser: ArgumentParser):
-    _ = parser.add_argument("--kargs", default="")
     _ = parser.add_argument("rootfs")
 
 
@@ -18,7 +17,7 @@ def command(args: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    prepare(cast(str, args.rootfs), cast(str, args.kargs))
+    prepare(cast(str, args.rootfs))
 
 
 if __name__ == "__main__":

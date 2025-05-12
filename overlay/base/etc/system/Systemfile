@@ -19,6 +19,7 @@ RUN \
 # RUN /usr/lib/system/install_packages gnome
 
 RUN fc-cache -f
+ARG KARGS
 RUN /usr/lib/system/build_kernel
 ARG VERSION_ID
 RUN /usr/lib/system/set_build_id

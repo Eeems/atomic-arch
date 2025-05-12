@@ -181,12 +181,12 @@ def upgrade(branch: str = "system"):
     if os.path.exists(rootfs):
         shutil.rmtree(rootfs)
 
-    build()
+    build(buildArgs=[f"KARGS={kernelCommandline}"])
     export(rootfs=rootfs, workingDir=SYSTEM_PATH)
-    _ = in_system("prepare", rootfs, "--kargs", kernelCommandline, check=True)
+    _ = in_system("prepare", rootfs, check=True)
     commit(branch, rootfs)
     prune(branch)
-    deploy(branch, "/", kernelCommandline)
+    deploy(branch, "/")
     _ = shutil.rmtree(rootfs)
     execute("/usr/bin/grub-mkconfig", "-o", "/boot/efi/EFI/grub/grub.cfg")
 

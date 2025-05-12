@@ -11,7 +11,6 @@ from ..ostree import deploy
 def register(parser: ArgumentParser):
     _ = parser.add_argument("--branch", default="system")
     _ = parser.add_argument("--sysroot", default="/")
-    _ = parser.add_argument("--kargs", default="", dest="kernelCommandline")
 
 
 def command(args: Namespace):
@@ -19,11 +18,7 @@ def command(args: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    deploy(
-        cast(str, args.branch),
-        cast(str, args.sysroot),
-        cast(str, args.kernelCommandline),
-    )
+    deploy(cast(str, args.branch), cast(str, args.sysroot))
 
 
 if __name__ == "__main__":
