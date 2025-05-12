@@ -9,14 +9,15 @@ from argparse import Namespace
 from typing import cast
 from typing import Any
 
-from . import podman
-from . import execute
-from . import SYSTEM_PATH
-from . import is_root
+from .. import execute
+from .. import SYSTEM_PATH
+from .. import is_root
+
+from ..podman import podman
+from ..podman import in_system
 
 from .export import export
 from .checkupdates import checkupdates
-from .checkupdates import in_system
 from .deploy import deploy
 from .prune import prune
 from .build import build

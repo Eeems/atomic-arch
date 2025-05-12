@@ -11,10 +11,10 @@ from typing import cast
 from typing import Any
 from glob import iglob
 
-from . import execute
-from . import ostree
-from . import OS_NAME
-from . import is_root
+from .. import execute
+from .. import ostree
+from .. import OS_NAME
+from .. import is_root
 
 from .prepare import prepare
 from .build import build_image

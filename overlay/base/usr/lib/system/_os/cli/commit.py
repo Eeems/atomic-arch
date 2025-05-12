@@ -6,10 +6,10 @@ from argparse import Namespace
 from typing import cast
 from datetime import datetime
 
-from . import ostree
-from . import is_root
-from . import SYSTEM_PATH
-from . import OS_NAME
+from .. import ostree
+from .. import is_root
+from .. import SYSTEM_PATH
+from .. import OS_NAME
 
 
 def register(parser: ArgumentParser):

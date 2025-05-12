@@ -6,9 +6,9 @@ from argparse import ArgumentParser
 from argparse import Namespace
 from typing import cast
 
-from . import delete
-from . import execute
-from . import is_root
+from .. import delete
+from .. import execute
+from .. import is_root
 
 
 def register(parser: ArgumentParser):

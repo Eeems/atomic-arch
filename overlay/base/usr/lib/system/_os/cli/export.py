@@ -11,10 +11,10 @@ from typing import Any
 from argparse import ArgumentParser
 from argparse import Namespace
 
-from . import podman
-from . import podman_cmd
-from . import SYSTEM_PATH
-from . import is_root
+from ..podman import podman
+from ..podman import podman_cmd
+from .. import SYSTEM_PATH
+from .. import is_root
 
 kwds = {"help": "Export your current system image to a folder"}
 

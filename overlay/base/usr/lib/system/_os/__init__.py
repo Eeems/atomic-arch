@@ -56,22 +56,57 @@ def chronic(cmd: str | list[str], *args: str):
         raise
 
 
-def podman_cmd(*args: str):
-    if _execute("systemd-detect-virt --quiet --container") == 0:
-        return ["podman", "--remote", *args]
-
-    return ["podman", *args]
-
-
-def podman(*args: str):
-    execute(*podman_cmd(*args))
-
-
 def ostree(*args: str):
     execute("ostree", f"--repo={getattr(ostree, 'repo')}", *args)
 
 
 setattr(ostree, "repo", "/ostree/repo")
+
+
+def in_nspawn_system(*args: str, check: bool = False):
+    if os.path.exists("/ostree") and os.path.isdir("/ostree"):
+        _ostree = "/ostree"
+        if not os.path.exists(SYSTEM_PATH):
+            os.makedirs(SYSTEM_PATH, exist_ok=True)
+
+        if not os.path.exists(f"{SYSTEM_PATH}/ostree"):
+            os.symlink("/ostree", f"{SYSTEM_PATH}/ostree")
+
+    else:
+        _ostree = f"{SYSTEM_PATH}/ostree"
+        os.makedirs(_ostree, exist_ok=True)
+        repo = os.path.join(_ostree, "repo")
+        setattr(ostree, "repo", repo)
+        if not os.path.exists(repo):
+            ostree("init")
+
+    cache = "/var/cache/pacman"
+    if not os.path.exists(cache):
+        os.makedirs(cache, exist_ok=True)
+
+    checksum = (
+        subprocess.check_output(["bash", "-c", "ostree admin status | grep *"])
+        .decode("utf-8")
+        .split(" ")[3]
+    )
+    os.environ["SYSTEMD_NSPAWN_LOCK"] = "0"
+    # TODO overlay /usr/lib/pacman somehow
+    cmd = [
+        "systemd-nspawn",
+        "--volatile=state",
+        "--link-journal=try-guest",
+        "--directory=/sysroot",
+        f"--bind={SYSTEM_PATH}:{SYSTEM_PATH}",
+        "--bind=/boot:/boot",
+        f"--bind={cache}:{cache}",
+        f"--pivot-root={_ostree}/deploy/{OS_NAME}/deploy/{checksum}:/sysroot",
+        *args,
+    ]
+    ret = _execute(shlex.join(cmd))
+    if ret and check:
+        raise subprocess.CalledProcessError(ret, cmd, None, None)
+
+    return ret
 
 
 def delete(glob: str):
@@ -88,12 +123,12 @@ def cli(argv: list[str]):
         prog="os", description="Manage your operating system", add_help=True
     )
     subparsers = parser.add_subparsers(help="Action to run")
-    for file in iglob(os.path.join(os.path.dirname(__file__), "*.py")):
+    for file in iglob(os.path.join(os.path.dirname(__file__), "cli", "*.py")):
         if os.path.abspath(file) == os.path.abspath(__file__) or file.endswith("__.py"):
             continue
 
         name = os.path.splitext(os.path.basename(file))[0]
-        module = importlib.import_module(f"{__name__}.{name}", __name__)
+        module = importlib.import_module(f"{__name__}.cli.{name}", __name__)
         subparser = subparsers.add_parser(
             name,
             **getattr(module, "kwds", {}),  # pyright:ignore [reportAny]

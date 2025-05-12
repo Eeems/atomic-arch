@@ -4,9 +4,9 @@ from argparse import ArgumentParser
 from argparse import Namespace
 from typing import cast
 
-from . import execute
-from . import is_root
-from . import OS_NAME
+from .. import execute
+from .. import is_root
+from .. import OS_NAME
 
 
 def register(parser: ArgumentParser):

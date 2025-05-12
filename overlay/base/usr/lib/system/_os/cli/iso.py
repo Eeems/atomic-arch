@@ -9,11 +9,11 @@ from argparse import Namespace
 from typing import Any
 from typing import cast
 
-from . import podman
-from . import execute
-from . import OS_NAME
-from . import SYSTEM_PATH
-from . import is_root
+from ..podman import podman
+from .. import execute
+from .. import OS_NAME
+from .. import SYSTEM_PATH
+from .. import is_root
 
 from .export import export
 

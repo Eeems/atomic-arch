@@ -7,8 +7,8 @@ from argparse import Namespace
 from typing import cast
 from typing import Any
 
-from . import podman
-from . import is_root
+from ..podman import podman
+from .. import is_root
 
 kwds = {"help": "Build your system image"}
 

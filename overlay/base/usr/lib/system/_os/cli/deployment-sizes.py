@@ -4,8 +4,8 @@ import sys
 from argparse import ArgumentParser
 from argparse import Namespace
 
-from . import is_root
-from . import OS_NAME
+from .. import is_root
+from .. import OS_NAME
 
 
 def register(_: ArgumentParser):
