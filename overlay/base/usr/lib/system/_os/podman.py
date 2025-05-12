@@ -72,6 +72,7 @@ def in_system(
         "--privileged",
         "--security-opt=label=disable",
         *[f"--volume={x}" for x in volume_args],
+        f"--mount=type=image,src={target},rw=true,subpath=/usr/etc,destination=/etc",
         f"--entrypoint={entrypoint}",
         target,
         *args,
@@ -99,13 +100,42 @@ def build(
     if buildArgs is not None:
         _buildArgs += buildArgs
 
+    context = os.path.join(SYSTEM_PATH, "context")
+    if os.path.exists(context):
+        _ = shutil.rmtree(context)
+
+    containerfile = os.path.join(context, "Containerfile")
+    _ = shutil.copytree("/etc/system", context)
+    with open(containerfile, "w") as f, open(systemfile, "r") as i:
+        _ = f.write(i.read())
+        _ = f.write(
+            "\n".join(
+                [
+                    "RUN fc-cache -f",
+                    "ARG KARGS",
+                    "RUN /usr/lib/system/build_kernel",
+                    "ARG VERSION_ID",
+                    "RUN /usr/lib/system/set_build_id",
+                    "RUN sed -i \\",
+                    r"  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \ ",
+                    r"  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \ ",
+                    "  /etc/pacman.conf",
+                    "RUN mv /etc /usr && ln -s /usr/etc /etc",
+                    "RUN mv /var/lib/pacman /usr/lib",
+                    "RUN mkdir /sysroot",
+                    "RUN ln -s /sysroot/ostree ostree",
+                    "RUN find /var -mindepth 1 > /.skiplist && echo /.skiplist >> /.skiplist",
+                ]
+            )
+        )
+
     podman(
         "build",
         "--force-rm",
         "--tag=system:latest",
         *[f"--build-arg={x}" for x in _buildArgs],
         f"--volume={cache}:{cache}",
-        f"--file={systemfile}",
+        f"--file={containerfile}",
     )
 
 

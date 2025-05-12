@@ -183,7 +183,6 @@ def upgrade(branch: str = "system"):
 
     build(buildArgs=[f"KARGS={kernelCommandline}"])
     export(rootfs=rootfs, workingDir=SYSTEM_PATH)
-    _ = in_system("prepare", rootfs, check=True)
     commit(branch, rootfs)
     prune(branch)
     deploy(branch, "/")

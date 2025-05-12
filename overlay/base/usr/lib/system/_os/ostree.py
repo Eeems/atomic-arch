@@ -1,9 +1,8 @@
 import os
-import shutil
-
-from datetime import datetime
-from sre_parse import SubPattern
 import subprocess
+
+from tempfile import NamedTemporaryFile
+from datetime import datetime
 
 from . import SYSTEM_PATH
 from . import OS_NAME
@@ -24,18 +23,26 @@ def ostree(*args: str):
 setattr(ostree, "repo", "/ostree/repo")
 
 
-def commit(branch: str = "system", rootfs: str | None = None):
+def commit(
+    branch: str = "system", rootfs: str | None = None, skipList: list[str] | None = None
+):
     if rootfs is None:
         rootfs = os.path.join(SYSTEM_PATH, "rootfs")
 
-    ostree(
-        "commit",
-        "--generate-composefs-metadata",
-        "--generate-sizes",
-        f"--branch={OS_NAME}/{branch}",
-        f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
-        f"--tree=dir={rootfs}",
-    )
+    if skipList is None:
+        skipList = []
+
+    with NamedTemporaryFile("w") as f:
+        _ = f.write("\n".join(skipList))
+        ostree(
+            "commit",
+            "--generate-composefs-metadata",
+            "--generate-sizes",
+            f"--branch={OS_NAME}/{branch}",
+            f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
+            f"--tree=dir={rootfs}",
+            f"--skip-list={f.name}",
+        )
 
 
 def deploy(branch: str = "system", sysroot: str = "/"):
@@ -64,26 +71,6 @@ def deploy(branch: str = "system", sysroot: str = "/"):
         "--retain",
         revision,
     )
-
-
-def prepare(rootfs: str):
-    cwd = os.getcwd()
-    os.chdir(rootfs)
-    _ = shutil.move("etc", "usr")
-    execute(
-        "sed",
-        "-i",
-        "-e",
-        r"s|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g",
-        "-e",
-        r"s|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g",
-        "usr/etc/pacman.conf",
-    )
-    _ = shutil.move("var/lib/pacman", "usr/lib")
-    delete("var/*")
-    os.mkdir("sysroot")
-    os.symlink("sysroot/ostree", "ostree")
-    os.chdir(cwd)
 
 
 def prune(branch: str = "system"):
