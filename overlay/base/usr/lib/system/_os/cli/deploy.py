@@ -4,9 +4,8 @@ from argparse import ArgumentParser
 from argparse import Namespace
 from typing import cast
 
-from .. import execute
 from .. import is_root
-from .. import OS_NAME
+from ..ostree import deploy
 
 
 def register(parser: ArgumentParser):
@@ -24,23 +23,6 @@ def command(args: Namespace):
         cast(str, args.branch),
         cast(str, args.sysroot),
         cast(str, args.kernelCommandline),
-    )
-
-
-def deploy(branch: str = "system", sysroot: str = "/", kernelCommandline: str = ""):
-    kargs = ["--karg=root=LABEL=SYS_ROOT", "--karg=rw"]
-    for karg in kernelCommandline.split():
-        kargs.append(f"--karg={karg.strip()}")
-
-    execute(
-        "ostree",
-        "admin",
-        "deploy",
-        f"--sysroot={sysroot}",
-        *kargs,
-        f"--os={OS_NAME}",
-        "--retain",
-        f"{OS_NAME}/{branch}",
     )
 
 

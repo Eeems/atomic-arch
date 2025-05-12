@@ -12,11 +12,12 @@ from collections.abc import Callable
 sys.path.append("overlay/base/usr/lib/system")
 import _os  # noqa: E402 #pyright:ignore [reportMissingImports]
 import _os.podman  # noqa: E402 #pyright:ignore [reportMissingImports]
+import _os.system  # noqa: E402 #pyright:ignore [reportMissingImports]
 
 podman = cast(Callable[..., None], _os.podman.podman)  # pyright:ignore [reportUnknownMemberType]
-_execute = cast(Callable[..., None], _os._execute)
-is_root = cast(Callable[[], bool], _os.is_root)
+_execute = cast(Callable[..., None], _os.system._execute)
 in_system = cast(Callable[..., int], _os.podman.in_system)  # pyright:ignore [reportUnknownMemberType]
+is_root = cast(Callable[[], bool], _os.is_root)
 IMAGE = cast(str, _os.IMAGE)
 
 

@@ -5,12 +5,8 @@ from argparse import Namespace
 from typing import cast
 from typing import Any
 
-from .. import execute
-from .. import ostree
-from .. import OS_NAME
 from .. import is_root
-
-RETAIN = 5
+from ..ostree import prune
 
 kwds = {"help": "Prune unused data from the ostree"}
 
@@ -25,17 +21,6 @@ def command(args: Namespace):
         sys.exit(1)
 
     prune(cast(str, args.branch))
-
-
-def prune(branch: str = "system"):
-    ostree(
-        "prune",
-        "--commit-only",
-        f"--retain-branch-depth={branch}={RETAIN}",
-        f"--only-branch={OS_NAME}/{branch}",
-        "--keep-younger-than=1 second",
-    )
-    execute("ostree", "admin", "cleanup")
 
 
 if __name__ == "__main__":

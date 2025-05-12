@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 from argparse import Namespace
 
 from .. import is_root
-from .. import execute
+from ..system import execute
 
 
 def register(_: ArgumentParser):
@@ -32,8 +32,8 @@ def command(_: Namespace):
 
 
 def rmfattr(path: str, attr: bytes):
-    if attr in xattr.list(path):
-        xattr.remove(path, attr)
+    if attr in xattr.list(path):  # pyright:ignore [reportUnknownMemberType]
+        xattr.remove(path, attr)  # pyright:ignore [reportUnknownMemberType]
 
 
 if __name__ == "__main__":

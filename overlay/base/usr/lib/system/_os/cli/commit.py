@@ -1,15 +1,12 @@
-import os
 import sys
 
 from argparse import ArgumentParser
 from argparse import Namespace
 from typing import cast
-from datetime import datetime
 
-from .. import ostree
 from .. import is_root
-from .. import SYSTEM_PATH
-from .. import OS_NAME
+
+from ..ostree import commit
 
 
 def register(parser: ArgumentParser):
@@ -23,20 +20,6 @@ def command(args: Namespace):
         sys.exit(1)
 
     commit(cast(str, args.branch), cast(str, args.rootfs))
-
-
-def commit(branch: str = "system", rootfs: str | None = None):
-    if rootfs is None:
-        rootfs = os.path.join(SYSTEM_PATH, "rootfs")
-
-    ostree(
-        "commit",
-        "--generate-composefs-metadata",
-        "--generate-sizes",
-        f"--branch={OS_NAME}/{branch}",
-        f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
-        f"--tree=dir={rootfs}",
-    )
 
 
 if __name__ == "__main__":

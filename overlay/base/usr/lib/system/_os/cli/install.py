@@ -11,17 +11,17 @@ from typing import cast
 from typing import Any
 from glob import iglob
 
-from .. import execute
-from .. import ostree
 from .. import OS_NAME
 from .. import is_root
+from ..system import execute
+from ..system import baseImage
+from ..ostree import ostree
+from ..ostree import deploy
+from ..ostree import commit
+from ..podman import build
+from ..podman import export
 
 from .prepare import prepare
-from .build import build_image
-from .build import build
-from .export import export
-from .deploy import deploy
-from .commit import commit
 
 NVIDIA_PACKAGES = ["nvidia-open-dkms", "nvidia-container-toolkit", "nvidia-utils"]
 
@@ -177,7 +177,7 @@ def install(
     export(workingDir=systemDir)
     rootfs = os.path.join(systemDir, "rootfs")
     prepare(rootfs)
-    buildImage = build_image()
+    buildImage = baseImage()
     tmp = os.path.join(sysroot, ".tmp")
     os.mkdir(tmp)
     execute("mount", "-o", "bind", tmp, "/var/tmp")

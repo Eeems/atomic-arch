@@ -9,13 +9,13 @@ from argparse import Namespace
 from typing import Any
 from typing import cast
 
-from ..podman import podman
-from .. import execute
 from .. import OS_NAME
 from .. import SYSTEM_PATH
 from .. import is_root
 
-from .export import export
+from ..system import execute
+from ..podman import podman
+from ..podman import export
 
 kwds = {"help": "Build a bootable ISO image to install your system"}
 

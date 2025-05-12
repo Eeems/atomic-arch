@@ -5,8 +5,8 @@ from argparse import Namespace
 from typing import cast
 from typing import Any
 
-from .. import execute
 from .. import is_root
+from ..ostree import undeploy
 
 kwds = {"help": "Revert the last system upgrade"}
 
@@ -20,11 +20,7 @@ def command(_: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    revert()
-
-
-def revert():
-    execute("ostree", "admin", "undeploy", "--sysroot=/", "0")
+    undeploy(0)
 
 
 if __name__ == "__main__":
