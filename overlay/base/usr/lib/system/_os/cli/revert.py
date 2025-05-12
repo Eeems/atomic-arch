@@ -5,7 +5,7 @@ from argparse import Namespace
 from typing import cast
 from typing import Any
 
-from .. import is_root
+from ..system import is_root
 from ..ostree import undeploy
 
 kwds = {"help": "Revert the last system upgrade"}

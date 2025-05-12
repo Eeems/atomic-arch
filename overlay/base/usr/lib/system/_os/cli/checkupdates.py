@@ -7,7 +7,7 @@ from typing import cast
 from typing import Any
 
 
-from .. import is_root
+from ..system import is_root
 from ..system import checkupdates
 
 kwds = {"help": "Checks for updates to the system"}

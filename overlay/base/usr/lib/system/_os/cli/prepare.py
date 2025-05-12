@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from argparse import Namespace
 from typing import cast
 
-from .. import is_root
+from ..system import is_root
 from ..ostree import prepare
 
 

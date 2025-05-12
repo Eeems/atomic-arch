@@ -7,7 +7,7 @@ from argparse import Namespace
 
 from ..podman import export
 from .. import SYSTEM_PATH
-from .. import is_root
+from ..system import is_root
 
 kwds = {"help": "Export your current system image to a folder"}
 

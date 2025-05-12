@@ -6,7 +6,7 @@ from typing import cast
 from typing import Any
 
 from ..podman import build
-from .. import is_root
+from ..system import is_root
 
 kwds = {"help": "Build your system image"}
 

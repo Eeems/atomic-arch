@@ -11,7 +11,7 @@ from typing import cast
 
 from .. import OS_NAME
 from .. import SYSTEM_PATH
-from .. import is_root
+from ..system import is_root
 
 from ..system import execute
 from ..podman import podman

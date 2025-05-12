@@ -2,9 +2,6 @@
 import argparse
 import importlib
 import os
-import shlex
-import shutil
-import subprocess
 import sys
 
 from glob import iglob
@@ -15,19 +12,6 @@ from typing import cast
 OS_NAME = "atomic-arch"
 IMAGE = f"eeems/{OS_NAME}"
 SYSTEM_PATH = "/var/lib/system"
-
-
-def is_root() -> bool:
-    return os.geteuid() == 0
-
-
-def delete(glob: str):
-    for path in iglob(glob):
-        if os.path.islink(path) or os.path.isfile(path):
-            os.unlink(path)
-
-        else:
-            shutil.rmtree(path)
 
 
 def cli(argv: list[str]):

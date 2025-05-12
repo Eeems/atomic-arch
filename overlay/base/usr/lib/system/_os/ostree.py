@@ -5,7 +5,7 @@ from datetime import datetime
 
 from . import SYSTEM_PATH
 from . import OS_NAME
-from . import delete
+from .system import delete
 from .system import execute
 
 RETAIN = 5

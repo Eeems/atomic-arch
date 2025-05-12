@@ -4,7 +4,7 @@ import sys
 from argparse import ArgumentParser
 from argparse import Namespace
 
-from .. import is_root
+from ..system import is_root
 from .. import OS_NAME
 
 

@@ -5,7 +5,7 @@ from argparse import Namespace
 from typing import cast
 from typing import Any
 
-from .. import is_root
+from ..system import is_root
 from ..ostree import prune
 
 kwds = {"help": "Prune unused data from the ostree"}

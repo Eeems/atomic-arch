@@ -5,7 +5,7 @@ import xattr
 from argparse import ArgumentParser
 from argparse import Namespace
 
-from .. import is_root
+from ..system import is_root
 from ..system import execute
 
 

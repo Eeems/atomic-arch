@@ -6,6 +6,7 @@ import shlex
 import shutil
 
 from typing import cast
+from glob import iglob
 
 from . import SYSTEM_PATH
 from . import OS_NAME
@@ -188,3 +189,94 @@ def upgrade(branch: str = "system"):
     deploy(branch, "/", kernelCommandline)
     _ = shutil.rmtree(rootfs)
     execute("/usr/bin/grub-mkconfig", "-o", "/boot/efi/EFI/grub/grub.cfg")
+
+
+def delete(glob: str):
+    for path in iglob(glob):
+        if os.path.islink(path) or os.path.isfile(path):
+            os.unlink(path)
+
+        else:
+            shutil.rmtree(path)
+
+
+def is_root() -> bool:
+    return os.geteuid() == 0
+
+
+def getVolumeOut() -> int:
+    return int(
+        [
+            float(x[8:])
+            for x in subprocess.check_output(
+                ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
+            )
+            .strip()
+            .decode("utf-8")
+            .split("\n")
+            if x.startswith("Volume: ")
+        ][0]
+        * 100
+    )
+
+
+def setVolumeOut(volume: int, maxVolume: int = 100) -> int:
+    if volume > maxVolume:
+        volume = maxVolume
+
+    elif volume < 0:
+        volume = 0
+
+    chronic("wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{volume}%")
+    return getVolumeOut()
+
+
+def getVolumeIn() -> int:
+    return int(
+        [
+            float(x[8:])
+            for x in subprocess.check_output(
+                ["wpctl", "get-volume", "@DEFAULT_AUDIO_SOURCE@"]
+            )
+            .strip()
+            .decode("utf-8")
+            .split("\n")
+            if x.startswith("Volume: ")
+        ][0]
+        * 100
+    )
+
+
+def setVolumeIn(volume: int, maxVolume: int = 100) -> int:
+    if volume > maxVolume:
+        volume = maxVolume
+
+    elif volume < 0:
+        volume = 0
+
+    chronic("wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", f"{volume}%")
+    return getVolumeIn()
+
+
+def muteOut():
+    chronic("wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1")
+
+
+def unmuteOut():
+    chronic("wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0")
+
+
+def toggleMuteOut():
+    chronic("wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle")
+
+
+def muteIn():
+    chronic("wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "1")
+
+
+def unmuteIn():
+    chronic("wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "0")
+
+
+def toggleMuteIn():
+    chronic("wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle")

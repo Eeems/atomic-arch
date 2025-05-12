@@ -12,7 +12,7 @@ from typing import Any
 from glob import iglob
 
 from .. import OS_NAME
-from .. import is_root
+from ..system import is_root
 from ..system import execute
 from ..system import baseImage
 from ..ostree import ostree

@@ -2,22 +2,43 @@
 import argparse
 import sys
 import shlex
+import shutil
 import subprocess
+import os
+import atexit
 
 from typing import cast
 from datetime import datetime
 from collections.abc import Callable
 
+if os.path.exists(".os"):
+    shutil.rmtree(".os")
 
-sys.path.append("overlay/base/usr/lib/system")
+os.makedirs(".os/lib/system")
+os.makedirs(".os/bin")
+_ = atexit.register(shutil.rmtree, ".os")
+_ = shutil.copytree(
+    "overlay/base/usr/lib/system/_os",
+    ".os/lib/system/_os",
+    copy_function=os.link,
+)
+_ = shutil.copytree(
+    "overlay/atomic/usr/lib/system/_os",
+    ".os/lib/system/_os",
+    dirs_exist_ok=True,
+    copy_function=os.link,
+)
+os.link("overlay/base/usr/bin/os", ".os/bin/os")
+sys.path.append(".os/lib/system")
+
 import _os  # noqa: E402 #pyright:ignore [reportMissingImports]
 import _os.podman  # noqa: E402 #pyright:ignore [reportMissingImports]
 import _os.system  # noqa: E402 #pyright:ignore [reportMissingImports]
 
 podman = cast(Callable[..., None], _os.podman.podman)  # pyright:ignore [reportUnknownMemberType]
-_execute = cast(Callable[..., None], _os.system._execute)
+_execute = cast(Callable[..., None], _os.system._execute)  # pyright:ignore [reportUnknownMemberType]
 in_system = cast(Callable[..., int], _os.podman.in_system)  # pyright:ignore [reportUnknownMemberType]
-is_root = cast(Callable[[], bool], _os.is_root)
+is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
 
@@ -150,7 +171,7 @@ def do_pull(args: argparse.Namespace):
 
 
 def do_os(args: argparse.Namespace):
-    ret = _execute(shlex.join(["overlay/base/usr/bin/os", *cast(list[str], args.arg)]))
+    ret = _execute(shlex.join([".os/bin/os", *cast(list[str], args.arg)]))
     if ret:
         sys.exit(ret)
 
