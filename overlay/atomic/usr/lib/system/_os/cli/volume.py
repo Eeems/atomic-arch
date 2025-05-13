@@ -17,6 +17,7 @@ kwds = {"help": "Control system volume"}
 
 
 def register(parser: ArgumentParser):
+    parser.set_defaults(parser=parser)
     subparsers = parser.add_subparsers()
     subparser = subparsers.add_parser("get", help="Get the current system volume")
     subparser.set_defaults(func2=command_get)
@@ -47,7 +48,7 @@ def register(parser: ArgumentParser):
 
 def command(args: Namespace):
     if not hasattr(args, "func2"):
-        parser.print_help()
+        args.parser.print_help()  # pyright:ignore [reportAny]
         sys.exit(1)
 
     cast(Callable[[argparse.Namespace], None], args.func2)(args)

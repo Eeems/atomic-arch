@@ -278,3 +278,42 @@ def unmuteIn():
 
 def toggleMuteIn():
     chronic("wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle")
+
+
+def getOutputs() -> dict[str, dict[str, str]]:
+    lines = (
+        subprocess.check_output(["niri", "msg", "outputs"])
+        .strip()
+        .decode("utf-8")
+        .split("\n")
+    )
+    outputs: dict[str, dict[str, str]] = {}
+    current = None
+    for line in lines:
+        if line.startswith('Output "'):
+            data = line.split('"', 3)
+            current = data[2][2:-1]
+            outputs[current] = {"name": data[1]}
+
+        elif current is None:
+            continue
+
+        elif line.startswith("  Current Mode: "):
+            outputs[current]["mode"] = line[16:].split("(", 1)[0]
+
+        elif line.startswith("  Scale: "):
+            outputs[current]["scale"] = line[9:]
+
+    return outputs
+
+
+def getOutputScale(display: str) -> int:
+    return int(float(getOutputs()[display]["scale"]) * 100)
+
+
+def setOutputScale(display: str, scale: int) -> int:
+    if scale < 20:
+        scale = 20
+
+    chronic("niri", "msg", "output", display, "scale", str(scale / 100))
+    return getOutputScale(display)

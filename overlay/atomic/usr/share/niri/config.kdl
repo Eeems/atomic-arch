@@ -27,6 +27,7 @@ input {
 	}
 }
 
+spawn-at-startup "os" "session-setup"
 spawn-at-startup "waypaper" "--restore" "--backend" "swaybg"
 spawn-at-startup "waybar"
 spawn-at-startup "swaync"
