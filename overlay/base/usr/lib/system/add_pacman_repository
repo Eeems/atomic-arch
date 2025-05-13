@@ -3,8 +3,8 @@ import argparse
 
 from typing import cast
 
-from _os import execute  # pyright:ignore [ reportImplicitRelativeImport]
-from _os import chronic  # pyright:ignore [ reportImplicitRelativeImport]
+from _os.system import execute  # pyright:ignore [ reportImplicitRelativeImport]
+from _os.system import chronic  # pyright:ignore [ reportImplicitRelativeImport]
 
 parser = argparse.ArgumentParser()
 _ = parser.add_argument("name", help="Name of repository")
