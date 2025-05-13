@@ -28,7 +28,7 @@ input {
 }
 
 spawn-at-startup "os" "session-setup"
-spawn-at-startup "waypaper" "--restore" "--backend" "swaybg"
+spawn-at-startup "waypaper" "--restore" "--backend" "swww"
 spawn-at-startup "waybar"
 spawn-at-startup "swaync"
 spawn-at-startup "syshud"
@@ -41,10 +41,19 @@ spawn-at-startup "dex" "--autostart"
 
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
-window-rule {
-    match app-id=r#"^org\.wezfurlong\.wezterm$"#
-    default-column-width {}
+layer-rule {
+    match namespace="^wallpaper$"
+    geometry-corner-radius 100
 }
+layer-rule {
+    match namespace="waybar"
+}
+layer-rule {
+    match namespace="^notifications$"
+
+    block-out-from "screencast"
+}
+
 window-rule {
     match app-id=r#"firefox$"# title="^Picture-in-Picture$"
     open-floating true

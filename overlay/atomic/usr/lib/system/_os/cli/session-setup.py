@@ -1,3 +1,5 @@
+import os
+
 from collections.abc import Iterable
 from argparse import ArgumentParser
 from argparse import Namespace
@@ -21,6 +23,8 @@ def command(_: Namespace):
     # Ensure volumes are clipped to the max allowed
     system.setVolumeOut(system.getVolumeOut())
     system.setVolumeIn(system.getVolumeIn())
+    if not os.path.exists("~/.config/waypaper/config.ini"):
+        os.symlink("/usr/share/waypaper/config.ini", "~/.config/waypaper/config.ini")
 
 
 if __name__ == "__main__":
