@@ -75,7 +75,7 @@ binds {
 
     Ctrl+Alt+T hotkey-overlay-title="Open a Terminal" { spawn "ghostty"; }
     Mod+Space hotkey-overlay-title="Run an Application" { spawn "fuzzel"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "hyprlock"; }
+    Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn "hyprlock"  "--config" "/usr/share/hypr/hyprlock.conf"; }
 
     XF86AudioRaiseVolume allow-when-locked=true { spawn "os" "volume" "set" "+10"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "os" "volume" "set" "-10"; }

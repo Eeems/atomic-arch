@@ -7,11 +7,11 @@ from typing import cast
 from typing import Callable
 from typing import Any
 
-from ..system import getVolumeIn
-from ..system import setVolumeIn
-from ..system import muteIn
-from ..system import unmuteIn
-from ..system import toggleMuteIn
+from ..niri import getVolumeIn
+from ..niri import setVolumeIn
+from ..niri import muteIn
+from ..niri import unmuteIn
+from ..niri import toggleMuteIn
 
 kwds = {"help": "Control system volume"}
 

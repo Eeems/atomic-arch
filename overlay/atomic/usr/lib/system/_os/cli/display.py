@@ -7,9 +7,10 @@ from typing import cast
 from typing import Callable
 from typing import Any
 
-from ..system import setOutputScale
-from ..system import getOutputScale
-from ..system import getOutputs
+from ..system import chronic
+from ..niri import setOutputScale
+from ..niri import getOutputScale
+from ..niri import getOutputs
 
 kwds = {"help": "Control system display"}
 
@@ -25,6 +26,10 @@ def register(parser: ArgumentParser):
     subparser.set_defaults(func2=command_scale)
     subparser = subparsers.add_parser("list", help="List all displays")
     subparser.set_defaults(func2=command_list)
+    subparser = subparsers.add_parser("off", help="Turn off all displays")
+    subparser.set_defaults(func2=command_off)
+    subparser = subparsers.add_parser("on", help="Turn on all displays")
+    subparser.set_defaults(func2=command_on)
 
 
 def command(args: Namespace):
@@ -38,25 +43,28 @@ def command(args: Namespace):
 def command_scale(args: Namespace):
     display = cast(str | None, args.display)
     if display is None:
-        display = cast(
-            str,
-            list(getOutputs().keys())[0],  # pyright:ignore [reportUnknownMemberType, reportUnknownArgumentType]
-        )
+        display = list(getOutputs().keys())[0]
 
     scale = cast(str | None, args.scale)
     if scale is None:
         print(f"{getOutputScale(display)}%")
 
     else:
-        print(f"{setOutputScale(display, scale)}%")
+        print(f"{setOutputScale(display, int(scale))}%")
 
 
 def command_list(_: Namespace):
-    print(
-        "\n".join(
-            getOutputs().keys(),  # pyright:ignore [reportUnknownMemberType, reportUnknownArgumentType]
-        )
-    )
+    print("\n".join(getOutputs().keys()))
+
+
+def command_off(_: Namespace):
+    for display in getOutputs().keys():
+        chronic("niri", "msg", "output", display, "off")
+
+
+def command_on(_: Namespace):
+    for display in getOutputs().keys():
+        chronic("niri", "msg", "output", display, "on")
 
 
 if __name__ == "__main__":
