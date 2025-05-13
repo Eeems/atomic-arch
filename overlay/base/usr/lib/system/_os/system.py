@@ -156,7 +156,6 @@ def in_nspawn_system(*args: str, check: bool = False):
 
 
 def upgrade(branch: str = "system"):
-    from .podman import in_system
     from .podman import export
     from .podman import build
     from .ostree import commit

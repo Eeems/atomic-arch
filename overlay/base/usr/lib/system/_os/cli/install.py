@@ -21,7 +21,6 @@ from ..ostree import commit
 from ..podman import build
 from ..podman import export
 
-from .prepare import prepare
 
 NVIDIA_PACKAGES = ["nvidia-open-dkms", "nvidia-container-toolkit", "nvidia-utils"]
 
@@ -143,46 +142,22 @@ def install(
         os.unlink(systemfile)
 
     _ = shutil.copy2("/etc/system/Systemfile", systemfile)
-    found_build_kernel = False
-    with open(systemfile, "r") as f:
-        lines = f.readlines()
-
-    with open(systemfile, "w") as f:
-        statement: list[str] = []
-        for line in lines:
-            statement.append(line)
-            if line.endswith("\\"):
-                continue
-
-            if statement[0].startswith("RUN /usr/lib/system/build_kernel"):
-                found_build_kernel = True
-                _ = f.write(
-                    " \\\n".join(
-                        [
-                            "RUN /usr/lib/system/install_packages",
-                            *[f"  {x}" for x in extraPackages or []],
-                        ]
-                    )
-                    + "\n"
-                )
-
-            _ = f.write("".join(statement))
-            statement = []
-
-    if not found_build_kernel:
-        raise Exception("Unable to find build_kernel call")
-
-    build(systemfile)
+    build(
+        systemfile,
+        buildArgs=[f"KARGS={kernelCommandline}"],
+        extraSteps=[
+            r"RUN /usr/lib/system/install_packages \ ",
+            " \\\n".join([f"  {x}" for x in extraPackages or []]),
+        ],
+    )
     os.unlink(systemfile)
     export(workingDir=systemDir)
     rootfs = os.path.join(systemDir, "rootfs")
-    prepare(rootfs)
     buildImage = baseImage()
     tmp = os.path.join(sysroot, ".tmp")
     os.mkdir(tmp)
     execute("mount", "-o", "bind", tmp, "/var/tmp")
     exitFunc1 = atexit.register(execute, "umount", "/var/tmp")
-    os.mkdir(os.path.join(rootfs, "var/tmp"))
     execute(
         "systemd-nspawn",
         f"--directory={rootfs}",
@@ -192,6 +167,9 @@ def install(
         "-c",
         f"podman --remote save --multi-image-archive system:latest {buildImage} | podman load",
     )
+    containers = os.path.join(sysroot, "ostree/deploy", OS_NAME, "var/lib/containers")
+    os.makedirs(containers, exist_ok=True)
+    _ = shutil.move(os.path.join(rootfs, "var/lib/containers"), containers)
     _ = shutil.rmtree(os.path.join(rootfs, "var/tmp"))
     atexit.unregister(exitFunc1)
     execute("umount", "/var/tmp")
@@ -199,7 +177,7 @@ def install(
 
     commit(branch, rootfs)
     shutil.rmtree(systemDir)
-    deploy(branch, sysroot, kernelCommandline)
+    deploy(branch, sysroot)
     execute(
         "grub-install",
         "--target=x86_64-efi",

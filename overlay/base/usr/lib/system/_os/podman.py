@@ -66,18 +66,19 @@ def in_system(
     if volumes is not None:
         volume_args += volumes
 
-    cmd = podman_cmd(
-        "run",
-        "--rm",
-        "--privileged",
-        "--security-opt=label=disable",
-        *[f"--volume={x}" for x in volume_args],
-        f"--mount=type=image,src={target},rw=true,subpath=/usr/etc,destination=/etc",
-        f"--entrypoint={entrypoint}",
-        target,
-        *args,
+    cmd = shlex.join(
+        podman_cmd(
+            "run",
+            "--rm",
+            "--privileged",
+            "--security-opt=label=disable",
+            *[f"--volume={x}" for x in volume_args],
+            f"--entrypoint={entrypoint}",
+            target,
+            *args,
+        )
     )
-    ret = _execute(shlex.join(cmd))
+    ret = _execute(cmd)
     if ret and check:
         raise subprocess.CalledProcessError(ret, cmd, None, None)
 
@@ -85,7 +86,9 @@ def in_system(
 
 
 def build(
-    systemfile: str = "/etc/system/Systemfile", buildArgs: list[str] | None = None
+    systemfile: str = "/etc/system/Systemfile",
+    buildArgs: list[str] | None = None,
+    extraSteps: list[str] | None = None,
 ):
     cache = "/var/cache/pacman"
     if not os.path.exists(cache):
@@ -110,21 +113,21 @@ def build(
         _ = f.write(i.read())
         _ = f.write(
             "\n".join(
-                [
+                (extraSteps or [])
+                + [
                     "RUN fc-cache -f",
                     "ARG KARGS",
                     "RUN /usr/lib/system/build_kernel",
                     "ARG VERSION_ID",
                     "RUN /usr/lib/system/set_build_id",
                     "RUN sed -i \\",
-                    r"  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \ ",
-                    r"  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \ ",
-                    "  /etc/pacman.conf",
-                    "RUN mv /etc /usr && ln -s /usr/etc /etc",
-                    "RUN mv /var/lib/pacman /usr/lib",
-                    "RUN mkdir /sysroot",
-                    "RUN ln -s /sysroot/ostree ostree",
-                    "RUN find /var -mindepth 1 > /.skiplist && echo /.skiplist >> /.skiplist",
+                    r"  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \ ".rstrip(),
+                    r"  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \ ".rstrip(),
+                    r"  /etc/pacman.conf \ ".rstrip(),
+                    r"  && mv /etc /usr && ln -s /usr/etc /etc \ ".rstrip(),
+                    r"  && mv /var/lib/pacman /usr/lib \ ".rstrip(),
+                    r"  && mkdir /sysroot \ ".rstrip(),
+                    r"  && ln -s /sysroot/ostree ostree \ ".rstrip(),
                 ]
             )
         )
@@ -132,6 +135,9 @@ def build(
     podman(
         "build",
         "--force-rm",
+        "--no-hosts",
+        "--no-hostname",
+        "--dns=none",
         "--tag=system:latest",
         *[f"--build-arg={x}" for x in _buildArgs],
         f"--volume={cache}:{cache}",

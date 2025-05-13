@@ -61,7 +61,7 @@ RUN /usr/lib/system/initialize_pacman \
 
 RUN systemctl enable \
   greetd \
-  udisks2 \
-  dconf
+  udisks2
 
 COPY overlay/atomic /
+RUN systemctl enable dconf

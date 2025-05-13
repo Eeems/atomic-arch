@@ -1,5 +1,7 @@
 FROM eeems/atomic-arch:base
 
+RUN echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+
 RUN \
   HOSTNAME=atomic \
   TIMEZONE=Canada/Mountain \

@@ -1,12 +1,10 @@
 import os
 import subprocess
 
-from tempfile import NamedTemporaryFile
 from datetime import datetime
 
 from . import SYSTEM_PATH
 from . import OS_NAME
-from .system import delete
 from .system import execute
 
 RETAIN = 5
@@ -32,17 +30,23 @@ def commit(
     if skipList is None:
         skipList = []
 
-    with NamedTemporaryFile("w") as f:
+    skipList.append("/etc")
+    for name in os.listdir(os.path.join(rootfs, "var")):
+        skipList.append(f"/var/{name}")
+
+    _skipList = os.path.join(SYSTEM_PATH, "skiplist")
+    with open(_skipList, "w") as f:
         _ = f.write("\n".join(skipList))
-        ostree(
-            "commit",
-            "--generate-composefs-metadata",
-            "--generate-sizes",
-            f"--branch={OS_NAME}/{branch}",
-            f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
-            f"--tree=dir={rootfs}",
-            f"--skip-list={f.name}",
-        )
+
+    ostree(
+        "commit",
+        "--generate-composefs-metadata",
+        "--generate-sizes",
+        f"--branch={OS_NAME}/{branch}",
+        f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
+        f"--tree=dir={rootfs}",
+        f"--skip-list={_skipList}",
+    )
 
 
 def deploy(branch: str = "system", sysroot: str = "/"):
