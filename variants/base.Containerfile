@@ -52,6 +52,7 @@ RUN /usr/lib/system/initialize_pacman \
   skopeo \
   pacman-contrib \
   python-pyxattr \
+  distrobox \
   && /usr/lib/system/remove_pacman_files
 
 RUN systemctl enable \
@@ -60,7 +61,9 @@ RUN systemctl enable \
   podman
 
 RUN mkdir -p /var/lib/system
+
 COPY overlay/base /
+
 RUN \
   systemctl enable atomic-state-overlay \
   && rm /usr/bin/su \
@@ -68,4 +71,5 @@ RUN \
   && chmod 400 /etc/sudoers \
   && ln -s /usr/bin/su{-rs,} \
   && ln -s /usr/bin/sudo{-rs,} \
-  && ln -s /usr/bin/visudo{-rs,}
+  && ln -s /usr/bin/visudo{-rs,} \
+  && chmod u+s /usr/bin/new{u,g}idmap

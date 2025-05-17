@@ -26,7 +26,6 @@ RUN /usr/lib/system/initialize_pacman \
   gnome-keyring \
   nautilus \
   power-profiles-daemon \
-  pavucontrol \
   python-numpy \
   pipewire-audio \
   pipewire-pulse \
@@ -47,6 +46,7 @@ RUN /usr/lib/system/initialize_pacman \
   brightnessctl \
   nm-connection-editor \
   gnome-power-manager \
+  gnome-disk-utility \
   polkit-gnome \
   bluez-utils \
   system-config-printer \
@@ -57,6 +57,9 @@ RUN /usr/lib/system/initialize_pacman \
   syshud \
   overskride \
   networkmanager-dmenu-git \
+  distroshelf \
+  libwireplumber-4.0-compat \
+  pwvucontrol \
   && /usr/lib/system/remove_pacman_files
 
 RUN systemctl enable \
