@@ -92,6 +92,11 @@ def do_iso(args: argparse.Namespace):
 
 def do_rootfs(args: argparse.Namespace):
     noBuild = cast(bool, args.noBuild)
+    doPush = cast(bool, args.push)
+    if noBuild and doPush:
+        print("You cannot push without also building")
+        sys.exit(1)
+
     if not is_root() and not noBuild:
         print("Must be run as root")
         sys.exit(1)
@@ -133,8 +138,12 @@ def do_rootfs(args: argparse.Namespace):
 
             _ = f.write(line)
 
-    if not noBuild:
-        build("rootfs")
+    if noBuild:
+        return
+
+    build("rootfs")
+    if doPush:
+        push("rootfs")
 
 
 def do_push(args: argparse.Namespace):
@@ -207,6 +216,7 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--day", default=now.strftime("%d"))
     _ = subparser.add_argument("--tag", default=None)
     _ = subparser.add_argument("--no-build", action="store_true", dest="noBuild")
+    _ = subparser.add_argument("--push", action="store_true")
     subparser.set_defaults(func=do_rootfs)
 
     subparser = subparsers.add_parser("push")
