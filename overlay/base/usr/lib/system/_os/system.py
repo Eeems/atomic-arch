@@ -171,7 +171,7 @@ def upgrade(branch: str = "system"):
 
     if os.path.exists("/etc/system/commandline"):
         with open("/etc/system/commandline", "r") as f:
-            kernelCommandline = f.read()
+            kernelCommandline = f.read().strip()
 
     else:
         kernelCommandline = ""
