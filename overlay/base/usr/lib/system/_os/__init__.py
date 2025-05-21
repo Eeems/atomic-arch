@@ -20,7 +20,7 @@ def cli(argv: list[str]):
     )
     subparsers = parser.add_subparsers(help="Action to run")
     for file in iglob(os.path.join(os.path.dirname(__file__), "cli", "*.py")):
-        if os.path.abspath(file) == os.path.abspath(__file__) or file.endswith("__.py"):
+        if file.endswith("__.py"):
             continue
 
         name = os.path.splitext(os.path.basename(file))[0]
