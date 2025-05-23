@@ -186,14 +186,26 @@ def do_os(args: argparse.Namespace):
 
 
 def do_scan(args: argparse.Namespace):
+    if not is_root():
+        print("Must be run as root")
+        sys.exit(1)
+
     ret = in_system(
         "-c",
-        "/usr/lib/system/install_packages trivy && trivy rootfs --skip-dirs=/ostree --skip-dirs=/var/lib/system /",
+        "/usr/lib/system/install_packages trivy && trivy rootfs --skip-dirs=/ostree --skip-dirs=/sysroot --skip-dirs=/var/lib/system /",
         target=f"{IMAGE}:{cast(str, args.target)}",
         entrypoint="/bin/bash",
     )
     if ret:
         sys.exit(ret)
+
+
+def do_checkupdates(args: argparse.Namespace):
+    if not is_root():
+        print("Must be run as root")
+        sys.exit(1)
+
+    pass
 
 
 if __name__ == "__main__":
@@ -240,6 +252,9 @@ if __name__ == "__main__":
     subparser = subparsers.add_parser("scan")
     _ = subparser.add_argument("target")
     subparser.set_defaults(func=do_scan)
+
+    subparser = subparsers.add_parser("checkupdates")
+    subparser.set_defaults(func=do_checkupdates)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
