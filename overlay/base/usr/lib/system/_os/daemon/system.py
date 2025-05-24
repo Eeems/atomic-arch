@@ -1,8 +1,11 @@
+import os
+import subprocess
 import dbus
 import dbus.service
 import traceback
 
 from ..system import upgrade
+from ..system import execute
 from ..system import checkupdates
 
 
@@ -33,7 +36,32 @@ class Object(dbus.service.Object):
     def checkupdates(self):
         try:
             self.upgrade_status("pending")
-            self.checkupdates_status("available" if checkupdates() else "none")
+            if not checkupdates():
+                self.checkupdates_status("none")
+                return
+
+            self.checkupdates_status("available")
+            for path in os.scandir("/run/user"):
+                if not path.is_dir():
+                    continue
+
+                uid = path.name
+                if uid == "0":
+                    continue
+
+                user = (
+                    subprocess.check_output(["id", "-u", "-n", uid])
+                    .decode("utf-8")
+                    .strip()
+                )
+                execute(
+                    "sudo",
+                    "-u",
+                    user,
+                    f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
+                    "notify-send",
+                    "Updates detected",
+                )
 
         except BaseException:
             traceback.print_exc()

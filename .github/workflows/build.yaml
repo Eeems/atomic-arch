@@ -99,9 +99,10 @@ jobs:
             echo "Updates=true" >> $GITHUB_OUTPUT
           elif [ $res -ne 0 ];then
             exit 1
+          else
+            echo "No Updates"
+            echo "Updates=false" >> $GITHUB_OUTPUT
           fi
-          echo "No Updates"
-          echo "Updates=false" >> $GITHUB_OUTPUT
         env:
           updates: ${{ needs.rootfs.outputs.Updates}}
   atomic:
