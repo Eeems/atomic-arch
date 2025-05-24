@@ -38,6 +38,7 @@ ARG ARCHIVE_YEAR
 ARG ARCHIVE_MONTH
 ARG ARCHIVE_DAY
 ARG PACSTRAP_TAG
+ARG HASH
 
 LABEL \
   os-release.NAME="Atomic Arch" \
@@ -49,23 +50,22 @@ LABEL \
   os-release.VERSION_ID="${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" \
   org.opencontainers.image.authors="eeems@eeems.email" \
   org.opencontainers.image.source="https://github.com/Eeems/atomic-arch" \
-  org.opencontainers.image.ref.name="rootfs"
+  org.opencontainers.image.ref.name="rootfs" \
+  hash="${HASH}"
 
 WORKDIR /
 COPY --from=pacstrap /rootfs /
 COPY overlay/rootfs /
 
-RUN <<EOF cat > /usr/lib/os-release
-NAME="Atomic Arch"
-PRETTY_NAME="Atomic Arch Linux"
-ID=atomic-arch
-HOME_URL="https://github.com/Eeems/atomic-arch"
-SUPPORT_URL="https://github.com/Eeems/atomic-arch/issues"
-BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues"
-VERSION=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}
-VERSION_ID=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}
-VARIANT=Base
-VARIANT_ID=base
-EOF
+RUN  echo 'NAME="Atomic Arch"' > /usr/lib/os-release \
+  && echo 'PRETTY_NAME="Atomic Arch Linux"' >> /usr/lib/os-release \
+  && echo 'ID=atomic-arch' >> /usr/lib/os-release \
+  && echo 'HOME_URL="https://github.com/Eeems/atomic-arch"' >> /usr/lib/os-release \
+  && echo 'SUPPORT_URL="https://github.com/Eeems/atomic-arch/issues"' >> /usr/lib/os-release \
+  && echo 'BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues"' >> /usr/lib/os-release \
+  && echo "VERSION=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" >> /usr/lib/os-release \
+  && echo "VERSION_ID=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" >> /usr/lib/os-release \
+  && echo "VARIANT=Base" >> /usr/lib/os-release \
+  && echo "VARIANT_ID=base" >> /usr/lib/os-release
 
 ENTRYPOINT [ "/bin/bash" ]

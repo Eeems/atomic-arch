@@ -1,0 +1,194 @@
+name: build
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+  schedule:
+    - cron: "0 23 * * *"
+
+jobs:
+  rootfs:
+    name: Build atomic-arch:rootfs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+      - name: Install ostree
+        uses: Eeems-Org/apt-cache-action@v1
+        with:
+          packages: ostree podman
+      - name: Add pacman cache
+        run: |
+          sudo mkdir -p \
+            /var/cache/pacman \
+            /var/lib/pacman \
+            /etc/pacman.d/gnupg
+      - name: Build
+        id: build
+        run: |
+          set +e
+          output=$(sudo ./make.py checkupdates)
+          res=$?
+          echo $output
+          set -e
+          if [ $res -eq 2 ];then
+            if [[ "$output" == *"mirrorlist "* ]]; then
+              sudo ./make.py rootfs --push
+            else
+              sudo ./make.py build --push rootfs
+            fi
+            echo "Updates=true" >> $GITHUB_OUTPUT
+          elif [ $res -ne 0 ];then
+            exit 1
+          else
+            echo "No Updates"
+            echo "Updates=false" >> $GITHUB_OUTPUT
+          fi
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: |
+            Automated rootfs update
+            skip-checks:true
+  base:
+    name: Build atomic-arch:base
+    runs-on: ubuntu-latest
+    needs: [rootfs]
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+      - name: Install ostree
+        uses: Eeems-Org/apt-cache-action@v1
+        with:
+          packages: ostree podman
+      - name: Add pacman cache
+        run: |
+          sudo mkdir -p \
+            /var/cache/pacman \
+            /var/lib/pacman \
+            /etc/pacman.d/gnupg
+      - name: Build
+        run: |
+          if [[ "$updates" == "true" ]]; then
+            res = 2
+          else
+            set +e
+            sudo ./make.py checkupdates --target=base
+            res=$?
+            set -e
+          fi
+          if [ $res -eq 2 ];then
+            sudo ./make.py build --push base
+            echo "Updates=true" >> $GITHUB_OUTPUT
+          elif [ $res -ne 0 ];then
+            exit 1
+          fi
+          echo "No Updates"
+          echo "Updates=false" >> $GITHUB_OUTPUT
+        env:
+          updates: ${{ needs.rootfs.outputs.Updates}}
+  atomic:
+    name: Build atomic-arch:atomic
+    runs-on: ubuntu-latest
+    needs: [base]
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+      - name: Install ostree
+        uses: Eeems-Org/apt-cache-action@v1
+        with:
+          packages: ostree podman
+      - name: Add pacman cache
+        run: |
+          sudo mkdir -p \
+            /var/cache/pacman \
+            /var/lib/pacman \
+            /etc/pacman.d/gnupg
+      - name: Build
+        run: |
+          if [[ "$updates" == "true" ]]; then
+            res = 2
+          else
+            set +e
+            sudo ./make.py checkupdates --target=atomic
+            res=$?
+            set -e
+          fi
+          if [ $res -eq 2 ];then
+            sudo ./make.py build --push atomic
+            echo "Updates=true" >> $GITHUB_OUTPUT
+          elif [ $res -ne 0 ];then
+            exit 1
+          else
+            echo "No Updates"
+            echo "Updates=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          updates: ${{ needs.base.outputs.Updates}}
+  gnome:
+    name: Build atomic-arch:gnome
+    runs-on: ubuntu-latest
+    needs: [base]
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+      - name: Install ostree
+        uses: Eeems-Org/apt-cache-action@v1
+        with:
+          packages: ostree podman
+      - name: Add pacman cache
+        run: |
+          sudo mkdir -p \
+            /var/cache/pacman \
+            /var/lib/pacman \
+            /etc/pacman.d/gnupg
+      - name: Build
+        run: |
+          if [[ "$updates" == "true" ]]; then
+            res = 2
+          else
+            set +e
+            sudo ./make.py checkupdates --target=gnome
+            res=$?
+            set -e
+          fi
+          if [ $res -eq 2 ];then
+            sudo ./make.py build --push gnome
+            echo "Updates=true" >> $GITHUB_OUTPUT
+          elif [ $res -ne 0 ];then
+            exit 1
+          else
+            echo "No Updates"
+            echo "Updates=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          updates: ${{ needs.base.outputs.Updates}}

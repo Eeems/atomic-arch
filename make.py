@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 import argparse
+import json
+import subprocess
 import sys
 import shlex
 import shutil
-import subprocess
 import os
 import atexit
 import re
 import requests
 
+from glob import iglob
+from hashlib import sha256
 from typing import cast
 from datetime import datetime
 from datetime import UTC
@@ -46,6 +49,22 @@ is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [report
 IMAGE = cast(str, _os.IMAGE)
 
 
+def hash(target: str) -> str:
+    m = sha256()
+    with open(f"variants/{target}.Containerfile", "rb") as f:
+        m.update(f.read())
+
+    for file in iglob(f"overlay/{target}/**"):
+        if os.path.isdir(file):
+            m.update(file.encode("utf-8"))
+
+        else:
+            with open(file, "rb") as f:
+                m.update(f.read())
+
+    return m.hexdigest()
+
+
 def build(target: str):
     now = datetime.now(UTC)
     uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
@@ -53,6 +72,7 @@ def build(target: str):
         "build",
         f"--tag=docker.io/{IMAGE}:{target}",
         f"--build-arg=VERSION_ID={uuid}",
+        f"--build-arg=HASH={hash(target)}",
         "--force-rm",
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file=variants/{target}.Containerfile",
@@ -201,14 +221,21 @@ def do_scan(args: argparse.Namespace):
         sys.exit(ret)
 
 
-def do_checkupdates(args: argparse.Namespace):  # pyright:ignore [reportUnusedParameter]
+def do_checkupdates(args: argparse.Namespace):
     if not is_root():
         print("Must be run as root")
         sys.exit(1)
 
+    target = cast(str, args.target)
+    image = f"eeems/atomic-arch:{target}"
     mirror = [
         x.split(" = ", 1)[1]
-        for x in in_system_output("cat", "/etc/pacman.d/mirrorlist", entrypoint="")
+        for x in in_system_output(
+            "cat",
+            "/etc/pacman.d/mirrorlist",
+            entrypoint="",
+            target=image,
+        )
         .decode("utf-8")
         .splitlines()
     ][0]
@@ -217,18 +244,51 @@ def do_checkupdates(args: argparse.Namespace):  # pyright:ignore [reportUnusedPa
     current = m.group(2)
     now = datetime.now()
     new = f"{now.year}/{now.strftime('%m')}/{now.strftime('%d')}"
-    if current == now:
-        return
+    has_updates = False
+    if current != now:
+        url = f"{m.group(1)}/{new}/"
+        res = requests.head(url)
+        if res.status_code == 200:
+            print(f"mirrorlist {current} -> {new}")
+            has_updates = True
 
-    url = f"{m.group(1)}/{new}/"
-    res = requests.head(url)
-    if res.status_code == 200:
-        print(f"mirrorlist {current} -> {new}")
-        sys.exit(2)
+        elif res.status_code != 404:
+            print(res.reason)
+            sys.exit(1)
 
-    elif res.status_code != 404:
-        print(res.reason)
+    new_hash = hash(target)
+    info = cast(
+        dict[str, object],
+        json.loads(
+            subprocess.check_output(
+                [
+                    "skopeo",
+                    "inspect",
+                    f"docker://{image}",
+                ]
+            )
+        ),
+    )
+    labels = cast(dict[str, dict[str, str]], info).get("Labels", {})
+    current_hash = labels.get("hash", "0")
+    if current_hash != new_hash:
+        print(f"context {current_hash[:9]} -> {new_hash[:9]}")
+        has_updates = True
+
+    res = in_system(
+        "-ec",
+        "if [ -f /usr/bin/checkupdates ];then /usr/bin/checkupdates; fi",
+        entrypoint="/bin/bash",
+        target=image,
+    )
+    if res == 1:
         sys.exit(1)
+
+    elif res == 2:
+        has_updates = True
+
+    if has_updates:
+        sys.exit(2)
 
 
 if __name__ == "__main__":
@@ -277,6 +337,7 @@ if __name__ == "__main__":
     subparser.set_defaults(func=do_scan)
 
     subparser = subparsers.add_parser("checkupdates")
+    _ = subparser.add_argument("--target", default="rootfs")
     subparser.set_defaults(func=do_checkupdates)
 
     args = parser.parse_args()
