@@ -6,6 +6,8 @@ import tarfile
 import subprocess
 
 from time import time
+from datetime import datetime
+from datetime import UTC
 
 from . import SYSTEM_PATH
 from .system import execute
@@ -99,6 +101,8 @@ def build(
         .decode("utf-8")
         .strip()
     )
+    now = datetime.now(UTC)
+    uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
     _buildArgs = [f"VERSION_ID={uuid}"]
     if buildArgs is not None:
         _buildArgs += buildArgs
