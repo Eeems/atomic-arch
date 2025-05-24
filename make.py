@@ -6,9 +6,12 @@ import shutil
 import subprocess
 import os
 import atexit
+import re
+import requests
 
 from typing import cast
 from datetime import datetime
+from datetime import UTC
 from collections.abc import Callable
 
 if os.path.exists(".os"):
@@ -38,16 +41,14 @@ import _os.system  # noqa: E402 #pyright:ignore [reportMissingImports]
 podman = cast(Callable[..., None], _os.podman.podman)  # pyright:ignore [reportUnknownMemberType]
 _execute = cast(Callable[..., None], _os.system._execute)  # pyright:ignore [reportUnknownMemberType]
 in_system = cast(Callable[..., int], _os.podman.in_system)  # pyright:ignore [reportUnknownMemberType]
+in_system_output = cast(Callable[..., bytes], _os.podman.in_system_output)  # pyright:ignore [reportUnknownMemberType]
 is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
 
 def build(target: str):
-    uuid = (
-        subprocess.check_output(["bash", "-c", "uuidgen --time-v7 | cut -c-8"])
-        .decode("utf-8")
-        .strip()
-    )
+    now = datetime.now(UTC)
+    uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
     podman(
         "build",
         f"--tag=docker.io/{IMAGE}:{target}",
@@ -200,12 +201,34 @@ def do_scan(args: argparse.Namespace):
         sys.exit(ret)
 
 
-def do_checkupdates(args: argparse.Namespace):
+def do_checkupdates(args: argparse.Namespace):  # pyright:ignore [reportUnusedParameter]
     if not is_root():
         print("Must be run as root")
         sys.exit(1)
 
-    pass
+    mirror = [
+        x.split(" = ", 1)[1]
+        for x in in_system_output("cat", "/etc/pacman.d/mirrorlist", entrypoint="")
+        .decode("utf-8")
+        .splitlines()
+    ][0]
+    m = re.match(r"^(.+)\/(\d{4}\/\d{2}\/\d{2})\/\$repo\/os\/\$arch$", mirror)
+    assert m
+    current = m.group(2)
+    now = datetime.now()
+    new = f"{now.year}/{now.strftime('%m')}/{now.strftime('%d')}"
+    if current == now:
+        return
+
+    url = f"{m.group(1)}/{new}/"
+    res = requests.head(url)
+    if res.status_code == 200:
+        print(f"mirrorlist {current} -> {new}")
+        sys.exit(2)
+
+    elif res.status_code != 404:
+        print(res.reason)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

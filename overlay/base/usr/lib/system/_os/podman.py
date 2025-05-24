@@ -33,6 +33,43 @@ def in_system(
     check: bool = False,
     volumes: list[str] | None = None,
 ) -> int:
+    cmd = shlex.join(
+        in_system_cmd(
+            *args,
+            target=target,
+            entrypoint=entrypoint,
+            volumes=volumes,
+        )
+    )
+    ret = _execute(cmd)
+    if ret and check:
+        raise subprocess.CalledProcessError(ret, cmd, None, None)
+
+    return ret
+
+
+def in_system_output(
+    *args: str,
+    target: str = "system:latest",
+    entrypoint: str = "/usr/bin/os",
+    volumes: list[str] | None = None,
+) -> bytes:
+    return subprocess.check_output(
+        in_system_cmd(
+            *args,
+            target=target,
+            entrypoint=entrypoint,
+            volumes=volumes,
+        )
+    )
+
+
+def in_system_cmd(
+    *args: str,
+    target: str = "system:latest",
+    entrypoint: str = "/usr/bin/os",
+    volumes: list[str] | None = None,
+) -> list[str]:
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
         _ostree = "/ostree"
         if not os.path.exists(SYSTEM_PATH):
@@ -68,23 +105,16 @@ def in_system(
     if volumes is not None:
         volume_args += volumes
 
-    cmd = shlex.join(
-        podman_cmd(
-            "run",
-            "--rm",
-            "--privileged",
-            "--security-opt=label=disable",
-            *[f"--volume={x}" for x in volume_args],
-            f"--entrypoint={entrypoint}",
-            target,
-            *args,
-        )
+    return podman_cmd(
+        "run",
+        "--rm",
+        "--privileged",
+        "--security-opt=label=disable",
+        *[f"--volume={x}" for x in volume_args],
+        f"--entrypoint={entrypoint}",
+        target,
+        *args,
     )
-    ret = _execute(cmd)
-    if ret and check:
-        raise subprocess.CalledProcessError(ret, cmd, None, None)
-
-    return ret
 
 
 def build(

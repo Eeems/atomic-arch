@@ -52,6 +52,7 @@ RUN /usr/lib/system/initialize_pacman \
   skopeo \
   pacman-contrib \
   python-pyxattr \
+  python-requests \
   distrobox \
   && /usr/lib/system/remove_pacman_files
 
