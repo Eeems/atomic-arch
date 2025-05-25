@@ -5,6 +5,9 @@ import subprocess
 import shlex
 import shutil
 
+from typing import TextIO
+from typing import BinaryIO
+from typing import Callable
 from typing import cast
 from glob import iglob
 
@@ -52,6 +55,79 @@ def chronic(cmd: str | list[str], *args: str):
     except subprocess.CalledProcessError as e:
         print(e.output)  # pyright:ignore [reportAny]
         raise
+
+
+def execute_pipe(
+    *args: str,
+    stdin: bytes | str | BinaryIO | TextIO | None = None,
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
+) -> int:
+    p = subprocess.Popen(
+        args,
+        stdin=None if stdin is None else subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    while p.stdout is None or p.stderr is None:
+        pass
+
+    if stdin is None:
+        pass
+
+    elif isinstance(stdin, bytes):
+        while p.stdin is None:
+            pass
+
+        _ = p.stdin.write(stdin)
+        p.stdin.close()
+
+    elif isinstance(stdin, str):
+        while p.stdin is None:
+            pass
+
+        _ = p.stdin.write(stdin.encode("utf-8"))
+        p.stdin.close()
+
+    else:
+        while p.stdin is None:
+            pass
+
+    os.set_blocking(p.stdout.fileno(), False)
+    os.set_blocking(p.stderr.fileno(), False)
+    while p.poll() is None:
+        line = p.stdout.readline()
+        if line:
+            onstdout(line)
+
+        line = p.stderr.readline()
+        if line:
+            onstderr(line)
+
+        if isinstance(stdin, BinaryIO):
+            line = stdin.readline()
+            if line:
+                _ = p.stdin.write(line)
+
+            if stdin.closed:
+                p.stdin.close()
+
+        elif isinstance(stdin, TextIO):
+            line = stdin.readline().encode("utf-8")
+            if line:
+                _ = p.stdin.write(line)
+
+            if stdin.closed:
+                p.stdin.close()
+
+    stdout, stderr = p.communicate()
+    for line in stdout.splitlines(True):
+        onstdout(line)
+
+    for line in stderr.splitlines(True):
+        onstderr(line)
+
+    return p.returncode
 
 
 def checkupdates(image: str | None = None) -> bool:

@@ -68,7 +68,9 @@ RUN mkdir -p /var/lib/system
 COPY overlay/base /
 
 RUN \
-  systemctl enable atomic-state-overlay \
+  systemctl enable \
+    atomic-state-overlay \
+    os-daemon \
   && rm /usr/bin/su \
   && chmod 644 /etc/pam.d/sudo{,-i} \
   && chmod 400 /etc/sudoers \

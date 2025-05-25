@@ -1,0 +1,12 @@
+[Unit]
+Description=OS Daemon
+Requires=dbus.socket
+
+[Service]
+Type=dbus
+BusName=os.system
+ExecStart=/usr/bin/os daemon
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
