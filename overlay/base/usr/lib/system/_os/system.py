@@ -181,12 +181,20 @@ def checkupdates(image: str | None = None) -> list[str]:
                 f"{image} {local_version}.{local_id} -> {remote_version}.{remote_id}"
             )
 
-    updates += (
-        in_system_output(entrypoint="/usr/bin/checkupdates")
-        .strip()
-        .decode("utf-8")
-        .splitlines()
-    )
+    try:
+        updates += (
+            in_system_output(entrypoint="/usr/bin/checkupdates")
+            .strip()
+            .decode("utf-8")
+            .splitlines()
+        )
+
+    except subprocess.CalledProcessError as e:
+        if e.returncode != 2:
+            raise
+
+        updates += e.stdout.strip().decode("utf-8").splitlines()
+
     return updates
 
 
