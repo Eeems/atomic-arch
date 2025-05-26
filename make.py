@@ -9,6 +9,7 @@ import os
 import atexit
 import re
 import requests
+import tempfile
 
 from glob import iglob
 from hashlib import sha256
@@ -17,25 +18,22 @@ from datetime import datetime
 from datetime import UTC
 from collections.abc import Callable
 
-if os.path.exists(".os"):
-    shutil.rmtree(".os")
-
-os.makedirs(".os/lib/system")
-os.makedirs(".os/bin")
-_ = atexit.register(shutil.rmtree, ".os")
+_osDir = tempfile.mkdtemp()
+os.makedirs(os.path.join(_osDir, "lib/system"))
+os.makedirs(os.path.join(_osDir, "bin"))
+_ = atexit.register(shutil.rmtree, _osDir)
 _ = shutil.copytree(
     "overlay/base/usr/lib/system/_os",
-    ".os/lib/system/_os",
-    copy_function=os.link,
+    os.path.join(_osDir, "lib/system/_os"),
 )
 _ = shutil.copytree(
     "overlay/atomic/usr/lib/system/_os",
-    ".os/lib/system/_os",
+    os.path.join(_osDir, "lib/system/_os"),
     dirs_exist_ok=True,
-    copy_function=os.link,
 )
-os.link("overlay/base/usr/bin/os", ".os/bin/os")
-sys.path.append(".os/lib/system")
+_ = shutil.copy2("overlay/base/usr/bin/os", os.path.join(_osDir, "bin/os"))
+_ = shutil.copystat("overlay/base/usr/bin/os", os.path.join(_osDir, "bin/os"))
+sys.path.append(os.path.join(_osDir, "lib/system"))
 
 import _os  # noqa: E402 #pyright:ignore [reportMissingImports]
 import _os.podman  # noqa: E402 #pyright:ignore [reportMissingImports]
@@ -201,7 +199,9 @@ def do_pull(args: argparse.Namespace):
 
 
 def do_os(args: argparse.Namespace):
-    ret = _execute(shlex.join([".os/bin/os", *cast(list[str], args.arg)]))
+    ret = _execute(
+        shlex.join([os.path.join(_osDir, "bin/os"), *cast(list[str], args.arg)])
+    )
     if ret:
         sys.exit(ret)
 

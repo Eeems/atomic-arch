@@ -36,7 +36,7 @@ def command(args: Namespace):
     if not cast(bool, args.noPull):
         image = baseImage()
         updates = checkupdates(image)
-        if updates:
+        if [x for x in updates if x.startswith(f"{image} ")]:
             try:
                 podman("pull", image)
 

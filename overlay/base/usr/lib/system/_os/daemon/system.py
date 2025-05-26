@@ -1,11 +1,12 @@
+import dbus  # pyright:ignore [reportMissingTypeStubs]
+import dbus.service  # pyright:ignore [reportMissingTypeStubs]
 import os
 import subprocess
-import dbus
-import dbus.service
-import traceback
 
 from ..system import execute
+from ..system import checkupdates
 from ..system import execute_pipe
+from ..dbus import groups_for_sender
 
 
 class Object(dbus.service.Object):
@@ -69,31 +70,37 @@ class Object(dbus.service.Object):
         pass
 
     @dbus.service.method(
-        dbus_interface="system.checkupdates", in_signature="", out_signature=""
+        dbus_interface="system.checkupdates",
+        in_signature="",
+        out_signature="b",
+        sender_keyword="sender",
     )
-    def checkupdates(self):
+    def checkupdates(self, sender: str = None) -> bool:
+        if not set(["adm", "wheel"]) & groups_for_sender(self, sender):
+            raise Exception("Permission denied")
+
         updates: list[str] = []
 
         def parse_line(line: bytes):
             updates.append(line.strip().decode("utf-8"))
 
-        self.upgrade_status("pending")
-        res = execute_pipe(
-            "/usr/bin/os",
-            "checkupdates",
-            onstdout=parse_line,
-        )
-        if res == 0:
-            self.checkupdates_status("none")
-            return
+        self.checkupdates_status("pending")
+        try:
+            self._updates = checkupdates()
 
-        if res == 1:
+        except BaseException as e:
             self.checkupdates_status("error")
-            return
+            raise
 
-        self._updates = updates
+        if not self._updates:
+            self.checkupdates_status("none")
+            return False
+
         self.checkupdates_status("available")
-        self.notify_all(f"{len(updates)} updates available")
+        self.notify_all(
+            f"{len(self._updates)} updates available:\n" + "\n".join(self._updates)
+        )
+        return True
 
     @dbus.service.signal(dbus_interface="system.checkupdates", signature="s")
     def checkupdates_status(self, status: str):

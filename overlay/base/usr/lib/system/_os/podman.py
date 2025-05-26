@@ -126,11 +126,6 @@ def build(
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
-    uuid = (
-        subprocess.check_output(["bash", "-c", "uuidgen --time-v7 | cut -c-8"])
-        .decode("utf-8")
-        .strip()
-    )
     now = datetime.now(UTC)
     uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
     _buildArgs = [f"VERSION_ID={uuid}"]

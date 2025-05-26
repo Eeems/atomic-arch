@@ -130,9 +130,9 @@ def execute_pipe(
     return p.returncode
 
 
-def checkupdates(image: str | None = None) -> bool:
+def checkupdates(image: str | None = None) -> list[str]:
     from .podman import podman_cmd
-    from .podman import in_system
+    from .podman import in_system_output
 
     if image is None:
         image = baseImage()
@@ -147,7 +147,7 @@ def checkupdates(image: str | None = None) -> bool:
         .split("\n")
         if x
     ]
-    image_update = False
+    updates: list[str] = []
     if digests:
         with open("/usr/lib/os-release", "r") as f:
             local_info = {
@@ -177,10 +177,17 @@ def checkupdates(image: str | None = None) -> bool:
         if local_id != remote_id:
             remote_version = remote_labels.get("os-release.VERSION", "0")
             local_version = local_info.get("VERSION", "0")
-            print(f"{image} {local_version}.{local_id} -> {remote_version}.{remote_id}")
-            image_update = True
+            updates.append(
+                f"{image} {local_version}.{local_id} -> {remote_version}.{remote_id}"
+            )
 
-    return in_system(entrypoint="/usr/bin/checkupdates") == 0 or image_update
+    updates += (
+        in_system_output(entrypoint="/usr/bin/checkupdates")
+        .strip()
+        .decode("utf-8")
+        .splitlines()
+    )
+    return updates
 
 
 def in_nspawn_system(*args: str, check: bool = False):

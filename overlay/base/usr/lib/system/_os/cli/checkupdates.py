@@ -6,33 +6,30 @@ from argparse import Namespace
 from typing import cast
 from typing import Any
 
-
-from ..system import is_root
-from ..system import checkupdates
+from ..dbus import checkupdates
 
 kwds = {"help": "Checks for updates to the system"}
 
 
 def register(parser: ArgumentParser):
     _ = parser.add_argument(
-        "--base-image", default=None, help="Base image to check", dest="baseImage"
+        "--force",
+        action="store_true",
+        help="Force check updates, even if there are already known updates",
     )
 
 
 def command(args: Namespace):
-    if not is_root():
-        print("Must be run as root")
-        sys.exit(1)
-
-    updates = False
+    updates: list[str] = []
     try:
-        updates = checkupdates(cast(str, args.baseImage))
+        updates = checkupdates(cast(bool, args.force))
 
     except BaseException:
         traceback.print_exc()
         sys.exit(1)
 
     if updates:
+        print("\n".join(updates))
         sys.exit(2)
 
 
