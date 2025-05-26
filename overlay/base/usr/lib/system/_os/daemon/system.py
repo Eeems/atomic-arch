@@ -38,9 +38,16 @@ class Object(dbus.service.Object):
             )
 
     @dbus.service.method(
-        dbus_interface="system.upgrade", in_signature="", out_signature=""
+        dbus_interface="system.upgrade",
+        in_signature="",
+        out_signature="",
+        sender_keyword="sender",
     )
-    def upgrade(self):
+    def upgrade(self, sender: str | None = None):
+        assert sender is not None
+        if not set(["adm", "wheel", "root"]) & groups_for_sender(self, sender):
+            raise Exception("Permission denied")
+
         self.upgrade_status("pending")
         self.notify_all("Starting system upgrade")
         res = execute_pipe(
@@ -75,8 +82,9 @@ class Object(dbus.service.Object):
         out_signature="b",
         sender_keyword="sender",
     )
-    def checkupdates(self, sender: str = None) -> bool:
-        if not set(["adm", "wheel"]) & groups_for_sender(self, sender):
+    def checkupdates(self, sender: str | None = None) -> bool:
+        assert sender is not None
+        if not set(["adm", "wheel", "root"]) & groups_for_sender(self, sender):
             raise Exception("Permission denied")
 
         updates: list[str] = []
