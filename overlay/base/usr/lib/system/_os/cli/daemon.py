@@ -26,11 +26,7 @@ POLICY = """
   <policy user="root">
     <allow own="os.system"/>
   </policy>
-  <policy context="default" group="wheel">
-    <allow send_destination="os.system"/>
-    <allow receive_sender="os.system" receive_type="signal"/>
-  </policy>
-  <policy context="default" group="adm">
+  <policy context="default">
     <allow send_destination="os.system"/>
     <allow receive_sender="os.system" receive_type="signal"/>
   </policy>

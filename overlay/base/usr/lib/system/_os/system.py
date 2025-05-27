@@ -27,14 +27,18 @@ def _execute(cmd: str):
     return os.waitstatus_to_exitcode(status)
 
 
-def execute(cmd: str | list[str], *args: str):
-    if not isinstance(cmd, str):
-        cmd = shlex.join(cmd)
+def execute(
+    cmd: str | list[str],
+    *args: str,
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
+):
+    if isinstance(cmd, str):
+        _args = [cmd]
+    else:
+        _args = cmd
 
-    if args:
-        cmd = f"{cmd} {shlex.join(args)}"
-
-    ret = _execute(cmd)
+    ret = execute_pipe(*_args, *args, onstdout=onstdout, onstderr=onstderr)
     if ret:
         raise subprocess.CalledProcessError(ret, cmd, None, None)
 
@@ -261,7 +265,11 @@ def in_nspawn_system(*args: str, check: bool = False):
     return ret
 
 
-def upgrade(branch: str = "system"):
+def upgrade(
+    branch: str = "system",
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
+):
     from .podman import export
     from .podman import build
     from .ostree import commit
@@ -279,13 +287,23 @@ def upgrade(branch: str = "system"):
     if os.path.exists(rootfs):
         shutil.rmtree(rootfs)
 
-    build(buildArgs=[f"KARGS={system_kernelCommandLine()}"])
-    export(rootfs=rootfs, workingDir=SYSTEM_PATH)
-    commit(branch, rootfs)
-    prune(branch)
-    deploy(branch, "/")
+    build(
+        buildArgs=[f"KARGS={system_kernelCommandLine()}"],
+        onstdout=onstdout,
+        onstderr=onstderr,
+    )
+    export(rootfs=rootfs, workingDir=SYSTEM_PATH, onstdout=onstdout, onstderr=onstderr)
+    commit(branch, rootfs, onstdout=onstdout, onstderr=onstderr)
+    prune(branch, onstdout=onstdout, onstderr=onstderr)
+    deploy(branch, "/", onstdout=onstdout, onstderr=onstderr)
     _ = shutil.rmtree(rootfs)
-    execute("/usr/bin/grub-mkconfig", "-o", "/boot/efi/EFI/grub/grub.cfg")
+    execute(
+        "/usr/bin/grub-mkconfig",
+        "-o",
+        "/boot/efi/EFI/grub/grub.cfg",
+        onstdout=onstdout,
+        onstderr=onstderr,
+    )
 
 
 def delete(glob: str):

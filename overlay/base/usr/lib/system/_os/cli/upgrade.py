@@ -27,7 +27,7 @@ def register(parser: ArgumentParser):
 
 
 def command(args: Namespace):
-    if upgrade_status() != "pending" and not cast(bool, args.noPull):
+    if not cast(bool, args.noPull) and upgrade_status() != "pending":
         updates = checkupdates()
         image = baseImage()
         if [x for x in updates if x.startswith(f"{image} ")]:

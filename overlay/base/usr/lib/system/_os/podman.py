@@ -12,6 +12,7 @@ from datetime import UTC
 from hashlib import sha256
 from glob import iglob
 from typing import cast
+from typing import Callable
 
 from . import SYSTEM_PATH
 from .system import execute
@@ -26,8 +27,16 @@ def podman_cmd(*args: str):
     return ["podman", *args]
 
 
-def podman(*args: str):
-    execute(*podman_cmd(*args))
+def podman(
+    *args: str,
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
+):
+    execute(
+        *podman_cmd(*args),
+        onstdout=onstdout,
+        onstderr=onstderr,
+    )
 
 
 def in_system(
@@ -194,6 +203,8 @@ def build(
     systemfile: str = "/etc/system/Systemfile",
     buildArgs: list[str] | None = None,
     extraSteps: list[str] | None = None,
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
 ):
     cache = "/var/cache/pacman"
     if not os.path.exists(cache):
@@ -225,6 +236,8 @@ def build(
         *[f"--build-arg={x}" for x in _buildArgs],
         f"--volume={cache}:{cache}",
         f"--file={containerfile}",
+        onstdout=onstdout,
+        onstderr=onstderr,
     )
 
 
@@ -233,6 +246,8 @@ def export(
     setup: str = "",
     rootfs: str | None = None,
     workingDir: str | None = None,
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
 ):
     if workingDir is None:
         workingDir = SYSTEM_PATH
@@ -259,6 +274,8 @@ def export(
         f"system:{tag}",
         "-c",
         setup,
+        onstdout=onstdout,
+        onstderr=onstderr,
     )
     cmd = podman_cmd("export", name)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -272,5 +289,5 @@ def export(
         raise subprocess.CalledProcessError(process.returncode, cmd, None, None)
 
     atexit.unregister(exitFunc1)
-    podman("rm", name)
+    podman("rm", name, onstdout=onstdout, onstderr=onstderr)
     os.chdir(cwd)

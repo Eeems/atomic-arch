@@ -1,6 +1,8 @@
+from mailbox import Babyl
 import dbus  # pyright:ignore [reportMissingTypeStubs]
 import dbus.service  # pyright:ignore [reportMissingTypeStubs]
 import os
+import sys
 import subprocess
 import threading
 
@@ -9,6 +11,7 @@ from typing import Callable
 from gi.repository import GLib
 
 from ..system import checkupdates
+from ..system import upgrade
 from ..system import execute_pipe
 from ..dbus import groups_for_sender
 
@@ -82,19 +85,15 @@ class Object(dbus.service.Object):
 
     def _upgrade(self):
         self.notify_all("Starting system upgrade")
-        res = execute_pipe(
-            "/usr/bin/os",
-            "upgrade",
-            onstderr=self.upgrade_stderr,
-            onstdout=self.upgrade_stdout,
-        )
-        if res:
-            self.upgrade_status("error")
-            self.notify_all("System upgrade failed")
-
-        else:
+        try:
+            upgrade(onstdout=self.upgrade_stdout, onstderr=self.upgrade_stderr)
             self.upgrade_status("success")
             self.notify_all("System upgrade complete, reboot required")
+
+        except BaseException as e:
+            self.upgrade_stderr(bytes(e))
+            self.upgrade_status("error")
+            self.notify_all("System upgrade failed")
 
         self._thread = None
         return False
@@ -105,13 +104,13 @@ class Object(dbus.service.Object):
 
     @dbus.service.signal(dbus_interface="system.upgrade", signature="s")
     def upgrade_stdout(self, stdout: bytes):
-        pass
+        print(stdout)
 
     @dbus.service.signal(dbus_interface="system.upgrade", signature="s")
     def upgrade_stderr(self, stderr: bytes):
-        pass
+        print(stderr, sys.stderr)
 
-    @dbus.service.method(dbus_interface="system.upgrade")
+    @dbus.service.method(dbus_interface="system.upgrade", out_signature="s")
     def status(self) -> str:
         return self._status
 

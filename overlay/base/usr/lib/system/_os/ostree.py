@@ -2,6 +2,7 @@ import os
 import subprocess
 
 from datetime import datetime
+from typing import Callable
 
 from . import SYSTEM_PATH
 from . import OS_NAME
@@ -14,15 +15,23 @@ def ostree_cmd(*args: str) -> list[str]:
     return ["ostree", f"--repo={getattr(ostree, 'repo')}", *args]
 
 
-def ostree(*args: str):
-    execute(*ostree_cmd(*args))
+def ostree(
+    *args: str,
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
+):
+    execute(*ostree_cmd(*args), onstdout=onstdout, onstderr=onstderr)
 
 
 setattr(ostree, "repo", "/ostree/repo")
 
 
 def commit(
-    branch: str = "system", rootfs: str | None = None, skipList: list[str] | None = None
+    branch: str = "system",
+    rootfs: str | None = None,
+    skipList: list[str] | None = None,
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
 ):
     if rootfs is None:
         rootfs = os.path.join(SYSTEM_PATH, "rootfs")
@@ -46,10 +55,17 @@ def commit(
         f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
         f"--tree=dir={rootfs}",
         f"--skip-list={_skipList}",
+        onstdout=onstdout,
+        onstderr=onstderr,
     )
 
 
-def deploy(branch: str = "system", sysroot: str = "/"):
+def deploy(
+    branch: str = "system",
+    sysroot: str = "/",
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
+):
     kargs = ["--karg=root=LABEL=SYS_ROOT", "--karg=rw"]
     revision = f"{OS_NAME}/{branch}"
     if b"/usr/etc/system/commandline" in subprocess.check_output(
@@ -74,19 +90,39 @@ def deploy(branch: str = "system", sysroot: str = "/"):
         f"--os={OS_NAME}",
         "--retain",
         revision,
+        onstdout=onstdout,
+        onstderr=onstderr,
     )
 
 
-def prune(branch: str = "system"):
+def prune(
+    branch: str = "system",
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
+):
     ostree(
         "prune",
         "--commit-only",
         f"--retain-branch-depth={branch}={RETAIN}",
         f"--only-branch={OS_NAME}/{branch}",
         "--keep-younger-than=1 second",
+        onstdout=onstdout,
+        onstderr=onstderr,
     )
-    execute("ostree", "admin", "cleanup")
+    execute("ostree", "admin", "cleanup", onstdout=onstdout, onstderr=onstderr)
 
 
-def undeploy(index: int):
-    execute("ostree", "admin", "undeploy", "--sysroot=/", str(index))
+def undeploy(
+    index: int,
+    onstdout: Callable[[bytes], None] = print,
+    onstderr: Callable[[bytes], None] = print,
+):
+    execute(
+        "ostree",
+        "admin",
+        "undeploy",
+        "--sysroot=/",
+        str(index),
+        onstdout=onstdout,
+        onstderr=onstderr,
+    )
