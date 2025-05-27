@@ -121,6 +121,53 @@ def in_system_cmd(
     )
 
 
+def context_hash(extra: bytes | None = None) -> str:
+    m = sha256()
+    for file in iglob("/etc/system/**"):
+        if os.path.isdir(file):
+            m.update(file.encode("utf-8"))
+
+        else:
+            with open(file, "rb") as f:
+                m.update(f.read())
+
+    if extra is not None:
+        m.update(extra)
+
+    return m.hexdigest()
+
+
+def system_hash() -> str:
+    with open("/usr/lib/os-release", "r") as f:
+        local_info = {
+            x[0]: x[1]
+            for x in [
+                x.strip().split("=", 1)
+                for x in f.readlines()
+                if x.startswith("BUILD_ID=")
+            ]
+        }
+
+    return local_info.get("BUILD_ID", "0")
+
+
+def image_hash(image: str) -> str:
+    info = cast(
+        dict[str, object],
+        json.loads(
+            subprocess.check_output(
+                [
+                    "skopeo",
+                    "inspect",
+                    f"docker://{image}",
+                ]
+            )
+        ),
+    )
+    labels = cast(dict[str, dict[str, str]], info).get("Labels", {})
+    return labels.get("hash", "0")
+
+
 CONTAINER_POST_STEPS = r"""
 RUN fc-cache -f
 
@@ -140,44 +187,7 @@ RUN sed -i \
 ARG VERSION_ID
 
 RUN /usr/lib/system/set_build_id
-
-ARG HASH
-
-LABEL hash="${HASH}"
 """
-
-
-def system_hash(extra: bytes | None = None) -> str:
-    m = sha256()
-    for file in iglob("/etc/system/**"):
-        if os.path.isdir(file):
-            m.update(file.encode("utf-8"))
-
-        else:
-            with open(file, "rb") as f:
-                m.update(f.read())
-
-    if extra is not None:
-        m.update(extra)
-
-    return m.hexdigest()
-
-
-def image_hash(image: str = "system:latest") -> str:
-    labels = cast(
-        dict[str, str],
-        json.loads(
-            subprocess.check_output(
-                [
-                    "podman",
-                    "inspect",
-                    "--format={{json .Labels }}",
-                    image,
-                ]
-            )
-        ),
-    )
-    return labels.get("hash", "0")
 
 
 def build(
@@ -189,9 +199,6 @@ def build(
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
-    now = datetime.now(UTC)
-    uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
-
     context = os.path.join(SYSTEM_PATH, "context")
     if os.path.exists(context):
         _ = shutil.rmtree(context)
@@ -200,10 +207,7 @@ def build(
     _ = shutil.copytree("/etc/system", context)
 
     extra: bytes = "\n".join((buildArgs or []) + (extraSteps or [])).encode("utf-8")
-    _buildArgs = [
-        f"VERSION_ID={uuid}",
-        f"HASH={system_hash(extra)}",
-    ]
+    _buildArgs = [f"VERSION_ID={context_hash(extra)}"]
     if buildArgs is not None:
         _buildArgs += buildArgs
 

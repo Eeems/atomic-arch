@@ -142,7 +142,7 @@ def checkupdates(image: str | None = None) -> list[str]:
     from .podman import podman_cmd
     from .podman import in_system_output
     from .podman import system_hash
-    from .podman import image_hash
+    from .podman import context_hash
 
     if image is None:
         image = baseImage()
@@ -158,10 +158,10 @@ def checkupdates(image: str | None = None) -> list[str]:
         if x
     ]
     updates: list[str] = []
-    new_hash = system_hash(f"KARGS={system_kernelCommandLine()}".encode("utf-8"))
-    current_hash = image_hash()
+    new_hash = context_hash(f"KARGS={system_kernelCommandLine()}".encode("utf-8"))
+    current_hash = system_hash()
     if new_hash != current_hash:
-        updates.append(f"system {current_hash[:9]} -> {new_hash[:9]}")
+        updates.append(f"Systemfile {current_hash[:9]} -> {new_hash[:9]}")
 
     if digests:
         with open("/usr/lib/os-release", "r") as f:
