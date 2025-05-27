@@ -148,7 +148,7 @@ def system_hash() -> str:
             ]
         }
 
-    return local_info.get("BUILD_ID", "0")
+    return local_info.get("BUILD_ID", "0000-00-00.0").split(".", 1)[1]
 
 
 def image_hash(image: str) -> str:
