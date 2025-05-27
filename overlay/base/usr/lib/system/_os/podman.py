@@ -4,10 +4,14 @@ import shlex
 import shutil
 import tarfile
 import subprocess
+import json
 
 from time import time
 from datetime import datetime
 from datetime import UTC
+from hashlib import sha256
+from glob import iglob
+from typing import cast
 
 from . import SYSTEM_PATH
 from .system import execute
@@ -117,6 +121,65 @@ def in_system_cmd(
     )
 
 
+CONTAINER_POST_STEPS = r"""
+RUN fc-cache -f
+
+ARG KARGS
+
+RUN /usr/lib/system/build_kernel
+
+RUN sed -i \
+  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \
+  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \
+  /etc/pacman.conf \
+  && mv /etc /usr && ln -s /usr/etc /etc \
+  && mv /var/lib/pacman /usr/lib \
+  && mkdir /sysroot \
+  && ln -s /sysroot/ostree ostree
+
+ARG VERSION_ID
+
+RUN /usr/lib/system/set_build_id
+
+ARG HASH
+
+LABEL hash="${HASH}"
+"""
+
+
+def system_hash(extra: bytes | None = None) -> str:
+    m = sha256()
+    for file in iglob("/etc/system/**"):
+        if os.path.isdir(file):
+            m.update(file.encode("utf-8"))
+
+        else:
+            with open(file, "rb") as f:
+                m.update(f.read())
+
+    if extra is not None:
+        m.update(extra)
+
+    return m.hexdigest()
+
+
+def image_hash(image: str = "system:latest") -> str:
+    labels = cast(
+        dict[str, str],
+        json.loads(
+            subprocess.check_output(
+                [
+                    "podman",
+                    "inspect",
+                    "--format={{json .Labels }}",
+                    image,
+                ]
+            )
+        ),
+    )
+    return labels.get("hash", "0")
+
+
 def build(
     systemfile: str = "/etc/system/Systemfile",
     buildArgs: list[str] | None = None,
@@ -128,9 +191,6 @@ def build(
 
     now = datetime.now(UTC)
     uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
-    _buildArgs = [f"VERSION_ID={uuid}"]
-    if buildArgs is not None:
-        _buildArgs += buildArgs
 
     context = os.path.join(SYSTEM_PATH, "context")
     if os.path.exists(context):
@@ -138,28 +198,18 @@ def build(
 
     containerfile = os.path.join(context, "Containerfile")
     _ = shutil.copytree("/etc/system", context)
+
+    extra: bytes = "\n".join((buildArgs or []) + (extraSteps or [])).encode("utf-8")
+    _buildArgs = [
+        f"VERSION_ID={uuid}",
+        f"HASH={system_hash(extra)}",
+    ]
+    if buildArgs is not None:
+        _buildArgs += buildArgs
+
     with open(containerfile, "w") as f, open(systemfile, "r") as i:
         _ = f.write(i.read())
-        _ = f.write(
-            "\n".join(
-                (extraSteps or [])
-                + [
-                    "RUN fc-cache -f",
-                    "ARG KARGS",
-                    "RUN /usr/lib/system/build_kernel",
-                    "ARG VERSION_ID",
-                    "RUN /usr/lib/system/set_build_id",
-                    "RUN sed -i \\",
-                    r"  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \ ".rstrip(),
-                    r"  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \ ".rstrip(),
-                    r"  /etc/pacman.conf \ ".rstrip(),
-                    r"  && mv /etc /usr && ln -s /usr/etc /etc \ ".rstrip(),
-                    r"  && mv /var/lib/pacman /usr/lib \ ".rstrip(),
-                    r"  && mkdir /sysroot \ ".rstrip(),
-                    r"  && ln -s /sysroot/ostree ostree \ ".rstrip(),
-                ]
-            )
-        )
+        _ = f.write("\n".join((extraSteps or []) + [CONTAINER_POST_STEPS.strip()]))
 
     podman(
         "build",

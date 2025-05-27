@@ -13,6 +13,7 @@ class Object(dbus.service.Object):
     def __init__(self, bus_name):
         super().__init__(bus_name, "/system")
         self._updates: list[str] = []
+        self._notification: str | None = None
 
     def notify_all(self, msg: str):
         for path in os.scandir("/run/user"):
@@ -27,14 +28,20 @@ class Object(dbus.service.Object):
                 subprocess.check_output(["id", "-u", "-n", uid]).decode("utf-8").strip()
             )
             # TODO use org.freedesktop.Notifications over dbus intead
-            execute(
+            args = [
                 "sudo",
                 "-u",
                 user,
                 f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
                 "notify-send",
+                "--print-id",
                 "--urgency=normal",
-                msg,
+            ]
+            if self._notification is not None:
+                args.append(f"--replace-id={self._notification}")
+
+            self._notification = (
+                subprocess.check_output([*args, msg]).strip().decode("utf-8")
             )
 
     @dbus.service.method(

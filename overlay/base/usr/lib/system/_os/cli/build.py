@@ -1,4 +1,5 @@
 import sys
+import os
 
 from argparse import ArgumentParser
 from argparse import Namespace
@@ -7,6 +8,7 @@ from typing import Any
 
 from ..podman import build
 from ..system import is_root
+from ..system import system_kernelCommandLine
 
 kwds = {"help": "Build your system image"}
 
@@ -20,7 +22,7 @@ def command(_: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    build()
+    build(buildArgs=[f"KARGS={system_kernelCommandLine()}"])
 
 
 if __name__ == "__main__":

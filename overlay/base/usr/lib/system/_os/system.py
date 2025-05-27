@@ -130,9 +130,19 @@ def execute_pipe(
     return p.returncode
 
 
+def system_kernelCommandLine() -> str:
+    if os.path.exists("/etc/system/commandline"):
+        with open("/etc/system/commandline", "r") as f:
+            return f.read().strip()
+
+    return ""
+
+
 def checkupdates(image: str | None = None) -> list[str]:
     from .podman import podman_cmd
     from .podman import in_system_output
+    from .podman import system_hash
+    from .podman import image_hash
 
     if image is None:
         image = baseImage()
@@ -148,6 +158,11 @@ def checkupdates(image: str | None = None) -> list[str]:
         if x
     ]
     updates: list[str] = []
+    new_hash = system_hash(f"KARGS={system_kernelCommandLine()}".encode("utf-8"))
+    current_hash = image_hash()
+    if new_hash != current_hash:
+        updates.append(f"system {current_hash[:9]} -> {new_hash[:9]}")
+
     if digests:
         with open("/usr/lib/os-release", "r") as f:
             local_info = {
@@ -193,7 +208,7 @@ def checkupdates(image: str | None = None) -> list[str]:
         if e.returncode != 2:
             raise
 
-        updates += e.stdout.strip().decode("utf-8").splitlines()
+        updates += cast(bytes, e.stdout).strip().decode("utf-8").splitlines()
 
     return updates
 
@@ -260,18 +275,11 @@ def upgrade(branch: str = "system"):
     if not os.path.exists(SYSTEM_PATH):
         os.makedirs(SYSTEM_PATH, exist_ok=True)
 
-    if os.path.exists("/etc/system/commandline"):
-        with open("/etc/system/commandline", "r") as f:
-            kernelCommandline = f.read().strip()
-
-    else:
-        kernelCommandline = ""
-
     rootfs = os.path.join(SYSTEM_PATH, "rootfs")
     if os.path.exists(rootfs):
         shutil.rmtree(rootfs)
 
-    build(buildArgs=[f"KARGS={kernelCommandline}"])
+    build(buildArgs=[f"KARGS={system_kernelCommandLine()}"])
     export(rootfs=rootfs, workingDir=SYSTEM_PATH)
     commit(branch, rootfs)
     prune(branch)

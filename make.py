@@ -44,6 +44,7 @@ _execute = cast(Callable[..., None], _os.system._execute)  # pyright:ignore [rep
 in_system = cast(Callable[..., int], _os.podman.in_system)  # pyright:ignore [reportUnknownMemberType]
 in_system_output = cast(Callable[..., bytes], _os.podman.in_system_output)  # pyright:ignore [reportUnknownMemberType]
 is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [reportUnknownMemberType]
+image_hash = cast(Callable[[str], str], _os.podman.image_hash)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
 
@@ -257,20 +258,7 @@ def do_checkupdates(args: argparse.Namespace):
             sys.exit(1)
 
     new_hash = hash(target)
-    info = cast(
-        dict[str, object],
-        json.loads(
-            subprocess.check_output(
-                [
-                    "skopeo",
-                    "inspect",
-                    f"docker://{image}",
-                ]
-            )
-        ),
-    )
-    labels = cast(dict[str, dict[str, str]], info).get("Labels", {})
-    current_hash = labels.get("hash", "0")
+    current_hash = image_hash(image)
     if current_hash != new_hash:
         print(f"context {current_hash[:9]} -> {new_hash[:9]}")
         has_updates = True
