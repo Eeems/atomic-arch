@@ -14,6 +14,8 @@ from ..system import checkupdates
 from ..system import upgrade
 from ..system import execute_pipe
 from ..dbus import groups_for_sender
+from ..console import bytes_to_stdout
+from ..console import bytes_to_stderr
 
 
 class Object(dbus.service.Object):
@@ -104,11 +106,11 @@ class Object(dbus.service.Object):
 
     @dbus.service.signal(dbus_interface="system.upgrade", signature="s")
     def upgrade_stdout(self, stdout: bytes):
-        print(stdout)
+        bytes_to_stdout(stdout)
 
     @dbus.service.signal(dbus_interface="system.upgrade", signature="s")
     def upgrade_stderr(self, stderr: bytes):
-        print(stderr, sys.stderr)
+        bytes_to_stderr(stderr, sys.stderr)
 
     @dbus.service.method(dbus_interface="system.upgrade", out_signature="s")
     def status(self) -> str:

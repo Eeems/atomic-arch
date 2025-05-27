@@ -1,5 +1,6 @@
 import atexit
 import os
+import sys
 import shlex
 import shutil
 import tarfile
@@ -18,6 +19,8 @@ from . import SYSTEM_PATH
 from .system import execute
 from .system import _execute  # pyright:ignore [reportPrivateUsage]
 from .ostree import ostree
+from .console import bytes_to_stdout
+from .console import bytes_to_stderr
 
 
 def podman_cmd(*args: str):
@@ -29,8 +32,8 @@ def podman_cmd(*args: str):
 
 def podman(
     *args: str,
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     execute(
         *podman_cmd(*args),
@@ -203,8 +206,8 @@ def build(
     systemfile: str = "/etc/system/Systemfile",
     buildArgs: list[str] | None = None,
     extraSteps: list[str] | None = None,
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     cache = "/var/cache/pacman"
     if not os.path.exists(cache):
@@ -246,8 +249,8 @@ def export(
     setup: str = "",
     rootfs: str | None = None,
     workingDir: str | None = None,
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     if workingDir is None:
         workingDir = SYSTEM_PATH

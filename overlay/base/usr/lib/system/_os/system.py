@@ -13,6 +13,8 @@ from glob import iglob
 
 from . import SYSTEM_PATH
 from . import OS_NAME
+from .console import bytes_to_stdout
+from .console import bytes_to_stderr
 
 
 def baseImage() -> str:
@@ -30,8 +32,8 @@ def _execute(cmd: str):
 def execute(
     cmd: str | list[str],
     *args: str,
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     if isinstance(cmd, str):
         _args = [cmd]
@@ -64,8 +66,8 @@ def chronic(cmd: str | list[str], *args: str):
 def execute_pipe(
     *args: str,
     stdin: bytes | str | BinaryIO | TextIO | None = None,
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ) -> int:
     p = subprocess.Popen(
         args,
@@ -267,8 +269,8 @@ def in_nspawn_system(*args: str, check: bool = False):
 
 def upgrade(
     branch: str = "system",
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     from .podman import export
     from .podman import build

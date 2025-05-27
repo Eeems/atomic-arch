@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 
 from datetime import datetime
@@ -7,6 +8,8 @@ from typing import Callable
 from . import SYSTEM_PATH
 from . import OS_NAME
 from .system import execute
+from .console import bytes_to_stdout
+from .console import bytes_to_stderr
 
 RETAIN = 5
 
@@ -17,8 +20,8 @@ def ostree_cmd(*args: str) -> list[str]:
 
 def ostree(
     *args: str,
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     execute(*ostree_cmd(*args), onstdout=onstdout, onstderr=onstderr)
 
@@ -30,8 +33,8 @@ def commit(
     branch: str = "system",
     rootfs: str | None = None,
     skipList: list[str] | None = None,
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     if rootfs is None:
         rootfs = os.path.join(SYSTEM_PATH, "rootfs")
@@ -63,8 +66,8 @@ def commit(
 def deploy(
     branch: str = "system",
     sysroot: str = "/",
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     kargs = ["--karg=root=LABEL=SYS_ROOT", "--karg=rw"]
     revision = f"{OS_NAME}/{branch}"
@@ -97,8 +100,8 @@ def deploy(
 
 def prune(
     branch: str = "system",
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     ostree(
         "prune",
@@ -114,8 +117,8 @@ def prune(
 
 def undeploy(
     index: int,
-    onstdout: Callable[[bytes], None] = print,
-    onstderr: Callable[[bytes], None] = print,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     execute(
         "ostree",
