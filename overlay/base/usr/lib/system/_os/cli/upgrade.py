@@ -7,19 +7,16 @@ from argparse import Namespace
 from typing import cast
 from typing import Any
 
-from ..system import is_root
-
 from ..podman import podman
-from ..system import checkupdates
 from ..system import baseImage
-from ..system import upgrade
+from ..dbus import checkupdates
+from ..dbus import upgrade
 
 
 kwds = {"help": "Perform a system upgrade"}
 
 
 def register(parser: ArgumentParser):
-    _ = parser.add_argument("--branch", default="system", help="System branch to prune")
     _ = parser.add_argument(
         "--no-pull",
         help="Do not pull base image updates",
@@ -29,13 +26,9 @@ def register(parser: ArgumentParser):
 
 
 def command(args: Namespace):
-    if not is_root():
-        print("Must be run as root")
-        sys.exit(1)
-
     if not cast(bool, args.noPull):
+        updates = checkupdates()
         image = baseImage()
-        updates = checkupdates(image)
         if [x for x in updates if x.startswith(f"{image} ")]:
             try:
                 podman("pull", image)
@@ -43,7 +36,7 @@ def command(args: Namespace):
             except subprocess.CalledProcessError:
                 traceback.print_exc()
 
-    upgrade(cast(str, args.branch))
+    upgrade()
 
 
 if __name__ == "__main__":
