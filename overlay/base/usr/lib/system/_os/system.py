@@ -110,6 +110,9 @@ def execute_pipe(
         if line:
             onstderr(line)
 
+        if p.stdin.closed:
+            continue
+
         if isinstance(stdin, BinaryIO):
             line = stdin.readline()
             if line:
@@ -125,6 +128,9 @@ def execute_pipe(
 
             if stdin.closed:
                 p.stdin.close()
+
+        else:
+            p.stdin.close()
 
     stdout, stderr = p.communicate()
     for line in stdout.splitlines(True):
