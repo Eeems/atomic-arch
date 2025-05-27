@@ -10,6 +10,7 @@ from typing import Any
 from ..podman import podman
 from ..system import baseImage
 from ..dbus import checkupdates
+from ..dbus import upgrade_status
 from ..dbus import upgrade
 
 
@@ -26,7 +27,7 @@ def register(parser: ArgumentParser):
 
 
 def command(args: Namespace):
-    if not cast(bool, args.noPull):
+    if upgrade_status() != "pending" and not cast(bool, args.noPull):
         updates = checkupdates()
         image = baseImage()
         if [x for x in updates if x.startswith(f"{image} ")]:

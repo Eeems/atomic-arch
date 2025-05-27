@@ -19,6 +19,7 @@ class Object(dbus.service.Object):
         self._updates: list[str] = []
         self._notification: str | None = None
         self._status: str = ""
+        self._thread: threading.Thread | None = None
 
     def notify_all(self, msg: str):
         for path in os.scandir("/run/user"):
@@ -70,8 +71,10 @@ class Object(dbus.service.Object):
                 success()
                 return
 
+            assert self._thread is None
             self.upgrade_status("pending")
-            threading.Thread(target=self._upgrade).start()
+            self._thread = threading.Thread(target=self._upgrade)
+            self._thread.start()
             success()
 
         except BaseException as e:
@@ -88,10 +91,12 @@ class Object(dbus.service.Object):
         if res:
             self.upgrade_status("error")
             self.notify_all("System upgrade failed")
-            return False
 
-        self.upgrade_status("success")
-        self.notify_all("System upgrade complete, reboot required")
+        else:
+            self.upgrade_status("success")
+            self.notify_all("System upgrade complete, reboot required")
+
+        self._thread = None
         return False
 
     @dbus.service.signal(dbus_interface="system.upgrade", signature="s")

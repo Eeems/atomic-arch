@@ -62,6 +62,19 @@ def upgrade():
         raise Exception("Upgrade failed")
 
 
+def upgrade_status() -> str:
+    DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    interface = dbus.Interface(
+        bus.get_object(  # pyright:ignore [reportUnknownMemberType]
+            "os.system",
+            "/system",
+        ),
+        "system.upgrade",
+    )
+    return cast(Callable[[], str], interface.status)()
+
+
 def groups_for_sender(obj: dbus.service.Object, sender: str) -> set[str]:
     userid = cast(
         Callable[[str], int],
