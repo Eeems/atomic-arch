@@ -299,13 +299,17 @@ def upgrade(
     prune(branch, onstdout=onstdout, onstderr=onstderr)
     deploy(branch, "/", onstdout=onstdout, onstderr=onstderr)
     _ = shutil.rmtree(rootfs)
-    execute(
-        "/usr/bin/grub-mkconfig",
-        "-o",
-        "/boot/efi/EFI/grub/grub.cfg",
-        onstdout=onstdout,
-        onstderr=onstderr,
+
+    cmd = shlex.join(
+        [
+            "/usr/bin/grub-mkconfig",
+            "-o",
+            "/boot/efi/EFI/grub/grub.cfg",
+        ]
     )
+    ret = _execute(cmd)
+    if ret:
+        raise subprocess.CalledProcessError(ret, cmd, None, None)
 
 
 def delete(glob: str):

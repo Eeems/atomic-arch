@@ -1,5 +1,5 @@
 import os
-import sys
+import shlex
 import subprocess
 
 from datetime import datetime
@@ -8,6 +8,7 @@ from typing import Callable
 from . import SYSTEM_PATH
 from . import OS_NAME
 from .system import execute
+from .system import _execute
 from .console import bytes_to_stdout
 from .console import bytes_to_stderr
 
@@ -84,18 +85,21 @@ def deploy(
         for karg in kernelCommandline.split():
             kargs.append(f"--karg={karg.strip()}")
 
-    execute(
-        "ostree",
-        "admin",
-        "deploy",
-        f"--sysroot={sysroot}",
-        *kargs,
-        f"--os={OS_NAME}",
-        "--retain",
-        revision,
-        onstdout=onstdout,
-        onstderr=onstderr,
+    cmd = shlex.join(
+        [
+            "ostree",
+            "admin",
+            "deploy",
+            f"--sysroot={sysroot}",
+            *kargs,
+            f"--os={OS_NAME}",
+            "--retain",
+            revision,
+        ]
     )
+    ret = _execute(cmd)
+    if ret:
+        raise subprocess.CalledProcessError(ret, cmd, None, None)
 
 
 def prune(
