@@ -110,7 +110,7 @@ def execute_pipe(
         if line:
             onstderr(line)
 
-        if p.stdin.closed:
+        if p.stdin is None or p.stdin.closed:
             continue
 
         if isinstance(stdin, BinaryIO):
