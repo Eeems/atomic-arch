@@ -39,7 +39,6 @@ RUN /usr/lib/system/initialize_pacman \
   ttf-roboto-mono-nerd \
   noto-fonts-emoji \
   adw-gtk-theme \
-  dex \
   swaync \
   nwg-clipman \
   libnotify \
