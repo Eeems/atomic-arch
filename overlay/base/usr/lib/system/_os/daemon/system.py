@@ -1,4 +1,3 @@
-from mailbox import Babyl
 import dbus  # pyright:ignore [reportMissingTypeStubs]
 import dbus.service  # pyright:ignore [reportMissingTypeStubs]
 import os
@@ -12,7 +11,6 @@ from gi.repository import GLib
 
 from ..system import checkupdates
 from ..system import upgrade
-from ..system import execute_pipe
 from ..dbus import groups_for_sender
 from ..console import bytes_to_stdout
 from ..console import bytes_to_stderr
@@ -93,7 +91,7 @@ class Object(dbus.service.Object):
             self.notify_all("System upgrade complete, reboot required")
 
         except BaseException as e:
-            self.upgrade_stderr(bytes(e))
+            self.upgrade_stderr(str(e).encode("utf-8"))
             self.upgrade_status("error")
             self.notify_all("System upgrade failed")
 
@@ -110,7 +108,7 @@ class Object(dbus.service.Object):
 
     @dbus.service.signal(dbus_interface="system.upgrade", signature="s")
     def upgrade_stderr(self, stderr: bytes):
-        bytes_to_stderr(stderr, sys.stderr)
+        bytes_to_stderr(stderr)
 
     @dbus.service.method(dbus_interface="system.upgrade", out_signature="s")
     def status(self) -> str:

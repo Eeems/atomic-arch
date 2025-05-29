@@ -47,6 +47,7 @@ def upgrade():
         print(stderr, file=sys.stderr, end="")
 
     def on_status(status: str):
+        print(f"Status: {status}")
         setattr(on_status, "status", status)
         if status in ["error", "success"]:
             loop.quit()

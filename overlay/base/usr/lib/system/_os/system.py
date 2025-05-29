@@ -78,10 +78,7 @@ def execute_pipe(
     while p.stdout is None or p.stderr is None:
         pass
 
-    if stdin is None:
-        pass
-
-    elif isinstance(stdin, bytes):
+    if isinstance(stdin, bytes):
         while p.stdin is None:
             pass
 
@@ -94,8 +91,10 @@ def execute_pipe(
 
         _ = p.stdin.write(stdin.encode("utf-8"))
         p.stdin.close()
+    elif stdin is not None:
+        os.set_blocking(stdin.fileno(), False)
 
-    else:
+    if stdin is not None:
         while p.stdin is None:
             pass
 
