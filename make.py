@@ -280,7 +280,9 @@ def do_checkupdates(args: argparse.Namespace):
 
 
 def do_check(_: argparse.Namespace):
-    execute("niri", "validate", "--config=overlay/atomic/usr/share/niri/config.kdl")
+    if shutil.which("niri") is not None:
+        execute("niri", "validate", "--config=overlay/atomic/usr/share/niri/config.kdl")
+
     if not os.path.exists(".venv/bin/activate"):
         chronic("python", "-m", "venv", ".venv")
 
