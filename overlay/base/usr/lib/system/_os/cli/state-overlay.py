@@ -1,6 +1,6 @@
 import os
 import sys
-import xattr
+import xattr  # pyright:ignore [reportMissingTypeStubs]
 
 from argparse import ArgumentParser
 from argparse import Namespace

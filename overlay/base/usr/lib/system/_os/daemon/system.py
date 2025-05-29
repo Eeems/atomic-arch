@@ -15,7 +15,10 @@ from ..console import bytes_to_stderr
 
 class Object(dbus.service.Object):
     def __init__(self, bus_name: dbus.service.BusName):
-        super().__init__(bus_name=bus_name, object_path="/system")
+        super().__init__(  # pyright:ignore [reportUnknownMemberType]
+            bus_name=bus_name,
+            object_path="/system",
+        )
         self._updates: list[str] = []
         self._notification: str | None = None
         self._status: str = ""
@@ -50,7 +53,7 @@ class Object(dbus.service.Object):
                 subprocess.check_output([*args, msg]).strip().decode("utf-8")
             )
 
-    @dbus.service.method(
+    @dbus.service.method(  # pyright:ignore [reportUnknownMemberType]
         dbus_interface="system.upgrade",
         sender_keyword="sender",
         async_callbacks=("success", "error"),
@@ -95,23 +98,35 @@ class Object(dbus.service.Object):
         self._thread = None
         return False
 
-    @dbus.service.signal(dbus_interface="system.upgrade", signature="s")
+    @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.upgrade",
+        signature="s",
+    )
     def upgrade_status(self, status: str):
         self._status = status
 
-    @dbus.service.signal(dbus_interface="system.upgrade", signature="s")
+    @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.upgrade",
+        signature="s",
+    )
     def upgrade_stdout(self, stdout: bytes):
         bytes_to_stdout(stdout)
 
-    @dbus.service.signal(dbus_interface="system.upgrade", signature="s")
+    @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.upgrade",
+        signature="s",
+    )
     def upgrade_stderr(self, stderr: bytes):
         bytes_to_stderr(stderr)
 
-    @dbus.service.method(dbus_interface="system.upgrade", out_signature="s")
+    @dbus.service.method(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.upgrade",
+        out_signature="s",
+    )
     def status(self) -> str:
         return self._status
 
-    @dbus.service.method(
+    @dbus.service.method(  # pyright:ignore [reportUnknownMemberType]
         dbus_interface="system.checkupdates",
         in_signature="",
         out_signature="b",
@@ -121,11 +136,6 @@ class Object(dbus.service.Object):
         assert sender is not None
         if not set(["adm", "wheel", "root"]) & groups_for_sender(self, sender):
             raise Exception("Permission denied")
-
-        updates: list[str] = []
-
-        def parse_line(line: bytes):
-            updates.append(line.strip().decode("utf-8"))
 
         self.checkupdates_status("pending")
         try:
@@ -145,12 +155,17 @@ class Object(dbus.service.Object):
         )
         return True
 
-    @dbus.service.signal(dbus_interface="system.checkupdates", signature="s")
-    def checkupdates_status(self, status: str):
+    @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.checkupdates",
+        signature="s",
+    )
+    def checkupdates_status(self, status: str):  # pyright:ignore [reportUnusedParameter]
         pass
 
-    @dbus.service.method(
-        dbus_interface="system.checkupdates", in_signature="", out_signature="as"
+    @dbus.service.method(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.checkupdates",
+        in_signature="",
+        out_signature="as",
     )
     def updates(self) -> list[str]:
         return self._updates

@@ -39,7 +39,7 @@ def upgrade():
         ),
         "system.upgrade",
     )
-    loop = GLib.MainLoop()  # pyright:ignore [reportUnknownMemberType]
+    loop = GLib.MainLoop()  # pyright:ignore [reportUnknownMemberType,reportUnknownVariableType]
 
     def on_stdout(stdout: str):
         print(stdout, end="")

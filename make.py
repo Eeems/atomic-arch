@@ -6,7 +6,6 @@ import shutil
 import os
 import atexit
 import re
-import requests
 import tempfile
 
 from glob import iglob
@@ -38,7 +37,7 @@ import _os.podman  # noqa: E402 #pyright:ignore [reportMissingImports]
 import _os.system  # noqa: E402 #pyright:ignore [reportMissingImports]
 
 podman = cast(Callable[..., None], _os.podman.podman)  # pyright:ignore [reportUnknownMemberType]
-_execute = cast(Callable[..., None], _os.system._execute)  # pyright:ignore [reportUnknownMemberType]
+_execute = cast(Callable[..., int], _os.system._execute)  # pyright:ignore [reportUnknownMemberType]
 execute = cast(Callable[..., None], _os.system.execute)  # pyright:ignore [reportUnknownMemberType]
 chronic = cast(Callable[..., None], _os.system.chronic)  # pyright:ignore [reportUnknownMemberType]
 in_system = cast(Callable[..., int], _os.podman.in_system)  # pyright:ignore [reportUnknownMemberType]
@@ -223,6 +222,8 @@ def do_scan(args: argparse.Namespace):
 
 
 def do_checkupdates(args: argparse.Namespace):
+    import requests
+
     if not is_root():
         print("Must be run as root")
         sys.exit(1)
@@ -280,15 +281,27 @@ def do_checkupdates(args: argparse.Namespace):
 
 
 def do_check(_: argparse.Namespace):
+    failed = False
     if shutil.which("niri") is not None:
-        execute("niri", "validate", "--config=overlay/atomic/usr/share/niri/config.kdl")
+        print("[check] Checking niri config", file=sys.stderr)
+        cmd = shlex.join(
+            [
+                "niri",
+                "validate",
+                "--config=overlay/atomic/usr/share/niri/config.kdl",
+            ]
+        )
+        res = _execute(cmd)
+        if res:
+            print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
+            failed = True
 
     if not os.path.exists(".venv/bin/activate"):
         chronic("python", "-m", "venv", ".venv")
 
     chronic(
         "bash",
-        "-c",
+        "-ec",
         ";".join(
             [
                 "source .venv/bin/activate",
@@ -306,26 +319,56 @@ def do_check(_: argparse.Namespace):
             ]
         ),
     )
-    execute(
-        "bash",
-        "-c",
-        ";".join(
-            [
-                "source .venv/bin/activate",
-                "ruff check .",
-            ]
-        ),
+    cmd = shlex.join(
+        [
+            "bash",
+            "-ec",
+            ";".join(
+                [
+                    "source .venv/bin/activate",
+                    "ruff check .",
+                ]
+            ),
+        ]
     )
-    execute(
-        "bash",
-        "-c",
-        ";".join(
-            [
-                "source .venv/bin/activate",
-                f"basedpyright --level=error --venvpath=.venv make.py {_osDir}",
-            ]
-        ),
+    print("[check] Checking python formatting", file=sys.stderr)
+    res = _execute(cmd)
+    if res:
+        print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
+        failed = True
+
+    cmd = shlex.join(
+        [
+            "bash",
+            "-ec",
+            ";".join(
+                [
+                    "source .venv/bin/activate",
+                    shlex.join(
+                        [
+                            "basedpyright",
+                            "--pythonversion=3.12",
+                            "--pythonplatform=Linux",
+                            "--venvpath=.venv",
+                            "make.py",
+                            f"{_osDir}",
+                        ]
+                    ),
+                ]
+            ),
+        ]
     )
+    print("[check] Checking python types", file=sys.stderr)
+    res = _execute(cmd)
+    if res:
+        print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
+        failed = True
+
+    if failed:
+        print("[check] One or more checks failed", file=sys.stderr)
+        sys.exit(1)
+
+    print("[check] All checks passed", file=sys.stderr)
 
 
 if __name__ == "__main__":

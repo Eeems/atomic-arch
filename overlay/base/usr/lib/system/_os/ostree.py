@@ -9,7 +9,7 @@ from typing import Callable
 from . import SYSTEM_PATH
 from . import OS_NAME
 from .system import execute
-from .system import _execute
+from .system import _execute  # pyright:ignore [reportPrivateUsage]
 from .console import bytes_to_stdout
 from .console import bytes_to_stderr
 
@@ -68,8 +68,8 @@ def commit(
 def deploy(
     branch: str = "system",
     sysroot: str = "/",
-    onstdout: Callable[[bytes], None] = bytes_to_stdout,
-    onstderr: Callable[[bytes], None] = bytes_to_stderr,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,  # pyright:ignore [reportUnusedParameter]
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,  # pyright:ignore [reportUnusedParameter]
 ):
     kargs = ["--karg=root=LABEL=SYS_ROOT", "--karg=rw"]
     revision = f"{OS_NAME}/{branch}"

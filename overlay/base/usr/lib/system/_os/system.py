@@ -24,7 +24,7 @@ def baseImage() -> str:
         ]
 
 
-def _execute(cmd: str):
+def _execute(cmd: str) -> int:
     status = os.system(cmd)
     return os.waitstatus_to_exitcode(status)
 

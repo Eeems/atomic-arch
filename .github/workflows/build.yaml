@@ -17,6 +17,23 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ hashFiles('make.py') }}
+      - name: Install dependencies
+        uses: Eeems-Org/apt-cache-action@v1
+        with:
+          packages: >
+            build-essential libpython3-dev
+            libdbus-1-dev
+            libglib2.0-dev
+            libcairo2-dev
+            libgirepository-2.0-dev
       - name: Ensure config is valid
         run: ./make.py check
   rootfs:
@@ -28,16 +45,21 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Login to dockerhub
         uses: redhat-actions/podman-login@v1
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           registry: docker.io
-      - name: Install ostree
+      - name: Install dependencies
         uses: Eeems-Org/apt-cache-action@v1
         with:
-          packages: ostree podman
+          packages: >
+            ostree
+            podman
       - name: Add pacman cache
         run: |
           sudo mkdir -p \
@@ -77,6 +99,9 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Login to dockerhub
         uses: redhat-actions/podman-login@v1
         with:
@@ -121,6 +146,9 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Login to dockerhub
         uses: redhat-actions/podman-login@v1
         with:
@@ -165,6 +193,9 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Login to dockerhub
         uses: redhat-actions/podman-login@v1
         with:
