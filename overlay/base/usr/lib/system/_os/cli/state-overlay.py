@@ -4,9 +4,20 @@ import xattr
 
 from argparse import ArgumentParser
 from argparse import Namespace
+from typing import cast
+from typing import Callable
 
 from ..system import is_root
 from ..system import execute
+
+xattrList = cast(
+    Callable[[str], list[bytes]],
+    getattr(xattr, "list"),
+)
+xattrRemove = cast(
+    Callable[[str, bytes], None],
+    getattr(xattr, "remove"),
+)
 
 
 def register(_: ArgumentParser):
@@ -32,8 +43,8 @@ def command(_: Namespace):
 
 
 def rmfattr(path: str, attr: bytes):
-    if attr in xattr.list(path):  # pyright:ignore [reportUnknownMemberType]
-        xattr.remove(path, attr)  # pyright:ignore [reportUnknownMemberType]
+    if attr in xattrList(path):
+        xattrRemove(path, attr)
 
 
 if __name__ == "__main__":

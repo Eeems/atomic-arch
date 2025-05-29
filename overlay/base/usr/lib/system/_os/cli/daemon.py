@@ -1,11 +1,13 @@
 import sys
 import os
 import importlib
-import dbus
-import dbus.service
+import dbus  # pyright:ignore [reportMissingTypeStubs]
+import dbus.service  # pyright:ignore [reportMissingTypeStubs]
 
-from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GLib
+from typing import cast
+from typing import Callable
+from dbus.mainloop.glib import DBusGMainLoop  # pyright:ignore [reportMissingTypeStubs,reportUnknownVariableType]
+from gi.repository import GLib  # pyright:ignore [reportMissingTypeStubs,reportUnknownVariableType,reportAttributeAccessIssue]
 from argparse import ArgumentParser
 from argparse import Namespace
 from glob import iglob
@@ -45,8 +47,8 @@ def command(args: Namespace):  # pyright:ignore [reportUnusedParameter]
     chronic("systemctl", "reload", "dbus")
     DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()
-    bus_name = dbus.service.BusName("os.system", bus)
-    objects = []
+    bus_name = cast(dbus.service.BusName, dbus.service.BusName("os.system", bus))
+    objects: list[dbus.service.Object] = []
     for file in iglob(os.path.join(os.path.dirname(__file__), "..", "daemon", "*.py")):
         if file.endswith("__.py"):
             continue
@@ -54,10 +56,14 @@ def command(args: Namespace):  # pyright:ignore [reportUnusedParameter]
         name = os.path.splitext(os.path.basename(file))[0]
         parent = ".".join(__name__.split(".")[:-2])
         module = importlib.import_module(f"{parent}.daemon.{name}", parent)
-        objects.append(module.Object(bus_name))
+        objects.append(
+            cast(
+                Callable[[dbus.service.BusName], dbus.service.Object],
+                module.Object,
+            )(bus_name)
+        )
 
-    loop = GLib.MainLoop()
-    loop.run()
+    GLib.MainLoop().run()  # pyright:ignore [reportUnknownMemberType]
 
 
 if __name__ == "__main__":

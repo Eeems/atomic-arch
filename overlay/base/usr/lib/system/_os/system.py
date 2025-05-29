@@ -59,7 +59,7 @@ def chronic(cmd: str | list[str], *args: str):
     try:
         _ = subprocess.check_output(argv, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        print(e.output)  # pyright:ignore [reportAny]
+        print(e.output.decode("utf-8"))  # pyright:ignore [reportAny]
         raise
 
 

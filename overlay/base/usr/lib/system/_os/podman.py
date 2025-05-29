@@ -1,3 +1,4 @@
+# pyright: reportImportCycles=false
 import atexit
 import os
 import shlex
@@ -13,9 +14,11 @@ from typing import cast
 from typing import Callable
 
 from . import SYSTEM_PATH
+
 from .system import execute
 from .system import _execute  # pyright:ignore [reportPrivateUsage]
 from .ostree import ostree
+
 from .console import bytes_to_stdout
 from .console import bytes_to_stderr
 

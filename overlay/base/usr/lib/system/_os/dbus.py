@@ -4,10 +4,11 @@ import grp
 import pwd
 import sys
 
+from dbus.mainloop.glib import DBusGMainLoop  # pyright:ignore [reportMissingTypeStubs,reportUnknownVariableType]
+from gi.repository import GLib  # pyright:ignore [reportMissingTypeStubs,reportUnknownVariableType,reportAttributeAccessIssue]
+
 from typing import Callable
 from typing import cast
-from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GLib
 
 
 def checkupdates(force: bool = False) -> list[str]:
@@ -38,7 +39,7 @@ def upgrade():
         ),
         "system.upgrade",
     )
-    loop = GLib.MainLoop()
+    loop = GLib.MainLoop()  # pyright:ignore [reportUnknownMemberType]
 
     def on_stdout(stdout: str):
         print(stdout, end="")
@@ -50,15 +51,19 @@ def upgrade():
         print(f"Status: {status}")
         setattr(on_status, "status", status)
         if status in ["error", "success"]:
-            loop.quit()
+            loop.quit()  # pyright:ignore [reportUnknownMemberType]
 
-    _ = interface.connect_to_signal("upgrade_stdout", on_stdout)
-    _ = interface.connect_to_signal("upgrade_stderr", on_stderr)
-    _ = interface.connect_to_signal("upgrade_status", on_status)
+    connect_to_signal = cast(
+        Callable[[str, Callable[[str], None]], None],
+        interface.connect_to_signal,
+    )
+    connect_to_signal("upgrade_stdout", on_stdout)
+    connect_to_signal("upgrade_stderr", on_stderr)
+    connect_to_signal("upgrade_status", on_status)
     if cast(Callable[[], str], interface.status)() != "pending":
         cast(Callable[[], None], interface.upgrade)()
 
-    loop.run()
+    loop.run()  # pyright:ignore [reportUnknownMemberType]
     if getattr(on_status, "status") == "error":
         raise Exception("Upgrade failed")
 

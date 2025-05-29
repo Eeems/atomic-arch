@@ -39,6 +39,8 @@ import _os.system  # noqa: E402 #pyright:ignore [reportMissingImports]
 
 podman = cast(Callable[..., None], _os.podman.podman)  # pyright:ignore [reportUnknownMemberType]
 _execute = cast(Callable[..., None], _os.system._execute)  # pyright:ignore [reportUnknownMemberType]
+execute = cast(Callable[..., None], _os.system.execute)  # pyright:ignore [reportUnknownMemberType]
+chronic = cast(Callable[..., None], _os.system.chronic)  # pyright:ignore [reportUnknownMemberType]
 in_system = cast(Callable[..., int], _os.podman.in_system)  # pyright:ignore [reportUnknownMemberType]
 in_system_output = cast(Callable[..., bytes], _os.podman.in_system_output)  # pyright:ignore [reportUnknownMemberType]
 is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [reportUnknownMemberType]
@@ -278,11 +280,50 @@ def do_checkupdates(args: argparse.Namespace):
 
 
 def do_check(_: argparse.Namespace):
-    _execute("niri validate --config overlay/atomic/usr/share/niri/config.kdl")
+    execute("niri", "validate", "--config=overlay/atomic/usr/share/niri/config.kdl")
     if not os.path.exists(".venv/bin/activate"):
-        _execute("python -m venv .venv")
+        chronic("python", "-m", "venv", ".venv")
 
-    _execute('bash -c "source .venv/bin/activate; pip install ruff; ruff check ."')
+    chronic(
+        "bash",
+        "-c",
+        ";".join(
+            [
+                "source .venv/bin/activate",
+                "pip install "
+                + " ".join(
+                    [
+                        "ruff",
+                        "basedpyright",
+                        "requests",
+                        "dbus-python",
+                        "PyGObject",
+                        "xattr",
+                    ]
+                ),
+            ]
+        ),
+    )
+    execute(
+        "bash",
+        "-c",
+        ";".join(
+            [
+                "source .venv/bin/activate",
+                "ruff check .",
+            ]
+        ),
+    )
+    execute(
+        "bash",
+        "-c",
+        ";".join(
+            [
+                "source .venv/bin/activate",
+                f"basedpyright --level=error --venvpath=.venv make.py {_osDir}",
+            ]
+        ),
+    )
 
 
 if __name__ == "__main__":

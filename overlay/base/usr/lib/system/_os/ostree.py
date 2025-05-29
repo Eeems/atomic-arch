@@ -1,3 +1,4 @@
+# pyright: reportImportCycles=false
 import os
 import shlex
 import subprocess
