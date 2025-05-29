@@ -1,6 +1,5 @@
 import traceback
 import subprocess
-import sys
 
 from argparse import ArgumentParser
 from argparse import Namespace

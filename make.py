@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import argparse
-import json
-import subprocess
 import sys
 import shlex
 import shutil
@@ -279,6 +277,14 @@ def do_checkupdates(args: argparse.Namespace):
         sys.exit(2)
 
 
+def do_check(_: argparse.Namespace):
+    _execute("niri validate --config overlay/atomic/usr/share/niri/config.kdl")
+    if not os.path.exists(".venv/bin/activate"):
+        _execute("python -m venv .venv")
+
+    _execute('bash -c "source .venv/bin/activate; pip install ruff; ruff check ."')
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers()
@@ -327,6 +333,9 @@ if __name__ == "__main__":
     subparser = subparsers.add_parser("checkupdates")
     _ = subparser.add_argument("--target", default="rootfs")
     subparser.set_defaults(func=do_checkupdates)
+
+    subparser = subparsers.add_parser("check")
+    subparser.set_defaults(func=do_check)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

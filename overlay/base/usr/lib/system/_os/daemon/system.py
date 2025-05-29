@@ -1,13 +1,10 @@
 import dbus  # pyright:ignore [reportMissingTypeStubs]
 import dbus.service  # pyright:ignore [reportMissingTypeStubs]
 import os
-import sys
 import subprocess
 import threading
 
-from typing import cast
 from typing import Callable
-from gi.repository import GLib
 
 from ..system import checkupdates
 from ..system import upgrade
@@ -134,7 +131,7 @@ class Object(dbus.service.Object):
         try:
             self._updates = checkupdates()
 
-        except BaseException as e:
+        except BaseException:
             self.checkupdates_status("error")
             raise
 

@@ -85,7 +85,7 @@ binds {
     XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "set" "+10%"; }
 
     Mod+Q { close-window; }
-    Mod+A { spawn "swaync-client --toggle-panel"; }
+    Mod+A { spawn "swaync-client" "--toggle-panel"; }
 
     Mod+Left  { focus-column-left; }
     Mod+Down  { focus-window-down; }

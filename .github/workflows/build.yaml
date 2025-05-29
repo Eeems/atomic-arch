@@ -11,9 +11,18 @@ on:
     - cron: "0 23 * * *"
 
 jobs:
+  check:
+    name: Ensure config is valid
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      - name: Ensure config is valid
+        run: ./make.py check
   rootfs:
     name: Build atomic-arch:rootfs
     runs-on: ubuntu-latest
+    needs: [check]
     permissions:
       contents: write
     steps:

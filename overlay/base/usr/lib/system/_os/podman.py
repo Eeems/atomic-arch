@@ -1,6 +1,5 @@
 import atexit
 import os
-import sys
 import shlex
 import shutil
 import tarfile
@@ -8,8 +7,6 @@ import subprocess
 import json
 
 from time import time
-from datetime import datetime
-from datetime import UTC
 from hashlib import sha256
 from glob import iglob
 from typing import cast
