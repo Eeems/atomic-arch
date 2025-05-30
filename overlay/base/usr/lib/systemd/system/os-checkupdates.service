@@ -1,0 +1,5 @@
+[Unit]
+Description=Check for updates
+
+[Service]
+ExecStart=/usr/bin/os checkupdates

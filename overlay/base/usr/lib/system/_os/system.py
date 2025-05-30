@@ -10,6 +10,7 @@ from typing import BinaryIO
 from typing import Callable
 from typing import cast
 from glob import iglob
+from select import select
 
 from . import SYSTEM_PATH
 from . import OS_NAME
@@ -101,6 +102,7 @@ def execute_pipe(
     os.set_blocking(p.stdout.fileno(), False)
     os.set_blocking(p.stderr.fileno(), False)
     while p.poll() is None:
+        _ = select([p.stderr, p.stdout], [] if p.stdin is None else [p.stdin], [])
         line = p.stdout.readline()
         if line:
             onstdout(line)

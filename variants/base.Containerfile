@@ -71,6 +71,7 @@ RUN \
   systemctl enable \
     atomic-state-overlay \
     os-daemon \
+    os-checkupdates.timer \
   && rm /usr/bin/su \
   && chmod 644 /etc/pam.d/sudo{,-i} \
   && chmod 400 /etc/sudoers \
