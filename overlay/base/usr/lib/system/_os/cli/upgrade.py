@@ -1,13 +1,10 @@
-import traceback
-import subprocess
-
 from argparse import ArgumentParser
 from argparse import Namespace
 from typing import cast
 from typing import Any
 
-from ..podman import podman
 from ..system import baseImage
+from ..dbus import pull
 from ..dbus import checkupdates
 from ..dbus import upgrade_status
 from ..dbus import upgrade
@@ -30,11 +27,7 @@ def command(args: Namespace):
         updates = checkupdates()
         image = baseImage()
         if [x for x in updates if x.startswith(f"{image} ")]:
-            try:
-                podman("pull", image)
-
-            except subprocess.CalledProcessError:
-                traceback.print_exc()
+            pull()
 
     upgrade()
 

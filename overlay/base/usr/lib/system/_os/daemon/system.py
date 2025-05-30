@@ -6,6 +6,8 @@ import threading
 
 from typing import Callable
 
+from ..podman import podman
+from ..system import baseImage
 from ..system import checkupdates
 from ..system import upgrade
 from ..dbus import groups_for_sender
@@ -21,8 +23,12 @@ class Object(dbus.service.Object):
         )
         self._updates: list[str] = []
         self._notification: str | None = None
-        self._status: str = ""
-        self._thread: threading.Thread | None = None
+        self._upgrade_status: str = ""
+        self._pull_status: str = ""
+        self._checkupdates_status: str = ""
+        self._upgrade_thread: threading.Thread | None = None
+        self._pull_thread: threading.Thread | None = None
+        self._checkupdates_thread: threading.Thread | None = None
 
     def notify_all(self, msg: str):
         for path in os.scandir("/run/user"):
@@ -70,14 +76,14 @@ class Object(dbus.service.Object):
                 error("Permission denied")
                 return
 
-            if self._status == "pending":
+            if self._upgrade_status == "pending":
                 success()
                 return
 
-            assert self._thread is None
+            assert self._upgrade_thread is None
             self.upgrade_status("pending")
-            self._thread = threading.Thread(target=self._upgrade)
-            self._thread.start()
+            self._upgrade_thread = threading.Thread(target=self._upgrade)
+            self._upgrade_thread.start()
             success()
 
         except BaseException as e:
@@ -95,7 +101,9 @@ class Object(dbus.service.Object):
             self.upgrade_status("error")
             self.notify_all("System upgrade failed")
 
-        self._thread = None
+        finally:
+            self._upgrade_thread = None
+
         return False
 
     @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
@@ -103,7 +111,8 @@ class Object(dbus.service.Object):
         signature="s",
     )
     def upgrade_status(self, status: str):
-        self._status = status
+        self._upgrade_status = status
+        print(f"upgrade status: {status}")
 
     @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
         dbus_interface="system.upgrade",
@@ -124,43 +133,78 @@ class Object(dbus.service.Object):
         out_signature="s",
     )
     def status(self) -> str:
-        return self._status
+        return self._upgrade_status
 
     @dbus.service.method(  # pyright:ignore [reportUnknownMemberType]
         dbus_interface="system.checkupdates",
         in_signature="",
-        out_signature="b",
+        out_signature="",
         sender_keyword="sender",
+        async_callbacks=("success", "error"),
     )
-    def checkupdates(self, sender: str | None = None) -> bool:
-        assert sender is not None
-        if not set(["adm", "wheel", "root"]) & groups_for_sender(self, sender):
-            raise Exception("Permission denied")
+    def checkupdates(
+        self,
+        success: Callable[[], None],
+        error: Callable[..., None],
+        sender: str | None = None,
+    ):
+        try:
+            assert sender is not None
+            if not set(["adm", "wheel", "root"]) & groups_for_sender(self, sender):
+                error("Permission denied")
+                return
 
-        self.checkupdates_status("pending")
+            if self._checkupdates_status == "pending":
+                success()
+                return
+
+            assert self._checkupdates_thread is None
+            self.checkupdates_status("pending")
+            self._checkupdates_thread = threading.Thread(target=self._checkupdates)
+            self._checkupdates_thread.start()
+            success()
+
+        except BaseException as e:
+            error(e)
+
+    def _checkupdates(self):
         try:
             self._updates = checkupdates()
+            if not self._updates:
+                self.checkupdates_status("none")
 
-        except BaseException:
+            else:
+                self.checkupdates_status("available")
+                self.notify_all(
+                    f"{len(self._updates)} updates available:\n"
+                    + "\n".join(self._updates)
+                )
+
+        except BaseException as e:
+            self.checkupdates_stderr(str(e).encode("utf-8"))
             self.checkupdates_status("error")
+            self.notify_all("Failed to checkupdates base image")
             raise
 
-        if not self._updates:
-            self.checkupdates_status("none")
-            return False
+        finally:
+            self._checkupdates_thread = None
 
-        self.checkupdates_status("available")
-        self.notify_all(
-            f"{len(self._updates)} updates available:\n" + "\n".join(self._updates)
-        )
-        return True
+        return False
 
     @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
         dbus_interface="system.checkupdates",
         signature="s",
     )
-    def checkupdates_status(self, status: str):  # pyright:ignore [reportUnusedParameter]
-        pass
+    def checkupdates_status(self, status: str):
+        self._checkupdates_status = status
+        print(f"checkupdates status: {status}")
+
+    @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.checkupdates",
+        signature="s",
+    )
+    def checkupdates_stderr(self, stderr: bytes):
+        bytes_to_stderr(stderr)
 
     @dbus.service.method(  # pyright:ignore [reportUnknownMemberType]
         dbus_interface="system.checkupdates",
@@ -169,3 +213,81 @@ class Object(dbus.service.Object):
     )
     def updates(self) -> list[str]:
         return self._updates
+
+    @dbus.service.method(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.pull",
+        in_signature="",
+        out_signature="",
+        sender_keyword="sender",
+        async_callbacks=("success", "error"),
+    )
+    def pull(
+        self,
+        success: Callable[[], None],
+        error: Callable[..., None],
+        sender: str | None = None,
+    ):
+        try:
+            assert sender is not None
+            if not set(["adm", "wheel", "root"]) & groups_for_sender(self, sender):
+                error("Permission denied")
+                return
+
+            if self._pull_status == "pending":
+                success()
+                return
+
+            assert self._pull_thread is None
+            self.pull_status("pending")
+            self._pull_thread = threading.Thread(target=self._pull)
+            self._pull_thread.start()
+            success()
+
+        except BaseException as e:
+            error(e)
+
+    def _pull(self):
+        self.notify_all("Pulling base image")
+        try:
+            image = baseImage()
+            podman(
+                "pull",
+                image,
+                onstdout=self.pull_stdout,
+                onstderr=self.pull_stderr,
+            )
+            self.pull_status("success")
+            self.notify_all("Base image pulled")
+
+        except BaseException as e:
+            self.pull_stderr(str(e).encode("utf-8"))
+            self.pull_status("error")
+            self.notify_all("Failed to pull base image")
+            raise
+
+        finally:
+            self._pull_thread = None
+
+        return False
+
+    @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.pull",
+        signature="s",
+    )
+    def pull_status(self, status: str):
+        self._pull_status = status
+        print(f"pull status: {status}")
+
+    @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.pull",
+        signature="s",
+    )
+    def pull_stdout(self, stdout: bytes):
+        bytes_to_stdout(stdout)
+
+    @dbus.service.signal(  # pyright:ignore [reportUnknownMemberType]
+        dbus_interface="system.pull",
+        signature="s",
+    )
+    def pull_stderr(self, stderr: bytes):
+        bytes_to_stderr(stderr)
