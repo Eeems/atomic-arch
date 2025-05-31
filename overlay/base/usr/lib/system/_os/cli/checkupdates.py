@@ -7,6 +7,7 @@ from typing import cast
 from typing import Any
 
 from ..dbus import checkupdates
+from ..system import _execute  # pyright:ignore [reportPrivateUsage]
 
 kwds = {"help": "Checks for updates to the system"}
 
@@ -20,6 +21,11 @@ def register(parser: ArgumentParser):
 
 
 def command(args: Namespace):
+    ret = _execute("nm-online --quiet")
+    if ret:
+        print("Not currently online", file=sys.stderr)
+        sys.exit(1)
+
     updates: list[str] = []
     try:
         updates = checkupdates(cast(bool, args.force))
