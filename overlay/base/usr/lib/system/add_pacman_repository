@@ -1,15 +1,36 @@
 #!/usr/bin/python
 import argparse
+import requests
+import os
+import shlex
+import stat
 
+from urllib.parse import urlparse
 from typing import cast
+from tempfile import NamedTemporaryFile
 
 from _os.system import execute  # pyright:ignore [ reportImplicitRelativeImport]
 from _os.system import chronic  # pyright:ignore [ reportImplicitRelativeImport]
+
+
+def is_url(url: str):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+
+    except ValueError:
+        return False
+
 
 parser = argparse.ArgumentParser()
 _ = parser.add_argument("name", help="Name of repository")
 _ = parser.add_argument(
     "--key",
+    help="Path or url to key file to import",
+    default=None,
+)
+_ = parser.add_argument(
+    "--keyfile",
     help="Key to import that is used for signing packages in the repository",
     default=None,
 )
@@ -24,15 +45,49 @@ _ = parser.add_argument(
     dest="servers",
 )
 args = parser.parse_args()
+os.makedirs("/usr/lib/system/initialize_pacman.d", exist_ok=True)
 execute("/usr/lib/system/initialize_pacman")
-key = cast(str | None, args.key)
-if key is not None:
-    print("[system] Adding key")
-    chronic("pacman-key", "--recv", key, "--keyserver", cast(str, args.keyserver))
-    chronic("pacman-key", "--lsign", key)
-
-print("[system] Adding repository")
 name = cast(str, args.name)
+script = f"/usr/lib/system/initialize_pacman.d/{name}"
+with open(script, "w") as f:
+    key = cast(str | None, args.key)
+    if key is not None:
+        print("[system] Adding key")
+        keyfile = cast(str | None, args.keyfile)
+        if keyfile is None:
+            cmd = [
+                "pacman-key",
+                "--recv",
+                key,
+                "--keyserver",
+                cast(str, args.keyserver),
+            ]
+            chronic(*cmd)
+            _ = f.write(f"{shlex.join(cmd)}\n")
+
+        elif is_url(keyfile):
+            res = requests.get(key)
+            res.raise_for_status()
+            with NamedTemporaryFile("wb") as t:
+                _ = t.write(res.content)
+                cmd = ["pacman-key", "--add", t.name]
+                chronic(*cmd)
+                _ = f.write(f"{shlex.join(cmd)}\n")
+
+        elif os.path.isfile(keyfile):
+            cmd = ["pacman-key", "--add", keyfile]
+            chronic(*cmd)
+            _ = f.write(f"{shlex.join(cmd)}\n")
+
+        else:
+            raise FileNotFoundError(keyfile)
+
+        cmd = ["pacman-key", "--lsign", key]
+        chronic(*cmd)
+        _ = f.write(f"{shlex.join(cmd)}\n")
+
+os.chmod(script, os.stat(script).st_mode | stat.S_IEXEC)
+print("[system] Adding repository")
 with open("/etc/pacman.conf", "a") as f:
     _ = f.write("\n".join([f"[{name}]", f"Include = /etc/pacman.d/{name}.mirrorlist"]))
     _ = f.write("\n")

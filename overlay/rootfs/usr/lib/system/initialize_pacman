@@ -4,3 +4,4 @@ echo "[system] Initializing keyring"
 chronic pacman-key --init
 echo "[system] populating keyring"
 chronic pacman-key --populate
+chronic run-parts /usr/lib/system/initialize_pacman.d
