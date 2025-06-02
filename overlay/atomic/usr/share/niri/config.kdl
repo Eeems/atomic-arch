@@ -80,6 +80,10 @@ binds {
     XF86AudioLowerVolume allow-when-locked=true { spawn "os" "volume" "set" "-10"; }
     XF86AudioMute allow-when-locked=true { spawn "os" "volume" "toggle-mute"; }
     XF86AudioMicMute allow-when-locked=true { spawn "os" "microphone" "toggle-mute"; }
+    XF86AudioPlay allow-when-locked=true { spawn "playerctl" "play-plause"; }
+    XF86AudioStop allow-when-locked=true { spawn "playerctl" "stop"; }
+    XF86AudioPrev allow-when-locked=true { spawn "playerctl" "next"; }
+    XF86AudioNext allow-when-locked=true { spawn "playerctl" "previous"; }
     XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "set" "10%-"; }
     XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "set" "+10%"; }
 
