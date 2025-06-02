@@ -7,7 +7,6 @@ import stat
 
 from urllib.parse import urlparse
 from typing import cast
-from tempfile import NamedTemporaryFile
 
 from _os.system import execute  # pyright:ignore [ reportImplicitRelativeImport]
 from _os.system import chronic  # pyright:ignore [ reportImplicitRelativeImport]
@@ -66,13 +65,17 @@ with open(script, "w") as f:
             _ = f.write(f"{shlex.join(cmd)}\n")
 
         elif is_url(keyfile):
-            res = requests.get(key)
+            res = requests.get(keyfile)
             res.raise_for_status()
-            with NamedTemporaryFile("wb") as t:
+            keyfileDest = os.path.join(
+                "/usr/lib/system/initialize_pacman.d", f"{name}.gpg"
+            )
+            with open(keyfileDest, "wb") as t:
                 _ = t.write(res.content)
-                cmd = ["pacman-key", "--add", t.name]
-                chronic(*cmd)
-                _ = f.write(f"{shlex.join(cmd)}\n")
+
+            cmd = ["pacman-key", "--add", keyfileDest]
+            chronic(*cmd)
+            _ = f.write(f"{shlex.join(cmd)}\n")
 
         elif os.path.isfile(keyfile):
             cmd = ["pacman-key", "--add", keyfile]
