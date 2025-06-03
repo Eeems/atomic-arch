@@ -49,6 +49,7 @@ execute("/usr/lib/system/initialize_pacman")
 name = cast(str, args.name)
 script = f"/usr/lib/system/initialize_pacman.d/{name}"
 with open(script, "w") as f:
+    _ = f.write("#!/bin/sh\n")
     key = cast(str | None, args.key)
     if key is not None:
         print("[system] Adding key")
