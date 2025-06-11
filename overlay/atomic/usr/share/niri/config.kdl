@@ -61,6 +61,15 @@ window-rule {
     match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
     default-floating-position x=10 y=10 relative-to="top-right"
 }
+window-rule {
+    match app-id="org.kde.kdeconnect.daemon" title=r#"^KDE Connect Daemon$"#
+    open-floating true
+    open-focused false
+    open-maximized true
+    open-fullscreen false
+    default-column-width { proportion 1.0; }
+    default-window-height { proportion 1.0; }
+}
 
 environment {
     ELECTRON_OZONE_PLATFORM_HINT "auto"
