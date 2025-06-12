@@ -91,8 +91,10 @@ def command(args: Namespace):
 
     if not useWego:
         print(
-            subprocess.check_output(["curl", "--silent", "wttr.in?format=%t%c"]).decode(
-                "utf-8"
+            (
+                subprocess.check_output(["curl", "--silent", "wttr.in?format=%t%c"])
+                .decode("utf-8")
+                .replace("\n", "\r")
             )
         )
         print(
@@ -102,7 +104,10 @@ def command(args: Namespace):
                     "--silent",
                     "wttr.in?format=%l:%20%C%c%0AWind:%20%w%0APrecipitation:%20%p%0APressure:%20󰷃%P%0AUV%Index:%20󱟾%20%u",
                 ]
-            ).decode("utf-8")
+            )
+            .decode("utf-8")
+            .replace("\n", "\r"),
+            end="",
         )
         return
 
@@ -120,7 +125,7 @@ def command(args: Namespace):
 
     print(f"{temp} {icon}")
     location = "Edmonton"  # TODO - pull location from ~/.wegorc and get name
-    print(f"{location}: {current['Desc']} {temp}")
+    print(f"{location}: {current['Desc']} {icon}", end="\r")
     windspeed = int(cast(str, current["WindspeedKmph"]))
     direction = cast(int | None, current["WinddirDegree"])
     if direction is None:
@@ -129,11 +134,11 @@ def command(args: Namespace):
     else:
         icon = WIND_ICONS[int(((direction + 22) % 360) / 45)]
 
-    print(f"Wind: {icon} {windspeed} km/h")
+    print(f"Wind: {icon} {windspeed} km/h", end="\r")
     humidity = int(cast(str, current["Humidity"]))
-    print(f"Humidity: {humidity}%")
+    print(f"Humidity: {humidity}%", end="\r")
     precipitation = round(float(current["PrecipM"]), 1)
-    print(f"Precipitation:  {precipitation}mm")
+    print(f"Precipitation:  {precipitation}mm", end="")
     # TODO display pressure and uv index
 
 
