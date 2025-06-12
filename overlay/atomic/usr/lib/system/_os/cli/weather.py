@@ -14,7 +14,7 @@ _execute = cast(Callable[[str], int], __execute)
 
 kwds = {"help": "Display the weather"}
 
-ICONS = [
+WEATHER_ICON = [
     "✨",
     "☁️",
     "🌫",
@@ -35,6 +35,16 @@ ICONS = [
     "⛈",
     "☁️",
 ]
+WIND_ICONS = [
+    "↓",
+    "↙",
+    "←",
+    "↖",
+    "↑",
+    "↗",
+    "→",
+    "↘",
+]
 
 
 def register(parser: ArgumentParser):
@@ -49,7 +59,18 @@ def register(parser: ArgumentParser):
 
 
 def command(args: Namespace):
-    useWego = os.path.exists(os.path.expanduser("~/.wegorc"))
+    wegoRc = os.path.expanduser("~/.wegorc")
+    useWego = os.path.exists(wegoRc)
+    if useWego:
+        with open(wegoRc, "r") as f:
+            useWego = bool(
+                [
+                    x.split("=", 1)[1]
+                    for x in f.read().splitlines()
+                    if x.startswith("owm-api-key=")
+                ]
+            )
+
     if cast(bool, args.ready):
         if useWego:
             return
@@ -69,12 +90,20 @@ def command(args: Namespace):
         return
 
     if not useWego:
-        res = _execute(
-            'echo "$(curl --silent wttr.in?format=%t%c | xargs)\n$(curl --silent wttr.in?format=%l:%20%C%c%0DWind:%20%w%0DPrecipitation:%20%p%0DPressure:%20󰷃%P%0DUV%Index:%20󱟾%20%u)\n"'
+        print(
+            subprocess.check_output(["curl", "--silent", "wttr.in?format=%t%c"]).decode(
+                "utf-8"
+            )
         )
-        if res:
-            sys.exit(res)
-
+        print(
+            subprocess.check_output(
+                [
+                    "curl",
+                    "--silent",
+                    "wttr.in?format=%l:%20%C%c%0AWind:%20%w%0APrecipitation:%20%p%0APressure:%20󰷃%P%0AUV%Index:%20󱟾%20%u",
+                ]
+            ).decode("utf-8")
+        )
         return
 
     data = cast(
@@ -82,22 +111,29 @@ def command(args: Namespace):
         json.loads(subprocess.check_output(["wego", "-f", "json", "-jsn-no-indent"])),
     )
     current = data["Current"]
-    icon = ICONS[cast(int, current["Code"])]
+    icon = WEATHER_ICON[cast(int, current["Code"])]
     temp = int(cast(str, current["TempC"]))
     if temp > 0:
         temp = f"+{temp}"
 
     temp = f"{temp}⁰C"
 
-    print(f"{icon} {temp}")
+    print(f"{temp} {icon}")
     location = "Edmonton"  # TODO - pull location from ~/.wegorc and get name
     print(f"{location}: {current['Desc']} {temp}")
     windspeed = int(cast(str, current["WindspeedKmph"]))
-    print(f"Wind: {windspeed} kph")
+    direction = cast(int | None, current["WinddirDegree"])
+    if direction is None:
+        icon = "?"
+
+    else:
+        icon = WIND_ICONS[int(((direction + 22) % 360) / 45)]
+
+    print(f"Wind: {icon} {windspeed} km/h")
     humidity = int(cast(str, current["Humidity"]))
     print(f"Humidity: {humidity}%")
-    precipitation = int(cast(str, current["PrecipM"]))
-    print(f"Precipitation: {precipitation} mm/3 hours")
+    precipitation = round(float(current["PrecipM"]), 1)
+    print(f"Precipitation:  {precipitation}mm")
     # TODO display pressure and uv index
 
 

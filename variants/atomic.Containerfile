@@ -61,6 +61,7 @@ RUN /usr/lib/system/initialize_pacman \
   distroshelf \
   libwireplumber-4.0-compat \
   pwvucontrol \
+  wego \
   && /usr/lib/system/remove_pacman_files
 
 RUN systemctl enable \
