@@ -108,6 +108,8 @@ def prune(
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
+    from .podman import podman
+
     ostree(
         "prune",
         "--commit-only",
@@ -118,6 +120,7 @@ def prune(
         onstderr=onstderr,
     )
     execute("ostree", "admin", "cleanup", onstdout=onstdout, onstderr=onstderr)
+    podman("system", "prune", "-f", "--build")
 
 
 def undeploy(
