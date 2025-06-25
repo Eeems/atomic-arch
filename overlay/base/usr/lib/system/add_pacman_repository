@@ -50,20 +50,25 @@ name = cast(str, args.name)
 script = f"/usr/lib/system/initialize_pacman.d/{name}"
 with open(script, "w") as f:
     _ = f.write("#!/bin/sh\n")
+
+    def runAndAppend(*cmd: str):
+        chronic(*cmd)
+        _ = f.write(f"{shlex.join(cmd)}\n")
+
     key = cast(str | None, args.key)
     if key is not None:
-        print("[system] Adding key")
+        msg = f"[system] Adding key for {name}"
+        print(msg)
+        _ = f.write(f"{shlex.join(['echo', msg])}\n")
         keyfile = cast(str | None, args.keyfile)
         if keyfile is None:
-            cmd = [
+            runAndAppend(
                 "pacman-key",
                 "--recv",
                 key,
                 "--keyserver",
                 cast(str, args.keyserver),
-            ]
-            chronic(*cmd)
-            _ = f.write(f"{shlex.join(cmd)}\n")
+            )
 
         elif is_url(keyfile):
             res = requests.get(keyfile)
@@ -74,29 +79,23 @@ with open(script, "w") as f:
             with open(keyfileDest, "wb") as t:
                 _ = t.write(res.content)
 
-            cmd = ["pacman-key", "--add", keyfileDest]
-            chronic(*cmd)
-            _ = f.write(f"{shlex.join(cmd)}\n")
+            runAndAppend("pacman-key", "--add", keyfileDest)
 
         elif os.path.isfile(keyfile):
-            cmd = ["pacman-key", "--add", keyfile]
-            chronic(*cmd)
-            _ = f.write(f"{shlex.join(cmd)}\n")
+            runAndAppend("pacman-key", "--add", keyfile)
 
         else:
             raise FileNotFoundError(keyfile)
 
-        cmd = ["pacman-key", "--lsign", key]
-        chronic(*cmd)
-        _ = f.write(f"{shlex.join(cmd)}\n")
+        runAndAppend("pacman-key", "--lsign", key)
 
 os.chmod(script, os.stat(script).st_mode | stat.S_IEXEC)
-print("[system] Adding repository")
+print(f"[system] Adding repository {name}")
 with open("/etc/pacman.conf", "a") as f:
     _ = f.write("\n".join([f"[{name}]", f"Include = /etc/pacman.d/{name}.mirrorlist"]))
     _ = f.write("\n")
 
-print("[system] Adding mirrors")
+print(f"[system] Adding mirrors for {name}")
 with open(f"/etc/pacman.d/{name}.mirrorlist", "w") as f:
     _ = f.write("\n".join([f"Server = {x}" for x in cast(list[str], args.servers)]))
     _ = f.write("\n")

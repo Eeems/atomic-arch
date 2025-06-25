@@ -2,8 +2,8 @@
 set -e
 echo "[system] Initializing keyring"
 chronic pacman-key --init
-echo "[system] populating keyring"
-chronic pacman-key --populate
 if [ -d /usr/lib/system/initialize_pacman.d ];then
   chronic run-parts /usr/lib/system/initialize_pacman.d
 fi
+echo "[system] populating keyring"
+chronic pacman-key --populate
