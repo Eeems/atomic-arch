@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ hashFiles('make.py') }}
+          key: venv-${{ hashFiles('make.py') }}
       - name: Install dependencies
         uses: Eeems-Org/apt-cache-action@v1
         with:
