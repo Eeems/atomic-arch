@@ -266,7 +266,18 @@ def do_checkupdates(args: argparse.Namespace):
 
     res = in_system(
         "-ec",
-        "if [ -f /usr/bin/checkupdates ];then /usr/bin/checkupdates; fi",
+        " ".join(
+            [
+                "if [ -f /usr/bin/chronic ]; then",
+                "  /usr/lib/system/initialize_pacman;",
+                "else",
+                "  /usr/lib/system/initialize_pacman > /dev/null;",
+                "fi;",
+                "if [ -f /usr/bin/checkupdates ];then",
+                "  /usr/bin/checkupdates;",
+                "fi",
+            ]
+        ),
         entrypoint="/bin/bash",
         target=image,
     )
