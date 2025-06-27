@@ -269,7 +269,7 @@ def do_checkupdates(args: argparse.Namespace):
         " ".join(
             [
                 "if [ -f /usr/bin/chronic ]; then",
-                "  /usr/lib/system/initialize_pacman;",
+                "  /usr/bin/chronic /usr/lib/system/initialize_pacman;",
                 "else",
                 "  /usr/lib/system/initialize_pacman > /dev/null;",
                 "fi;",
