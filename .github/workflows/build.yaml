@@ -93,7 +93,7 @@ jobs:
             Automated rootfs update
             skip-checks:true
   base:
-    name: Build atomic-arch:base
+    name: atomic-arch:base image
     runs-on: ubuntu-latest
     needs: [rootfs]
     steps:
@@ -140,7 +140,7 @@ jobs:
         env:
           updates: ${{ needs.rootfs.outputs.Updates}}
   atomic:
-    name: Build atomic-arch:atomic
+    name: atomic-arch:atomic image
     runs-on: ubuntu-latest
     needs: [base]
     steps:
@@ -187,7 +187,7 @@ jobs:
         env:
           updates: ${{ needs.base.outputs.Updates}}
   gnome:
-    name: Build atomic-arch:gnome
+    name: atomic-arch:gnome image
     runs-on: ubuntu-latest
     needs: [base]
     steps:
@@ -234,7 +234,7 @@ jobs:
         env:
           updates: ${{ needs.base.outputs.Updates}}
   eeems:
-    name: Build atomic-arch:eeems
+    name: atomic-arch:eeems image
     runs-on: ubuntu-latest
     needs: [atomic]
     steps:
@@ -279,4 +279,60 @@ jobs:
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
         env:
-          updates: ${{ needs.base.outputs.Updates}}
+          updates: ${{ needs.atomic.outputs.Updates}}
+  iso-base:
+    name: atomic-arch:base iso
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - base
+          - atomic
+          - gnome
+          - eeems
+    needs:
+      - base
+      - atomic
+      - gnome
+      - eeems
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+      - name: Install ostree
+        uses: Eeems-Org/apt-cache-action@v1
+        with:
+          packages: ostree podman
+      - name: Add pacman cache
+        run: |
+          sudo mkdir -p \
+            /var/cache/pacman \
+            /var/lib/pacman \
+            /etc/pacman.d/gnupg
+      - name: Build
+        run: |
+          if [[ "$updates-${{ matrix.variant }}" == "true" ]];then
+            sudo ./make.py iso ${{ matrix.variant }}
+          else
+            echo "No updates to base image"
+          fi
+        env:
+          updates-rootfs: ${{ needs.rootfs.outputs.Updates}}
+          updates-base: ${{ needs.base.outputs.Updates}}
+          updates-atomic: ${{ needs.atomic.outputs.Updates}}
+          updates-gnome: ${{ needs.gnome.outputs.Updates}}
+          updates-eeems: ${{ needs.eeems.outputs.Updates}}
+      - name: Upload iso
+        uses: actions/upload-artifact@v4
+        with:
+          name: atomic-arch-${{ matrix.variant }}.iso
+          path: /var/lib/system/atomic-arch-${{ matrix.variant }}-*.iso
