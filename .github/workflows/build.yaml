@@ -319,18 +319,7 @@ jobs:
             /var/lib/pacman \
             /etc/pacman.d/gnupg
       - name: Build
-        run: |
-          if [[ "$updates-${{ matrix.variant }}" == "true" ]];then
-            sudo ./make.py iso ${{ matrix.variant }}
-          else
-            echo "No updates to base image"
-          fi
-        env:
-          updates-rootfs: ${{ needs.rootfs.outputs.Updates}}
-          updates-base: ${{ needs.base.outputs.Updates}}
-          updates-atomic: ${{ needs.atomic.outputs.Updates}}
-          updates-gnome: ${{ needs.gnome.outputs.Updates}}
-          updates-eeems: ${{ needs.eeems.outputs.Updates}}
+        run: sudo ./make.py iso ${{ matrix.variant }}
       - name: Upload iso
         uses: actions/upload-artifact@v4
         with:
