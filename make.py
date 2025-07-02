@@ -247,7 +247,7 @@ def do_checkupdates(args: argparse.Namespace):
     now = datetime.now()
     new = f"{now.year}/{now.strftime('%m')}/{now.strftime('%d')}"
     has_updates = False
-    if current != now:
+    if current != new:
         url = f"{m.group(1)}/{new}/"
         res = requests.head(url)
         if res.status_code == 200:
