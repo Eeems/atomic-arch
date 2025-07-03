@@ -55,6 +55,7 @@ RUN /usr/lib/system/initialize_pacman \
   pacman-contrib \
   python-pyxattr \
   python-requests \
+  python-dbus \
   distrobox \
   && /usr/lib/system/remove_pacman_files
 
