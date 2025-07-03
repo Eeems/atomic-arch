@@ -293,7 +293,7 @@ jobs:
         env:
           updates: ${{ needs.atomic.outputs.Updates}}
   iso-base:
-    name: atomic-arch:base iso
+    name: atomic-arch:${{ matrix.variant }} iso
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
