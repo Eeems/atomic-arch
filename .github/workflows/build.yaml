@@ -338,7 +338,11 @@ jobs:
             /var/lib/pacman \
             /etc/pacman.d/gnupg
       - name: Build
-        run: sudo ./make.py iso ${{ matrix.variant }}
+        run: |
+          if [ ! -f /etc/containers/seccomp.json ];then
+            echo '{}' > /etc/containers/seccomp.json
+          fi
+          sudo ./make.py iso ${{ matrix.variant }}
       - name: Upload iso
         uses: actions/upload-artifact@v4
         with:
