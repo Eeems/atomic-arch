@@ -4,7 +4,10 @@ FROM ${BASE_IMAGE}
 
 ARG UUID
 
-RUN /usr/lib/system/setup_live_user
+RUN \
+  rm /home \
+  && mkdir /home \
+  && /usr/lib/system/setup_live_user
 RUN \
   mkdir -p /etc/mkinitcpio{,.conf}.d \
   && cp -lf /etc/system/mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf \
