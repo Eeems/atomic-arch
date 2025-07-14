@@ -340,7 +340,7 @@ jobs:
       - name: Build
         run: |
           if [ ! -f /etc/containers/seccomp.json ];then
-            echo '{}' | sudo tee /etc/containers/seccomp.json
+            sudo cp seccomp.json /etc/containers/seccomp.json
           fi
           sudo ./make.py iso ${{ matrix.variant }}
       - name: Upload iso
