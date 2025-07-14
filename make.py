@@ -104,9 +104,7 @@ def do_iso(args: argparse.Namespace):
 
     for target in cast(list[str], args.target):
         _ = in_system("build", target=f"{IMAGE}:{target}", check=True)
-
-    for target in cast(list[str], args.target):
-        _ = in_system("iso", target=f"{IMAGE}:{target}", check=True)
+        _ = in_system("iso", check=True)
 
 
 def do_rootfs(args: argparse.Namespace):

@@ -2,11 +2,11 @@
 set -e
 echo "[system] Variant: $VARIANT"
 if [ -f /etc/system/Isofile ]; then
-  sed -i "/FROM eeems\/atomic-arch:/ s|base|$VARIANT_ID|" /etc/system/Isofile
+  sed -i "/FROM eeems\/atomic-arch:/ s|:.*|:$VARIANT_ID|" /etc/system/Isofile
 fi
 if [ -f /etc/system/Systemfile ]; then
-  sed -i "/FROM eeems\/atomic-arch:/ s|base|$VARIANT_ID|" /etc/system/Systemfile
+  sed -i "/FROM eeems\/atomic-arch:/ s|:.*|:$VARIANT_ID|" /etc/system/Systemfile
 fi
-sed -i "/VARIANT=/ s|Base|$VARIANT|" /usr/lib/os-release
-sed -i "/VARIANT_ID=/ s|base|$VARIANT_ID|" /usr/lib/os-release
+sed -i "/VARIANT=/ s|=.*|=$VARIANT|" /usr/lib/os-release
+sed -i "/VARIANT_ID=/ s|=.*|=$VARIANT_ID|" /usr/lib/os-release
 sed -i "/VERSION_ID=/ s|.*|VERSION_ID=$VERSION_ID|" /usr/lib/os-release
