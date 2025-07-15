@@ -5,9 +5,11 @@ import subprocess
 
 from datetime import datetime
 from typing import Callable
+from collections.abc import Generator
 
 from . import SYSTEM_PATH
 from . import OS_NAME
+
 from .system import execute
 from .system import _execute  # pyright:ignore [reportPrivateUsage]
 from .console import bytes_to_stdout
@@ -137,3 +139,28 @@ def undeploy(
         onstdout=onstdout,
         onstderr=onstderr,
     )
+
+
+def deployments() -> Generator[tuple[int, str, str]]:
+    status = subprocess.check_output(["ostree", "admin", "status"])
+    deployments = [
+        x
+        for x in status.decode("utf-8").split("\n")
+        if not x.startswith("    origin refspec:") and f" {OS_NAME} " in x
+    ]
+    index = 0
+    for deployment in deployments:
+        parts = deployment.split()
+        if len(parts) == 2:
+            checksum = parts[1]
+            type = ""
+
+        elif parts[0] == "*":
+            checksum = parts[2]
+            type = "current"
+        else:
+            checksum = parts[1]
+            type = parts[2].strip("()")
+
+        yield index, checksum, type
+        index += 1

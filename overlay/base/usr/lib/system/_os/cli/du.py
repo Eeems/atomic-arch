@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from argparse import Namespace
 
 from ..system import is_root
+from ..ostree import deployments
 from .. import OS_NAME
 
 
@@ -17,28 +18,6 @@ def command(_: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    status = subprocess.check_output(["ostree", "admin", "status"])
-    deployments = [
-        x
-        for x in status.decode("utf-8").split("\n")
-        if not x.startswith("    origin refspec:") and f" {OS_NAME} " in x
-    ]
-    info: list[tuple[str, str]] = []
-    for deployment in deployments:
-        parts = deployment.split()
-        if len(parts) == 2:
-            checksum = parts[1]
-            type = ""
-
-        elif parts[0] == "*":
-            checksum = parts[2]
-            type = "current"
-        else:
-            checksum = parts[1]
-            type = parts[2].strip("()")
-
-        info.append((checksum, type))
-
     sizes = list(
         reversed(
             subprocess.check_output(
@@ -47,7 +26,7 @@ def command(_: Namespace):
                     "-hs",
                     *[
                         f"/ostree/deploy/{OS_NAME}/deploy/{c}"
-                        for c, _ in reversed(info)
+                        for _, c, _ in reversed(list(deployments()))
                     ],
                 ]
             )
@@ -56,9 +35,7 @@ def command(_: Namespace):
             .split("\n")
         )
     )
-    for data in info:
-        checksum, type = data
-        index = info.index(data)
+    for index, checksum, type in deployments():
         diffsize = sizes[index].split()[0]
         size = (
             subprocess.check_output(

@@ -18,8 +18,8 @@ from .console import bytes_to_stdout
 from .console import bytes_to_stderr
 
 
-def baseImage() -> str:
-    with open("/etc/system/Systemfile", "r") as f:
+def baseImage(systemFile: str = "/etc/system/Systemfile") -> str:
+    with open(systemFile, "r") as f:
         return [x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")][
             0
         ]
