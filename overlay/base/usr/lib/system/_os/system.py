@@ -33,6 +33,7 @@ def _execute(cmd: str) -> int:
 def execute(
     cmd: str | list[str],
     *args: str,
+    stdin: bytes | str | BinaryIO | TextIO | None = None,
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
@@ -41,7 +42,7 @@ def execute(
     else:
         _args = cmd
 
-    ret = execute_pipe(*_args, *args, onstdout=onstdout, onstderr=onstderr)
+    ret = execute_pipe(*_args, *args, stdin=stdin, onstdout=onstdout, onstderr=onstderr)
     if ret:
         raise subprocess.CalledProcessError(ret, cmd, None, None)
 
@@ -292,25 +293,39 @@ def upgrade(
     if not os.path.exists(SYSTEM_PATH):
         os.makedirs(SYSTEM_PATH, exist_ok=True)
 
-    rootfs = os.path.join(SYSTEM_PATH, "rootfs")
-    if os.path.exists(rootfs):
-        shutil.rmtree(rootfs)
-
     build(
         buildArgs=[f"KARGS={system_kernelCommandLine()}"],
         onstdout=onstdout,
         onstderr=onstderr,
     )
-    with export(workingDir=SYSTEM_PATH, onstdout=onstdout, onstderr=onstderr) as t:
-        if not os.path.exists(rootfs):
-            os.makedirs(rootfs, exist_ok=True)
 
-        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
+    def _skipList(name: str):
+        from .podman import podman_cmd
 
-    commit(branch, rootfs, onstdout=onstdout, onstderr=onstderr)
+        cmd = podman_cmd("exec", name, "find", "/var")
+        setattr(
+            _skipList,
+            "_value",
+            [
+                x
+                for x in [x.strip() for x in subprocess.check_output(cmd).splitlines()]
+                if x
+            ],
+        )
+
+    with export(
+        workingDir=SYSTEM_PATH, onstdout=onstdout, onstderr=onstderr, onsetup=_skipList
+    ) as stdout:
+        commit(
+            branch,
+            tarfile=stdout,
+            onstdout=onstdout,
+            onstderr=onstderr,
+            skipList=cast(list[str], getattr(_skipList, "_value")),
+        )
+
     prune(branch, onstdout=onstdout, onstderr=onstderr)
     deploy(branch, "/", onstdout=onstdout, onstderr=onstderr)
-    _ = shutil.rmtree(rootfs)
 
     cmd = shlex.join(
         [

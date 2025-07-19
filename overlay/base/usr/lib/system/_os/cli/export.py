@@ -1,5 +1,6 @@
 import sys
 import os
+import tarfile
 
 from typing import cast
 from typing import Any
@@ -37,11 +38,14 @@ def command(args: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    with export(
-        cast(str, args.tag),
-        cast(str, args.setup),
-        cast(str, args.workingDir),
-    ) as t:
+    with (
+        export(
+            cast(str, args.tag),
+            cast(str, args.setup),
+            cast(str, args.workingDir),
+        ) as stdout,
+        tarfile.open(fileobj=stdout, mode="r|*") as t,
+    ):
         rootfs = cast(str, args.rootfs)
         if not os.path.exists(rootfs):
             os.makedirs(rootfs, exist_ok=True)

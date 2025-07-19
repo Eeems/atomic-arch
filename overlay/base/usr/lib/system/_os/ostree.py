@@ -4,7 +4,9 @@ import shlex
 import subprocess
 
 from datetime import datetime
+from typing import BinaryIO
 from typing import Callable
+from typing import TextIO
 from collections.abc import Generator
 
 from . import SYSTEM_PATH
@@ -24,10 +26,11 @@ def ostree_cmd(*args: str) -> list[str]:
 
 def ostree(
     *args: str,
+    stdin: bytes | str | BinaryIO | TextIO | None = None,
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
-    execute(*ostree_cmd(*args), onstdout=onstdout, onstderr=onstderr)
+    execute(*ostree_cmd(*args), stdin=stdin, onstdout=onstdout, onstderr=onstderr)
 
 
 setattr(ostree, "repo", "/ostree/repo")
@@ -36,19 +39,28 @@ setattr(ostree, "repo", "/ostree/repo")
 def commit(
     branch: str = "system",
     rootfs: str | None = None,
+    tarfile: BinaryIO | None = None,
     skipList: list[str] | None = None,
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
-    if rootfs is None:
+    if rootfs is not None:
+        tree = f"dir={rootfs}"
+
+    elif tarfile is not None:
+        tree = "tar=-"
+
+    elif rootfs is None:
         rootfs = os.path.join(SYSTEM_PATH, "rootfs")
+        tree = f"dir={rootfs}"
 
     if skipList is None:
         skipList = []
 
     skipList.append("/etc")
-    for name in os.listdir(os.path.join(rootfs, "var")):
-        skipList.append(f"/var/{name}")
+    if rootfs is not None:
+        for name in os.listdir(os.path.join(rootfs, "var")):
+            skipList.append(f"/var/{name}")
 
     _skipList = os.path.join(SYSTEM_PATH, "skiplist")
     with open(_skipList, "w") as f:
@@ -60,8 +72,9 @@ def commit(
         "--generate-sizes",
         f"--branch={OS_NAME}/{branch}",
         f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
-        f"--tree=dir={rootfs}",
+        f"--tree={tree}",
         f"--skip-list={_skipList}",
+        stdin=tarfile,
         onstdout=onstdout,
         onstderr=onstderr,
     )

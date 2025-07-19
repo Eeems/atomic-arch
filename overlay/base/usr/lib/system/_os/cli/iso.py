@@ -2,6 +2,7 @@ import shutil
 import atexit
 import os
 import sys
+import tarfile
 
 from datetime import datetime
 from argparse import ArgumentParser
@@ -63,11 +64,14 @@ def iso():
     if os.path.exists(rootfs):
         shutil.rmtree(rootfs)
 
-    with export(
-        f"iso-{uuid}",
-        f"podman --remote save {buildImage} | podman load",
-        workingDir=SYSTEM_PATH,
-    ) as t:
+    with (
+        export(
+            f"iso-{uuid}",
+            f"podman --remote save {buildImage} | podman load",
+            workingDir=SYSTEM_PATH,
+        ) as stdout,
+        tarfile.open(fileobj=stdout, mode="r|*") as t,
+    ):
         if not os.path.exists(rootfs):
             os.makedirs(rootfs, exist_ok=True)
 
