@@ -1,4 +1,5 @@
 import sys
+import os
 
 from typing import cast
 from typing import Any
@@ -36,12 +37,16 @@ def command(args: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    export(
+    with export(
         cast(str, args.tag),
         cast(str, args.setup),
-        cast(str, args.rootfs),
         cast(str, args.workingDir),
-    )
+    ) as t:
+        rootfs = cast(str, args.rootfs)
+        if not os.path.exists(rootfs):
+            os.makedirs(rootfs, exist_ok=True)
+
+        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
 
 
 if __name__ == "__main__":

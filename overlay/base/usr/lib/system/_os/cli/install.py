@@ -151,7 +151,18 @@ def install(
         ],
     )
     os.unlink(systemfile)
-    export(workingDir=systemDir)
+    rootfs = os.path.join(systemDir, "rootfs")
+
+    with export(workingDir=systemDir) as t:
+        if not os.path.exists(rootfs):
+            os.makedirs(rootfs, exist_ok=True)
+
+        t.extractall(
+            rootfs,
+            numeric_owner=True,
+            filter="fully_trusted",
+        )
+
     rootfs = os.path.join(systemDir, "rootfs")
     buildImage = baseImage()
     tmp = os.path.join(sysroot, ".tmp")

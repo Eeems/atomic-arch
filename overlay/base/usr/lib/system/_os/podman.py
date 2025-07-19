@@ -12,6 +12,8 @@ from hashlib import sha256
 from glob import iglob
 from typing import cast
 from typing import Callable
+from collections.abc import Generator
+from contextlib import contextmanager
 
 from . import SYSTEM_PATH
 
@@ -244,24 +246,17 @@ def build(
     )
 
 
+@contextmanager
 def export(
     tag: str = "latest",
     setup: str = "",
-    rootfs: str | None = None,
     workingDir: str | None = None,
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
-):
+) -> Generator[tarfile.TarFile, None, None]:
     if workingDir is None:
         workingDir = SYSTEM_PATH
 
-    if rootfs is None:
-        rootfs = os.path.join(workingDir, "rootfs")
-
-    if os.path.exists(rootfs):
-        shutil.rmtree(rootfs)
-
-    os.makedirs(rootfs, exist_ok=True)
     os.makedirs(workingDir, exist_ok=True)
     cwd = os.getcwd()
     os.chdir(workingDir)
@@ -283,14 +278,15 @@ def export(
     cmd = podman_cmd("export", name)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     assert process.stdout is not None
-    with tarfile.open(fileobj=process.stdout, mode="r|*") as t:
-        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
+    try:
+        yield tarfile.open(fileobj=process.stdout, mode="r|*")
 
-    process.stdout.close()
-    _ = process.wait()
-    if process.returncode != 0:
-        raise subprocess.CalledProcessError(process.returncode, cmd, None, None)
+    finally:
+        process.stdout.close()
+        _ = process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, cmd, None, None)
 
-    atexit.unregister(exitFunc1)
-    podman("rm", name, onstdout=onstdout, onstderr=onstderr)
-    os.chdir(cwd)
+        atexit.unregister(exitFunc1)
+        podman("rm", name, onstdout=onstdout, onstderr=onstderr)
+        os.chdir(cwd)

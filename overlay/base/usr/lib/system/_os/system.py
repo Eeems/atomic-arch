@@ -301,7 +301,12 @@ def upgrade(
         onstdout=onstdout,
         onstderr=onstderr,
     )
-    export(rootfs=rootfs, workingDir=SYSTEM_PATH, onstdout=onstdout, onstderr=onstderr)
+    with export(workingDir=SYSTEM_PATH, onstdout=onstdout, onstderr=onstderr) as t:
+        if not os.path.exists(rootfs):
+            os.makedirs(rootfs, exist_ok=True)
+
+        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
+
     commit(branch, rootfs, onstdout=onstdout, onstderr=onstderr)
     prune(branch, onstdout=onstdout, onstderr=onstderr)
     deploy(branch, "/", onstdout=onstdout, onstderr=onstderr)

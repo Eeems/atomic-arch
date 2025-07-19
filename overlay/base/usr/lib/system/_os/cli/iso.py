@@ -63,12 +63,16 @@ def iso():
     if os.path.exists(rootfs):
         shutil.rmtree(rootfs)
 
-    export(
+    with export(
         f"iso-{uuid}",
         f"podman --remote save {buildImage} | podman load",
-        rootfs=rootfs,
         workingDir=SYSTEM_PATH,
-    )
+    ) as t:
+        if not os.path.exists(rootfs):
+            os.makedirs(rootfs, exist_ok=True)
+
+        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
+
     atexit.unregister(exitFunc1)
     podman("rmi", f"system:iso-{uuid}")
 
