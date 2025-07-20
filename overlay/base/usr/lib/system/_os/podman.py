@@ -3,10 +3,10 @@ import atexit
 import os
 import shlex
 import shutil
+import tarfile
 import subprocess
 import json
 
-from io import BytesIO
 from time import time
 from hashlib import sha256
 from glob import iglob
@@ -253,8 +253,7 @@ def export(
     workingDir: str | None = None,
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
-    onsetup: Callable[[str], None] | None = None,
-) -> Generator[BytesIO, None, None]:
+) -> Generator[tarfile.TarFile, None, None]:
     if workingDir is None:
         workingDir = SYSTEM_PATH
 
@@ -276,14 +275,11 @@ def export(
         onstdout=onstdout,
         onstderr=onstderr,
     )
-    if onsetup is not None:
-        onsetup(name)
-
     cmd = podman_cmd("export", name)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     assert process.stdout is not None
     try:
-        yield cast(BytesIO, process.stdout)
+        yield tarfile.open(fileobj=process.stdout, mode="r|*")
 
     finally:
         process.stdout.close()

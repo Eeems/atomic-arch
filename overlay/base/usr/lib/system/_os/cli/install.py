@@ -3,7 +3,6 @@ import sys
 import shutil
 import shlex
 import atexit
-import tarfile
 
 from getpass import getpass
 from argparse import ArgumentParser
@@ -154,10 +153,7 @@ def install(
     os.unlink(systemfile)
     rootfs = os.path.join(systemDir, "rootfs")
 
-    with (
-        export(workingDir=systemDir) as stdout,
-        tarfile.open(fileobj=stdout, mode="r|*") as t,
-    ):
+    with export(workingDir=systemDir) as t:
         if not os.path.exists(rootfs):
             os.makedirs(rootfs, exist_ok=True)
 
