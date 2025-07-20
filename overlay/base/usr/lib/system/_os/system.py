@@ -302,7 +302,7 @@ def upgrade(
     def _skipList(name: str):
         from .podman import podman_cmd
 
-        cmd = podman_cmd("exec", name, "-c", "/usr/bin/find /var")
+        cmd = podman_cmd("exec", name, "find", "/var")
         setattr(
             _skipList,
             "_value",
