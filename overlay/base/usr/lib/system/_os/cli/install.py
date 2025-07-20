@@ -22,7 +22,12 @@ from ..podman import build
 from ..podman import export
 
 
-NVIDIA_PACKAGES = ["nvidia-open-dkms", "nvidia-container-toolkit", "nvidia-utils"]
+NVIDIA_PACKAGES = [
+    "nvidia-open-dkms",
+    "nvidia-container-toolkit",
+    "nvidia-utils",
+    "nvidia-settings",
+]
 
 kwds = {"help": f"Installs {OS_NAME}"}
 
