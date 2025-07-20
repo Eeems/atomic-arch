@@ -268,17 +268,20 @@ def export(
         "run",
         f"--name={name}",
         "--privileged",
+        "--detach",
         "--security-opt=label=disable",
         "--volume=/run/podman/podman.sock:/run/podman/podman.sock",
         f"system:{tag}",
         "-c",
-        setup,
+        "while true;do sleep 1;dne",
         onstdout=onstdout,
         onstderr=onstderr,
     )
+    podman("exec", name, "-c", setup)
     if onsetup is not None:
         onsetup(name)
 
+    podman("kill", name)
     cmd = podman_cmd("export", name)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     assert process.stdout is not None
