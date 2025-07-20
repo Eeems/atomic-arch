@@ -24,7 +24,7 @@ from ..podman import export
 
 NVIDIA_PACKAGES = ["nvidia-open-dkms", "nvidia-container-toolkit", "nvidia-utils"]
 
-kwds = {"help": "Revert the last system upgrade"}
+kwds = {"help": f"Installs {OS_NAME}"}
 
 
 def register(parser: ArgumentParser):
@@ -178,9 +178,9 @@ def install(
         "-c",
         f"podman --remote save --multi-image-archive system:latest {buildImage} | podman load",
     )
-    containers = os.path.join(sysroot, "ostree/deploy", OS_NAME, "var/lib/containers")
-    os.makedirs(containers, exist_ok=True)
-    _ = shutil.move(os.path.join(rootfs, "var/lib/containers"), containers)
+    lib = os.path.join(sysroot, "ostree/deploy", OS_NAME, "var/lib")
+    os.makedirs(lib, exist_ok=True)
+    _ = shutil.move(os.path.join(rootfs, "var/lib/containers"), lib)
     _ = shutil.rmtree(os.path.join(rootfs, "var/tmp"))
     atexit.unregister(exitFunc1)
     execute("umount", "/var/tmp")
