@@ -1,3 +1,6 @@
+animations {
+	slowdown 0.2
+}
 layout {
     gaps 8
     center-focused-column "never"
