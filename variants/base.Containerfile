@@ -38,6 +38,9 @@ RUN /usr/lib/system/initialize_pacman \
   flatpak \
   ostree \
   xorriso \
+  mtools \
+  rsync \
+  dmidecode \
   squashfs-tools \
   btrfs-progs \
   e2fsprogs \
