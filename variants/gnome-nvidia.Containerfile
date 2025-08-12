@@ -2,7 +2,7 @@
 FROM eeems/atomic-arch:gnome
 
 ARG VARIANT="Gnome (nvidia)"
-ARG VARIANT_ID="gnoame-nvidia"
+ARG VARIANT_ID="gnome-nvidia"
 ARG VERSION_ID
 ARG HASH
 
