@@ -343,7 +343,7 @@ jobs:
         env:
           updates: ${{ needs.atomic.outputs.Updates}}
   nvidia:
-    name: atomic-arch:${{ matrix.variant }} iso
+    name: atomic-arch:${{ matrix.variant }}-nvidia
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
