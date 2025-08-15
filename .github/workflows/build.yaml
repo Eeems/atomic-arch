@@ -407,7 +407,7 @@ jobs:
         env:
           updates: ${{ needs.atomic.outputs.Updates}}
   iso:
-    name: atomic-arch:${{ matrix.variant }} iso
+    name: atomic-arch:${{ matrix.variant }}${{ matrix.subvariant }} iso
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -418,6 +418,9 @@ jobs:
           - gnome
           - eeems
           - system76
+        subvariant:
+          - ""
+          - -nvidia
     needs:
       - base
       - atomic
@@ -459,16 +462,9 @@ jobs:
           if [ ! -f /etc/containers/seccomp.json ];then
             sudo cp seccomp.json /etc/containers/seccomp.json
           fi
-          sudo ./make.py iso ${{ matrix.variant }} ${{ matrix.variant }}-nvidia
+          sudo ./make.py iso ${{ matrix.variant }}${{ matrix.subvariant }}
       - name: Upload iso
         uses: actions/upload-artifact@v4
         with:
           name: atomic-arch-${{ matrix.variant }}.iso
-          path: |
-            /var/lib/system/atomic-arch-${{ matrix.variant }}-*.iso
-            !/var/lib/system/atomic-arch-${{ matrix.variant }}-nvidia-*.iso
-      - name: Upload nvidia iso
-        uses: actions/upload-artifact@v4
-        with:
-          name: atomic-arch-${{ matrix.variant }}-nvidia.iso
-          path: /var/lib/system/atomic-arch-${{ matrix.variant }}-nvidia-*.iso
+          path: /var/lib/system/atomic-arch-${{ matrix.variant }}-*.iso
