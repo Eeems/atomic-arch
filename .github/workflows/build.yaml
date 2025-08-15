@@ -466,5 +466,5 @@ jobs:
       - name: Upload iso
         uses: actions/upload-artifact@v4
         with:
-          name: atomic-arch-${{ matrix.variant }}.iso
-          path: /var/lib/system/atomic-arch-${{ matrix.variant }}-*.iso
+          name: atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}.iso
+          path: /var/lib/system/atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}-*.iso
