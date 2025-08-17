@@ -141,7 +141,7 @@ def undeploy(
     )
 
 
-def deployments() -> Generator[tuple[int, str, str]]:
+def deployments() -> Generator[tuple[int, str, str], None, None]:
     status = subprocess.check_output(["ostree", "admin", "status"])
     deployments = [
         x
