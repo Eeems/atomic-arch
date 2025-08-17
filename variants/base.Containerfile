@@ -60,7 +60,14 @@ RUN /usr/lib/system/initialize_pacman \
   python-requests \
   python-dbus \
   distrobox \
-  && /usr/lib/system/remove_pacman_files
+  && /usr/lib/system/remove_pacman_files \
+  && rm /usr/bin/su \
+  && chmod 644 /etc/pam.d/sudo{,-i} \
+  && chmod 400 /etc/sudoers \
+  && ln -s /usr/bin/su{-rs,} \
+  && ln -s /usr/bin/sudo{-rs,} \
+  && ln -s /usr/bin/visudo{-rs,} \
+  && chmod u+s /usr/bin/new{u,g}idmap
 
 RUN systemctl enable \
   NetworkManager \
@@ -71,15 +78,7 @@ RUN mkdir -p /var/lib/system
 
 COPY overlay/base /
 
-RUN \
-  systemctl enable \
-    atomic-state-overlay \
-    os-daemon \
-    os-checkupdates.timer \
-  && rm /usr/bin/su \
-  && chmod 644 /etc/pam.d/sudo{,-i} \
-  && chmod 400 /etc/sudoers \
-  && ln -s /usr/bin/su{-rs,} \
-  && ln -s /usr/bin/sudo{-rs,} \
-  && ln -s /usr/bin/visudo{-rs,} \
-  && chmod u+s /usr/bin/new{u,g}idmap
+RUN systemctl enable \
+  atomic-state-overlay \
+  os-daemon \
+  os-checkupdates.timer
