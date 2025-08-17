@@ -165,21 +165,23 @@ def system_hash() -> str:
     return local_info.get("BUILD_ID", "0000-00-00.0").split(".", 1)[1]
 
 
+def image_info(image: str, remote: bool = True) -> dict[str, object]:
+    if remote:
+        args = ["skopeo", "inspect", f"docker://{image}"]
+
+    else:
+        args = podman_cmd("inspect", "--format={{ json . }}", image)
+
+    data = subprocess.check_output(args)
+    return cast(dict[str, object], json.loads(data))
+
+
+def image_labels(image: str, remote: bool = True) -> dict[str, str]:
+    return cast(dict[str, dict[str, str]], image_info(image, remote)).get("Labels", {})
+
+
 def image_hash(image: str) -> str:
-    info = cast(
-        dict[str, object],
-        json.loads(
-            subprocess.check_output(
-                [
-                    "skopeo",
-                    "inspect",
-                    f"docker://{image}",
-                ]
-            )
-        ),
-    )
-    labels = cast(dict[str, dict[str, str]], info).get("Labels", {})
-    return labels.get("hash", "0")
+    return image_labels(image).get("hash", "0")
 
 
 CONTAINER_POST_STEPS = r"""

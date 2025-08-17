@@ -153,24 +153,15 @@ def system_kernelCommandLine() -> str:
 
 
 def checkupdates(image: str | None = None) -> list[str]:
-    from .podman import podman_cmd
     from .podman import in_system_output
     from .podman import system_hash
     from .podman import context_hash
+    from .podman import image_labels
+    from .podman import image_info
 
     if image is None:
         image = baseImage()
 
-    digests = [
-        x
-        for x in subprocess.check_output(
-            podman_cmd("inspect", "--format={{ .Digest }}", image)
-        )
-        .decode("utf-8")
-        .strip()
-        .split("\n")
-        if x
-    ]
     updates: list[str] = []
     new_hash = context_hash(f"KARGS={system_kernelCommandLine()}".encode("utf-8"))
     current_hash = system_hash()
@@ -178,7 +169,7 @@ def checkupdates(image: str | None = None) -> list[str]:
         updates.append(f"Systemfile {current_hash[:9]} -> {new_hash[:9]}")
 
     mirrorlist: list[str] | None = None
-    if digests:
+    if image_info(image, remote=False).get("Digest", []):
         with open("/usr/lib/os-release", "r") as f:
             local_info = {
                 x[0]: x[1]
@@ -190,19 +181,7 @@ def checkupdates(image: str | None = None) -> list[str]:
             }
 
         local_id = local_info.get("VERSION_ID", "0")
-        remote_info = cast(
-            dict[str, object],
-            json.loads(
-                subprocess.check_output(
-                    [
-                        "skopeo",
-                        "inspect",
-                        f"docker://{image}",
-                    ]
-                )
-            ),
-        )
-        remote_labels = cast(dict[str, dict[str, str]], remote_info).get("Labels", {})
+        remote_labels = image_labels(image, remote=True)
         remote_id = remote_labels.get("os-release.VERSION_ID", "0")
         if local_id != remote_id:
             remote_version = remote_labels.get("os-release.VERSION", "0")

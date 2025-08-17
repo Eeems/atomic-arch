@@ -7,6 +7,7 @@ import os
 import atexit
 import re
 import tempfile
+import json
 
 from glob import iglob
 from hashlib import sha256
@@ -44,6 +45,7 @@ in_system = cast(Callable[..., int], _os.podman.in_system)  # pyright:ignore [re
 in_system_output = cast(Callable[..., bytes], _os.podman.in_system_output)  # pyright:ignore [reportUnknownMemberType]
 is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [reportUnknownMemberType]
 image_hash = cast(Callable[[str], str], _os.podman.image_hash)  # pyright:ignore [reportUnknownMemberType]
+image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_info)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
 
@@ -380,6 +382,22 @@ def do_check(_: argparse.Namespace):
     print("[check] All checks passed", file=sys.stderr)
 
 
+def do_inspect(args: argparse.Namespace):
+    if not is_root():
+        print("Must be run as root")
+        sys.exit(1)
+
+    remote = cast(bool, args.remote)
+    print(
+        json.dumps(
+            {
+                x: image_info(f"{IMAGE}:{x}", remote)
+                for x in cast(list[str], args.target)
+            }
+        )
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers()
@@ -431,6 +449,11 @@ if __name__ == "__main__":
 
     subparser = subparsers.add_parser("check")
     subparser.set_defaults(func=do_check)
+
+    subparser = subparsers.add_parser("inspect")
+    _ = subparser.add_argument("--remote", action="store_true")
+    _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
+    subparser.set_defaults(func=do_inspect)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
