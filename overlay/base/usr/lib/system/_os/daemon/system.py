@@ -22,7 +22,7 @@ class Object(dbus.service.Object):
             object_path="/system",
         )
         self._updates: list[str] = []
-        self._notification: str | None = None
+        self._notification: dict[str, str] = {}
         self._upgrade_status: str = ""
         self._pull_status: str = ""
         self._checkupdates_status: str = ""
@@ -30,7 +30,7 @@ class Object(dbus.service.Object):
         self._pull_thread: threading.Thread | None = None
         self._checkupdates_thread: threading.Thread | None = None
 
-    def notify_all(self, msg: str):
+    def notify_all(self, msg: str, action: str):
         for path in os.scandir("/run/user"):
             if not path.is_dir():
                 continue
@@ -52,10 +52,10 @@ class Object(dbus.service.Object):
                 "--print-id",
                 "--urgency=normal",
             ]
-            if self._notification is not None:
-                args.append(f"--replace-id={self._notification}")
+            if action in self._notification:
+                args.append(f"--replace-id={self._notification[action]}")
 
-            self._notification = (
+            self._notification[action] = (
                 subprocess.check_output([*args, msg]).strip().decode("utf-8")
             )
 
@@ -90,16 +90,16 @@ class Object(dbus.service.Object):
             error(e)
 
     def _upgrade(self):
-        self.notify_all("Starting system upgrade")
+        self.notify_all("Starting system upgrade", "upgrade")
         try:
             upgrade(onstdout=self.upgrade_stdout, onstderr=self.upgrade_stderr)
             self.upgrade_status("success")
-            self.notify_all("System upgrade complete, reboot required")
+            self.notify_all("System upgrade complete, reboot required", "upgrade")
 
         except BaseException as e:
             self.upgrade_stderr(str(e).encode("utf-8"))
             self.upgrade_status("error")
-            self.notify_all("System upgrade failed")
+            self.notify_all("System upgrade failed", "upgrade")
 
         finally:
             self._upgrade_thread = None
@@ -177,13 +177,14 @@ class Object(dbus.service.Object):
                 self.checkupdates_status("available")
                 self.notify_all(
                     f"{len(self._updates)} updates available:\n"
-                    + "\n".join(self._updates)
+                    + "\n".join(self._updates),
+                    "checkupdates",
                 )
 
         except BaseException as e:
             self.checkupdates_stderr(str(e).encode("utf-8"))
             self.checkupdates_status("error")
-            self.notify_all("Failed to checkupdates base image")
+            self.notify_all("Failed to checkupdates base image", "checkupdates")
             raise
 
         finally:
@@ -247,7 +248,7 @@ class Object(dbus.service.Object):
             error(e)
 
     def _pull(self):
-        self.notify_all("Pulling base image")
+        self.notify_all("Pulling base image", "pull")
         try:
             image = baseImage()
             podman(
@@ -257,12 +258,12 @@ class Object(dbus.service.Object):
                 onstderr=self.pull_stderr,
             )
             self.pull_status("success")
-            self.notify_all("Base image pulled")
+            self.notify_all("Base image pulled", "pull")
 
         except BaseException as e:
             self.pull_stderr(str(e).encode("utf-8"))
             self.pull_status("error")
-            self.notify_all("Failed to pull base image")
+            self.notify_all("Failed to pull base image", "pull")
             raise
 
         finally:
