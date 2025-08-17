@@ -51,7 +51,13 @@ LABEL \
   org.opencontainers.image.authors="eeems@eeems.email" \
   org.opencontainers.image.source="https://github.com/Eeems/atomic-arch" \
   org.opencontainers.image.ref.name="rootfs" \
-  hash="${HASH}"
+  hash="${HASH}" \
+  mirrorlist="[ \
+  \"https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+  \"https://america.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+  \"https://asia.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+  \"https://europe.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\" \
+  ]"
 
 WORKDIR /
 COPY --from=pacstrap /rootfs /

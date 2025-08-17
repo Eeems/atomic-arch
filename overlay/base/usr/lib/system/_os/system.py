@@ -11,6 +11,7 @@ from typing import Callable
 from typing import cast
 from glob import iglob
 from select import select
+from tempfile import NamedTemporaryFile
 
 from . import SYSTEM_PATH
 from . import OS_NAME
@@ -176,6 +177,7 @@ def checkupdates(image: str | None = None) -> list[str]:
     if new_hash != current_hash:
         updates.append(f"Systemfile {current_hash[:9]} -> {new_hash[:9]}")
 
+    mirrorlist: list[str] | None = None
     if digests:
         with open("/usr/lib/os-release", "r") as f:
             local_info = {
@@ -209,9 +211,35 @@ def checkupdates(image: str | None = None) -> list[str]:
                 f"{image} {local_version}.{local_id} -> {remote_version}.{remote_id}"
             )
 
+        try:
+            data = json.loads(remote_labels.get("mirrorlist", "[]"))  # pyright: ignore[reportAny]
+            assert isinstance(data, list)
+            for x in data:  # pyright: ignore[reportUnknownVariableType]
+                assert isinstance(x, str)
+
+            mirrorlist = cast(list[str], data)
+
+        except json.JSONDecodeError:
+            pass
+
+    if mirrorlist is None or not mirrorlist:
+        with open("/etc/pacman.d/mirrorlist") as f:
+            mirrorlist = [
+                x.split("=")[1].strip()
+                for x in f.read().splitlines(False)
+                if x.startswith("Server") and "=" in x
+            ]
+
+    mirrorlist_file = NamedTemporaryFile("w", delete_on_close=False)
+    mirrorlist_file.writelines([f"Server = {x}\n" for x in mirrorlist])
+    mirrorlist_file.close()
+
     try:
         updates += (
-            in_system_output(entrypoint="/usr/bin/checkupdates")
+            in_system_output(
+                entrypoint="/usr/bin/checkupdates",
+                volumes=[f"{mirrorlist_file.name}:/etc/pacman.d/mirrorlist"],
+            )
             .strip()
             .decode("utf-8")
             .splitlines()
@@ -222,6 +250,9 @@ def checkupdates(image: str | None = None) -> list[str]:
             raise
 
         updates += cast(bytes, e.stdout).strip().decode("utf-8").splitlines()
+
+    finally:
+        os.unlink(mirrorlist_file.name)
 
     return updates
 
