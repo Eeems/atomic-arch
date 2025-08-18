@@ -48,6 +48,7 @@ image_hash = cast(Callable[[str], str], _os.podman.image_hash)  # pyright:ignore
 image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_info)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
+
 def hash(target: str) -> str:
     m = sha256()
     with open(f"variants/{target}.Containerfile", "rb") as f:
@@ -397,6 +398,11 @@ def do_inspect(args: argparse.Namespace):
     )
 
 
+def do_hash(args: argparse.Namespace):
+    for target in cast(list[str], args.target):
+        print(f"{target}: {hash(target)[:9]}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers()
@@ -453,6 +459,10 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--remote", action="store_true")
     _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
     subparser.set_defaults(func=do_inspect)
+
+    subparser = subparsers.add_parser("hash")
+    _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
+    subparser.set_defaults(func=do_hash)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

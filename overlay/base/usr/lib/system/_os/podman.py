@@ -180,8 +180,8 @@ def image_labels(image: str, remote: bool = True) -> dict[str, str]:
     return cast(dict[str, dict[str, str]], image_info(image, remote)).get("Labels", {})
 
 
-def image_hash(image: str) -> str:
-    return image_labels(image).get("hash", "0")
+def image_hash(image: str, remote: bool = True) -> str:
+    return image_labels(image, remote=remote).get("hash", "0")
 
 
 CONTAINER_POST_STEPS = r"""
