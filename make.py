@@ -54,7 +54,7 @@ def hash(target: str) -> str:
     with open(f"variants/{target}.Containerfile", "rb") as f:
         m.update(f.read())
 
-    for file in iglob(f"overlay/{target}/**", recursive=True):
+    for file in sorted(iglob(f"overlay/{target}/**", recursive=True)):
         if os.path.isdir(file):
             m.update(file.encode("utf-8"))
 
