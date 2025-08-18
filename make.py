@@ -48,13 +48,12 @@ image_hash = cast(Callable[[str], str], _os.podman.image_hash)  # pyright:ignore
 image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_info)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
-
 def hash(target: str) -> str:
     m = sha256()
     with open(f"variants/{target}.Containerfile", "rb") as f:
         m.update(f.read())
 
-    for file in iglob(f"overlay/{target}/**"):
+    for file in iglob(f"overlay/{target}/**", recursive=True):
         if os.path.isdir(file):
             m.update(file.encode("utf-8"))
 
