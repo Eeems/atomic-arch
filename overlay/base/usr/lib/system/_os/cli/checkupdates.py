@@ -45,14 +45,15 @@ def command(args: Namespace):
         return
 
     print("\n".join(updates))
-    image = baseImage()
-    try:
-        if [x for x in updates if x.startswith(f"{image} ")]:
-            pull()
+    if cast(bool, args.download):
+        image = baseImage()
+        try:
+            if [x for x in updates if x.startswith(f"{image} ")]:
+                pull()
 
-    except BaseException:
-        traceback.print_exc()
-        sys.exit(1)
+        except BaseException:
+            traceback.print_exc()
+            sys.exit(1)
 
     sys.exit(2)
 
