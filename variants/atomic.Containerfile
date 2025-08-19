@@ -51,6 +51,7 @@ RUN /usr/lib/system/initialize_pacman \
   polkit-gnome \
   bluez-utils \
   system-config-printer \
+  dex \
   && /usr/lib/system/install_aur_packages \
   python-imageio-ffmpeg \
   python-screeninfo \
