@@ -18,9 +18,14 @@ for pkgref in "$@"; do
       /tmp/src
   else
     chronic sudo -u aur git clone \
-      --depth=1 \
-      "https://aur.archlinux.org/${package}.git" \
+      --branch "$package" \
+      --single-branch \
+      https://github.com/archlinux/aur.git \
       /tmp/src
+    # chronic sudo -u aur git clone \
+    #   --depth=1 \
+    #   "https://aur.archlinux.org/${package}.git" \
+    #   /tmp/src
   fi
   cd /tmp/src
   sudo -u aur chronic makepkg \
