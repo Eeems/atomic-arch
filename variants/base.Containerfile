@@ -45,6 +45,7 @@ RUN /usr/lib/system/initialize_pacman \
   debugedit \
   terminus-font \
   pv \
+  nvme-cli \
   run-parts \
   skopeo \
   pacman-contrib \
