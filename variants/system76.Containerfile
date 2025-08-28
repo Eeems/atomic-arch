@@ -17,8 +17,8 @@ RUN /usr/lib/system/set_variant
 
 RUN /usr/lib/system/add_pacman_repository \
   --key=A64228CCD26972801C2CE6E3EC931EA46980BA1B \
-  --server=https://repo.eeems.codes/\$repo \
   --server=https://repo.eeems.website/\$repo \
+  --server=https://repo.eeems.codes/\$repo \
   eeems-system76 \
   && /usr/lib/system/remove_pacman_files
 

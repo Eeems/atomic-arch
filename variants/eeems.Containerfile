@@ -22,8 +22,8 @@ RUN /usr/lib/system/add_pacman_repository \
   sublime-text \
   && /usr/lib/system/add_pacman_repository \
   --key=A64228CCD26972801C2CE6E3EC931EA46980BA1B \
-  --server=https://repo.eeems.codes/\$repo \
   --server=https://repo.eeems.website/\$repo \
+  --server=https://repo.eeems.codes/\$repo \
   eeems-linux \
   && /usr/lib/system/install_packages eeems-keyring \
   && /usr/lib/system/remove_pacman_files
