@@ -3,10 +3,14 @@ import sys
 
 from argparse import ArgumentParser
 from argparse import Namespace
+from typing import cast
+from typing import Any
 
 from ..system import is_root
 from ..ostree import deployments
 from .. import OS_NAME
+
+kwds = {"help": "Output size of current deployments"}
 
 
 def register(_: ArgumentParser):
@@ -61,7 +65,9 @@ def command(_: Namespace):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
+    parser = ArgumentParser(
+        **cast(dict[str, Any], kwds),  # pyright:ignore [reportAny,reportExplicitAny]
+    )
     register(parser)
     args = parser.parse_args()
     command(args)
