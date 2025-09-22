@@ -6,7 +6,7 @@ from typing import cast
 from typing import Any
 
 from ..system import is_root
-from ..ostree import ostree
+from ..system import execute
 
 kwds = {"help": "Make the current deploy mutable"}
 
@@ -28,7 +28,7 @@ def command(args: Namespace):
     if cast(bool, args.hotfix):
         argv.append("--hotfix")
 
-    ostree("admin", "unlock", *argv)
+    execute("ostree", "admin", "unlock", *argv)
 
 
 if __name__ == "__main__":
