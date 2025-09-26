@@ -81,5 +81,6 @@ RUN \
   atomic-state-overlay \
   os-daemon \
   os-checkupdates.timer \
+  systemd-timesyncd \
   && chmod 400 /etc/sudoers \
   && chmod 644 /etc/pam.d/sudo{,-i}
