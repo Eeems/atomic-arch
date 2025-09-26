@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1.4
 ARG ARCHIVE_YEAR=2025
 ARG ARCHIVE_MONTH=09
-ARG ARCHIVE_DAY=25
+ARG ARCHIVE_DAY=26
 ARG PACSTRAP_TAG=20250427.0.341977
 
 FROM docker.io/library/archlinux:base-devel-${PACSTRAP_TAG} AS pacstrap
