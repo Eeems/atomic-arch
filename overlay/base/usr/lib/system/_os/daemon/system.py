@@ -5,6 +5,7 @@ import subprocess
 import threading
 
 from typing import Callable
+from typing import cast
 
 from ..podman import podman
 from ..system import baseImage
@@ -55,9 +56,16 @@ class Object(dbus.service.Object):
             if action in self._notification:
                 args.append(f"--replace-id={self._notification[action]}")
 
-            self._notification[action] = (
-                subprocess.check_output([*args, msg]).strip().decode("utf-8")
-            )
+            try:
+                self._notification[action] = (
+                    subprocess.check_output([*args, msg]).strip().decode("utf-8")
+                )
+
+            except subprocess.CalledProcessError as e:
+                print(e)
+                output = cast(bytes | None, e.output)
+                if output is not None:
+                    print(output.strip().decode("utf-8"))
 
     @dbus.service.method(  # pyright:ignore [reportUnknownMemberType]
         dbus_interface="system.upgrade",
