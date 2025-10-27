@@ -457,6 +457,15 @@ jobs:
             /var/cache/pacman \
             /var/lib/pacman \
             /etc/pacman.d/gnupg
+      - name: Clean up system
+        run: |
+          rm -rf .git/
+          docker system prune --force
+          docker rmi $(docker image ls -aq) || true
+          docker system prune --force
+          export DEBIAN_FRONTEND="noninteractive"
+          sudo apt-get autoremove -y
+          sudo apt-get autoclean -y
       - name: Build
         run: |
           if [ ! -f /etc/containers/seccomp.json ];then
