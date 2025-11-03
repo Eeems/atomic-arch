@@ -39,6 +39,7 @@ RUN /usr/lib/system/initialize_pacman \
   zram-generator \
   v4l2loopback-utils \
   v4l2loopback-dkms \
+  && curl -sS https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg | gpg --import - \
   && /usr/lib/system/install_aur_packages \
   spotify \
   wego \
