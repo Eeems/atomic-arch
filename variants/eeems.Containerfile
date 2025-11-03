@@ -39,6 +39,10 @@ RUN /usr/lib/system/initialize_pacman \
   zram-generator \
   v4l2loopback-utils \
   v4l2loopback-dkms \
+  && /usr/lib/system/install_aur_packages \
+  spotify \
+  wego \
+  ztui \
   && /usr/lib/system/remove_pacman_files
 
 RUN systemctl enable zerotier-one
