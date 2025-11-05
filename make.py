@@ -52,7 +52,14 @@ IMAGE = cast(str, _os.IMAGE)
 
 def hash(target: str) -> str:
     m = sha256()
-    with open(f"variants/{target}.Containerfile", "rb") as f:
+    containerfile = f"variants/{target}.Containerfile"
+    if "-" in target and not os.path.exists(containerfile):
+        base_variant, template = target.rsplit("-", 1)
+        containerfile = f"templates/{template}.Containerfile"
+        labels = image_labels(f"{IMAGE}:{base_variant}", False)
+        m.update(labels["hash"].encode("utf-8"))
+
+    with open(containerfile, "rb") as f:
         m.update(f.read())
 
     for file in sorted(iglob(f"overlay/{target}/**", recursive=True)):
@@ -69,24 +76,16 @@ def hash(target: str) -> str:
 def build(target: str):
     now = datetime.now(UTC)
     uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
-    build_args: dict[str, str] = {
-        "VERSION_ID": uuid,
-    }
+    build_args: dict[str, str] = {"VERSION_ID": uuid, "HASH": hash(target)}
     containerfile = f"variants/{target}.Containerfile"
     if "-" in target and not os.path.exists(containerfile):
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
         labels = image_labels(f"{IMAGE}:{base_variant}", False)
-        m = sha256()
-        m.update(labels["hash"].encode("utf-8"))
-        with open(containerfile, "rb") as f:
-            m.update(f.read())
-
         build_args["BASE_VARIANT_ID"] = f"{base_variant}"
-        build_args["HASH"] = m.hexdigest()
-        build_args["MIRRORLIST"] = f"{labels['mirrorlist']}"
         build_args["VARIANT"] = f"{labels['os-release.VARIANT']} ({template})"
         build_args["VARIANT_ID"] = f"{labels['os-release.VARIANT_ID']}-{template}"
+        build_args["MIRRORLIST"] = f"{labels['mirrorlist']}"
         build_args["VERSION"] = f"{labels['os-release.VERSION']}"
         build_args["VERSION_ID"] = f"{labels['os-release.VERSION_ID']}"
         build_args["NAME"] = f"{labels['os-release.NAME']}"
@@ -94,9 +93,6 @@ def build(target: str):
         build_args["ID"] = f"{labels['os-release.ID']}"
         build_args["HOME_URL"] = f"{labels['os-release.HOME_URL']}"
         build_args["BUG_REPORT_URL"] = f"{labels['os-release.BUG_REPORT_URL']}"
-
-    else:
-        build_args["HASH"] = hash(target)
 
     podman(
         "build",

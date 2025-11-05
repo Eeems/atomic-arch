@@ -1,8 +1,11 @@
 #syntax=docker/dockerfile:1.4
-ARG VARIANT="Atomic"
-ARG VARIANT_ID="atomic"
-
 FROM eeems/atomic-arch:base
+
+ARG \
+  VARIANT="Atomic" \
+  VARIANT_ID="atomic" \
+  VERSION_ID \
+  HASH
 
 RUN /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_packages \

@@ -6,9 +6,10 @@ ARG PACSTRAP_TAG=20250427.0.341977
 
 FROM docker.io/library/archlinux:base-devel-${PACSTRAP_TAG} AS pacstrap
 
-ARG ARCHIVE_YEAR
-ARG ARCHIVE_MONTH
-ARG ARCHIVE_DAY
+ARG \
+  ARCHIVE_YEAR \
+  ARCHIVE_MONTH \
+  ARCHIVE_DAY
 
 RUN \
   echo "Server = https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist \
@@ -34,11 +35,12 @@ RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
 
 FROM scratch AS rootfs
 
-ARG ARCHIVE_YEAR
-ARG ARCHIVE_MONTH
-ARG ARCHIVE_DAY
-ARG PACSTRAP_TAG
-ARG HASH
+ARG \
+  ARCHIVE_YEAR \
+  ARCHIVE_MONTH \
+  ARCHIVE_DAY \
+  PACSTRAP_TAG \
+  HASH
 
 LABEL \
   os-release.NAME="Atomic Arch" \
@@ -53,10 +55,10 @@ LABEL \
   org.opencontainers.image.ref.name="rootfs" \
   hash="${HASH}" \
   mirrorlist="[ \
-  \"https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
-  \"https://america.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
-  \"https://asia.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
-  \"https://europe.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\" \
+    \"https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+    \"https://america.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+    \"https://asia.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+    \"https://europe.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\" \
   ]"
 
 WORKDIR /
@@ -76,16 +78,11 @@ RUN  echo 'NAME="Atomic Arch"' > /usr/lib/os-release \
 
 ENTRYPOINT [ "/bin/bash" ]
 
-ONBUILD ARG VARIANT=${VARIANT}
-ONBUILD ARG VERSION=${VERSION}
-ONBUILD ARG VERSION_ID=${VERSION_ID}
-ONBUILD ARG MIRRORLIST=${MIRRORLIST}
-ONBUILD ARG NAME=${NAME}
-ONBUILD ARG PRETTY_NAME=${PRETTY_NAME}
-ONBUILD ARG ID=${ID}
-ONBUILD ARG HOME_URL=${HOME_URL}
-ONBUILD ARG BUG_REPORT_URL=${BUG_REPORT_URL}
-ONBUILD ARG HASH
+ONBUILD ARG \
+  VARIANT \
+  VARIANT_ID \
+  VERSION_ID \
+  HASH
 
 ONBUILD LABEL \
   os-release.VARIANT="${VARIANT}" \

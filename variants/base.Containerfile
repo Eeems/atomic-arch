@@ -1,6 +1,7 @@
 #syntax=docker/dockerfile:1.4
-ARG VARIANT="Base"
-ARG VARIANT_ID="base"
+ARG \
+  VARIANT="Base" \
+  VARIANT_ID="base"
 
 FROM eeems/atomic-arch:rootfs
 

@@ -1,5 +1,10 @@
 #syntax=docker/dockerfile:1.4
-ARG BASE_VARIANT_ID
+ARG \
+  BASE_VARIANT_ID \
+  VARIANT \
+  VARIANT_ID \
+  VERSION_ID
+
 FROM eeems/atomic-arch:${BASE_VARIANT_ID} AS build
 
 RUN /usr/lib/system/initialize_pacman \
@@ -17,17 +22,18 @@ FROM scratch
 
 COPY --from=build / /
 
-ARG VARIANT
-ARG VARIANT_ID
-ARG VERSION
-ARG VERSION_ID
-ARG MIRRORLIST
-ARG HASH
-ARG NAME
-ARG PRETTY_NAME
-ARG ID
-ARG HOME_URL
-ARG BUG_REPORT_URL
+ARG \
+  VARIANT \
+  VARIANT_ID \
+  VERSION \
+  VERSION_ID \
+  MIRRORLIST \
+  HASH \
+  NAME \
+  PRETTY_NAME \
+  ID \
+  HOME_URL \
+  BUG_REPORT_URL \
 
 LABEL \
   os-release.NAME="Atomic Arch" \
@@ -44,7 +50,3 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}" \
   mirrorlist="${MIRRORLIST}"
-
-RUN VARIANT="${VARIANT}" \
-  VARIANT_ID="${VARIANT_ID}" \
-  /usr/lib/system/set_variant
