@@ -3,9 +3,7 @@ FROM eeems/atomic-arch:base
 
 ARG \
   VARIANT="Atomic" \
-  VARIANT_ID="atomic" \
-  VERSION_ID \
-  HASH
+  VARIANT_ID="atomic"
 
 RUN /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_packages \

@@ -1,14 +1,9 @@
 #syntax=docker/dockerfile:1.4
-FROM eeems/atomic-arch:base
-
-ARG VARIANT="GNOME"
-ARG VARIANT_ID="gnome"
-
 ARG \
   VARIANT="GNOME" \
-  VARIANT_ID="gnome" \
-  VERSION_ID \
-  HASH
+  VARIANT_ID="gnome"
+
+FROM eeems/atomic-arch:base
 
 RUN /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_packages \
