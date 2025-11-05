@@ -1,21 +1,6 @@
 #syntax=docker/dockerfile:1.4
-ARG VARIANT_ID
-FROM eeems/atomic-arch:${VARIANT_ID} AS build
-
-ARG VARIANT
-ARG VERSION_ID
-ARG HASH
-
-LABEL \
-  os-release.VARIANT="${VARIANT} (slim)" \
-  os-release.VARIANT_ID="${VARIANT_ID}-slim" \
-  os-release.VERSION_ID="${VERSION_ID}" \
-  org.opencontainers.image.ref.name="${VARIANT_ID}-slim" \
-  hash="${HASH}"
-
-RUN VARIANT="${VARIANT} (slim)" \
-  VARIANT_ID="${VARIANT_ID}-slim" \
-  /usr/lib/system/set_variant
+ARG BASE_VARIANT_ID
+FROM eeems/atomic-arch:${BASE_VARIANT_ID} AS build
 
 RUN /usr/lib/system/initialize_pacman \
   && echo "[system] Removing orphaned packages" \
@@ -31,3 +16,35 @@ RUN /usr/lib/system/initialize_pacman \
 FROM scratch
 
 COPY --from=build / /
+
+ARG VARIANT
+ARG VARIANT_ID
+ARG VERSION
+ARG VERSION_ID
+ARG MIRRORLIST
+ARG HASH
+ARG NAME
+ARG PRETTY_NAME
+ARG ID
+ARG HOME_URL
+ARG BUG_REPORT_URL
+
+LABEL \
+  os-release.NAME="Atomic Arch" \
+  os-release.PRETTY_NAME="Atomic Arch Linux" \
+  os-release.ID="atomic-arch" \
+  os-release.HOME_URL="https://github.com/Eeems/atomic-arch" \
+  os-release.BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues" \
+  os-release.VERSION="${VERSION}" \
+  os-release.VERSION_ID="${VERSION_ID}" \
+  os-release.VARIANT="${VARIANT}" \
+  os-release.VARIANT_ID="${VARIANT_ID}" \
+  org.opencontainers.image.authors="eeems@eeems.email" \
+  org.opencontainers.image.source="https://github.com/Eeems/atomic-arch" \
+  org.opencontainers.image.ref.name="${VARIANT_ID}" \
+  hash="${HASH}" \
+  mirrorlist="${MIRRORLIST}"
+
+RUN VARIANT="${VARIANT}" \
+  VARIANT_ID="${VARIANT_ID}" \
+  /usr/lib/system/set_variant

@@ -1,19 +1,9 @@
 #syntax=docker/dockerfile:1.4
-FROM eeems/atomic-arch:eeems
 
 ARG VARIANT="System76"
 ARG VARIANT_ID="system76"
-ARG VERSION_ID
-ARG HASH
 
-LABEL \
-  os-release.VARIANT="${VARIANT}" \
-  os-release.VARIANT_ID="${VARIANT_ID}" \
-  os-release.VERSION_ID="${VERSION_ID}" \
-  org.opencontainers.image.ref.name="${VARIANT_ID}" \
-  hash="${HASH}"
-
-RUN /usr/lib/system/set_variant
+FROM eeems/atomic-arch:eeems
 
 RUN /usr/lib/system/add_pacman_repository \
   --key=A64228CCD26972801C2CE6E3EC931EA46980BA1B \

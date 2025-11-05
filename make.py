@@ -82,9 +82,18 @@ def build(target: str):
         with open(containerfile, "rb") as f:
             m.update(f.read())
 
+        build_args["BASE_VARIANT_ID"] = f"{base_variant}"
         build_args["HASH"] = m.hexdigest()
-        build_args["VARIANT"] = labels["os-release.VARIANT"]
-        build_args["VARIANT_ID"] = labels["os-release.VARIANT_ID"]
+        build_args["MIRRORLIST"] = f"{labels['mirrorlist']}"
+        build_args["VARIANT"] = f"{labels['os-release.VARIANT']} ({template})"
+        build_args["VARIANT_ID"] = f"{labels['os-release.VARIANT_ID']}-{template}"
+        build_args["VERSION"] = f"{labels['os-release.VERSION']}"
+        build_args["VERSION_ID"] = f"{labels['os-release.VERSION_ID']}"
+        build_args["NAME"] = f"{labels['os-release.NAME']}"
+        build_args["PRETTY_NAME"] = f"{labels['os-release.PRETTY_NAME']}"
+        build_args["ID"] = f"{labels['os-release.ID']}"
+        build_args["HOME_URL"] = f"{labels['os-release.HOME_URL']}"
+        build_args["BUG_REPORT_URL"] = f"{labels['os-release.BUG_REPORT_URL']}"
 
     else:
         build_args["HASH"] = hash(target)
@@ -96,6 +105,7 @@ def build(target: str):
         "--force-rm",
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file={containerfile}",
+        "--format=docker",
         ".",
     )
 
