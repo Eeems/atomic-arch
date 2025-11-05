@@ -15,6 +15,16 @@ echo "LANG=${LANGUAGE:-en_US}.${ENCODING:-UTF-8}" >/etc/locale.conf
 echo "${LANGUAGE:-en_US}.${ENCODING:-UTF-8} ${ENCODING:-UTF-8}" >/etc/locale.gen
 echo "[system] Generating locale"
 chronic locale-gen
+echo "[system] Removing unused locales"
+cat >/etc/locale.nopurge <<EOF
+MANDELETE
+SHOWFREEDSPACE
+VERBOSE
+NOCOLOR
+${LANGUAGE:-en_US}.${ENCODING:-UTF-8}"
+EOF
+chronic localepurge
+rm /etc/locale.nopurge
 echo "[system] Ranking mirrorlist"
 rankmirrors /etc/pacman.d/mirrorlist | tail -n +2 >/etc/pacman.d/mirrorlist.new
 rm /etc/pacman.d/mirrorlist

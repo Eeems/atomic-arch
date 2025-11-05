@@ -46,6 +46,7 @@ in_system_output = cast(Callable[..., bytes], _os.podman.in_system_output)  # py
 is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [reportUnknownMemberType]
 image_hash = cast(Callable[[str], str], _os.podman.image_hash)  # pyright:ignore [reportUnknownMemberType]
 image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_info)  # pyright:ignore [reportUnknownMemberType]
+image_labels = cast(Callable[[str, bool], dict[str, str]], _os.podman.image_labels)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
 
@@ -68,14 +69,33 @@ def hash(target: str) -> str:
 def build(target: str):
     now = datetime.now(UTC)
     uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
+    build_args: dict[str, str] = {
+        "VERSION_ID": uuid,
+    }
+    containerfile = f"variants/{target}.Containerfile"
+    if "-" in target and not os.path.exists(containerfile):
+        base_variant, template = target.rsplit("-", 1)
+        containerfile = f"templates/{template}.Containerfile"
+        labels = image_labels(f"{IMAGE}:{base_variant}", False)
+        m = sha256()
+        m.update(labels["hash"].encode("utf-8"))
+        with open(containerfile, "rb") as f:
+            m.update(f.read())
+
+        build_args["HASH"] = m.hexdigest()
+        build_args["VARIANT"] = labels["os-release.VARIANT"]
+        build_args["VARIANT_ID"] = labels["os-release.VARIANT_ID"]
+
+    else:
+        build_args["HASH"] = hash(target)
+
     podman(
         "build",
         f"--tag=docker.io/{IMAGE}:{target}",
-        f"--build-arg=VERSION_ID={uuid}",
-        f"--build-arg=HASH={hash(target)}",
+        *[f"--build-arg={k}={v}" for k, v in build_args.items()],
         "--force-rm",
         "--volume=/var/cache/pacman:/var/cache/pacman",
-        f"--file=variants/{target}.Containerfile",
+        f"--file={containerfile}",
         ".",
     )
 

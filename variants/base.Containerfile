@@ -76,6 +76,13 @@ RUN mkdir -p /var/lib/system
 
 COPY overlay/base /
 
+RUN mkdir /var/home \
+  && /usr/lib/system/initialize_pacman \
+  && /usr/lib/system/install_aur_packages \
+  localepurge \
+  && /usr/lib/system/remove_pacman_files \
+  && rmdir /var/home
+
 RUN \
   systemctl enable \
   atomic-state-overlay \

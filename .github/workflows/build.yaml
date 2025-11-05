@@ -406,6 +406,70 @@ jobs:
           fi
         env:
           updates: ${{ needs.atomic.outputs.Updates}}
+  slim:
+    name: atomic-arch:${{ matrix.variant }}-slim
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - base
+          - atomic
+          - gnome
+          - eeems
+          - system76
+    needs:
+      - base
+      - atomic
+      - gnome
+      - eeems
+      - system76
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+      - name: Install dependencies
+        uses: Eeems-Org/apt-cache-action@v1
+        with:
+          packages: >
+            ostree
+            podman
+      - name: Add pacman cache
+        run: |
+          sudo mkdir -p \
+            /var/cache/pacman \
+            /var/lib/pacman \
+            /etc/pacman.d/gnupg
+      - name: Build
+        run: |
+          if [[ "$updates" == "true" ]]; then
+            echo "Base image updated"
+            res = 2
+          else
+            set +e
+            sudo ./make.py checkupdates --target=${{ matrix.variant }}-slim
+            res=$?
+            set -e
+          fi
+          if [ $res -eq 2 ];then
+            sudo ./make.py build --push ${{ matrix.variant }}-slim
+            echo "Updates=true" >> $GITHUB_OUTPUT
+          elif [ $res -ne 0 ];then
+            exit 1
+          else
+            echo "No Updates"
+            echo "Updates=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          updates: ${{ needs.atomic.outputs.Updates}}
   iso:
     name: atomic-arch:${{ matrix.variant }}${{ matrix.subvariant }} iso
     runs-on: ubuntu-latest
@@ -421,6 +485,7 @@ jobs:
         subvariant:
           - ""
           - -nvidia
+          - -slim
     needs:
       - base
       - atomic
@@ -428,6 +493,7 @@ jobs:
       - eeems
       - system76
       - nvidia
+      - slim
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
