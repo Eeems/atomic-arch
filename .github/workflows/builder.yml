@@ -4,12 +4,12 @@ on:
     branches:
       - master
     paths:
-      - "Dockerfile.base"
+      - .github/workflows/Dockerfile.builder
   push:
     branches:
       - master
     paths:
-      - "Dockerfile.base"
+      - .github/workflows/Dockerfile.builder
   workflow_dispatch:
   schedule:
     - cron: "0 0 * * 0"
