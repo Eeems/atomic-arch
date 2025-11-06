@@ -23,6 +23,24 @@ RUN apt-get update \
         libglib2.0-dev \
         libcairo2-dev \
         libgirepository-2.0-dev \
+        # Pyenv extra dependencies
+        libssl-dev \
+        zlib1g-dev \
+        libbz2-dev \
+        libreadline-dev \
+        libsqlite3-dev \
+        curl \
+        git \
+        libncursesw5-dev \
+        xz-utils \
+        tk-dev \
+        libxml2-dev \
+        libxmlsec1-dev \
+        libffi-dev \
+        liblzma-dev \
+    && curl https://pyenv.run | bash \
+    && pyenv install 3.12 \
+    && pyenv global 3.12 \
     # Cleanup
     && apt-get autoremove -y \
     && apt-get clean \

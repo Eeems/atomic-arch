@@ -11,9 +11,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
     - name: Login to dockerhub
       uses: redhat-actions/podman-login@v1
       with:
@@ -31,6 +28,7 @@ runs:
       id: build
       shell: bash
       run: |
+        export PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH
         if [[ "$updates" == "true" ]]; then
             echo "Previous image updated"
             res = 2
