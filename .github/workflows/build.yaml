@@ -442,15 +442,9 @@ jobs:
           packages: >
             ostree
             podman
-      - name: Clean up system
-        run: |
-          rm -rf .git/
-          docker system prune --force
-          docker rmi $(docker image ls -aq) || true
-          docker system prune --force
-          export DEBIAN_FRONTEND="noninteractive"
-          sudo apt-get autoremove -y
-          sudo apt-get autoclean -y
+      - name: Free up space
+        if: ${{ contains('atomic eeems system76', matrix.variant) }}
+        uses: ./.github/actions/cleanup
       - name: Add pacman cache
         run: |
           sudo mkdir -p \
