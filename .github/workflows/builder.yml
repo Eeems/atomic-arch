@@ -4,11 +4,13 @@ on:
     branches:
       - master
     paths:
+      - .github/workflows/builder.yml
       - .github/workflows/Dockerfile.builder
   push:
     branches:
       - master
     paths:
+      - .github/workflows/builder.yml
       - .github/workflows/Dockerfile.builder
   workflow_dispatch:
   schedule:
