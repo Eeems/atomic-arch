@@ -1,8 +1,13 @@
-name: Build Base Image
-
+name: Build builder image
 on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "Dockerfile.base"
   push:
-    branches: [master]
+    branches:
+      - master
     paths:
       - "Dockerfile.base"
   workflow_dispatch:
@@ -44,7 +49,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .github/workflows
-          file: Dockerfile.builder
+          file: .github/workflows/Dockerfile.builder
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
