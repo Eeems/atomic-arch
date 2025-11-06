@@ -4,26 +4,31 @@ FROM ubuntu:22.04
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYENV_ROOT=/opt/pyenv \
+    PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH
 
-# Install core tools + Python 3.12 + your deps
+# Install core tools + build deps for pyenv + your system deps
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        software-properties-common \
         ca-certificates \
         curl \
-        gnupg && \
-    add-apt-repository ppa:deadsnakes/ppa -y && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        # Python 3.12
-        python3.12 \
-        python3.12-dev \
-        python3.12-venv \
-        python3.12-distutils \
-        python3-pip \
-        # Your system deps
+        gnupg \
+        # Build essentials for compiling Python
         build-essential \
+        libssl-dev \
+        zlib1g-dev \
+        libbz2-dev \
+        libreadline-dev \
+        libsqlite3-dev \
+        libncursesw5-dev \
+        xz-utils \
+        tk-dev \
+        libxml2-dev \
+        libxmlsec1-dev \
+        libffi-dev \
+        liblzma-dev \
+        # Your system deps
         libpython3-dev \
         libdbus-1-dev \
         libglib2.0-dev \
@@ -32,17 +37,20 @@ RUN apt-get update && \
         ostree \
         podman \
     && \
-    # Set python3.12 as default
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 100 \
-        --slave /usr/bin/python3-config python3-config /usr/bin/python3.12-config && \
-    # Minimal pip setup
-    python3 -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    # Install pyenv
+    curl https://pyenv.run | bash && \
+    # Install Python 3.12 via pyenv
+    pyenv install 3.12 && \
+    pyenv global 3.12 && \
+    # Ensure pip is available and upgraded
+    python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     # Cleanup
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Verify
-RUN python3 --version | grep -q "3.12" && \
+RUN python --version | grep -q "3.12" && \
+    pip --version && \
     podman --version && \
     ostree --version
 
