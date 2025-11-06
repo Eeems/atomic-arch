@@ -16,7 +16,6 @@ on:
 
 permissions:
   contents: read
-  packages: write # Needed for GHCR
 
 jobs:
   build-and-push:
@@ -25,13 +24,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to GHCR
+      - name: Login to dockerhub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USER }}

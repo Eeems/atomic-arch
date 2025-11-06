@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:1.7
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -12,15 +12,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
-        curl \
         gnupg \
-        # Build essentials for compiling Python
+        # Pyenv dependencies
         build-essential \
-        libssl-dev \
-        zlib1g-dev \
+        libssl-dev zlib1g-dev \
         libbz2-dev \
         libreadline-dev \
         libsqlite3-dev \
+        curl \
+        git \
         libncursesw5-dev \
         xz-utils \
         tk-dev \
@@ -28,7 +28,8 @@ RUN apt-get update && \
         libxmlsec1-dev \
         libffi-dev \
         liblzma-dev \
-        # Your system deps
+        libzstd-dev \
+        # Builder dependencies
         libpython3-dev \
         libdbus-1-dev \
         libglib2.0-dev \
