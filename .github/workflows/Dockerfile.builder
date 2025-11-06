@@ -13,23 +13,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         gnupg \
-        # Pyenv dependencies
-        build-essential \
-        libssl-dev zlib1g-dev \
-        libbz2-dev \
-        libreadline-dev \
-        libsqlite3-dev \
-        curl \
-        git \
-        libncursesw5-dev \
-        xz-utils \
-        tk-dev \
-        libxml2-dev \
-        libxmlsec1-dev \
-        libffi-dev \
-        liblzma-dev \
-        libzstd-dev \
         # Builder dependencies
+        python3-dev \
         libpython3-dev \
         libdbus-1-dev \
         libglib2.0-dev \
@@ -37,12 +22,6 @@ RUN apt-get update \
         libgirepository-2.0-dev \
         ostree \
         podman \
-    # Install pyenv
-    && curl https://pyenv.run | bash \
-    && pyenv install 3.12 \
-    && pyenv global 3.12 \
-    # Ensure pip is available and upgraded
-    && python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
     # Cleanup
     && apt-get autoremove -y \
     && apt-get clean \
@@ -50,9 +29,6 @@ RUN apt-get update \
         /var/lib/apt/lists/* \
         /tmp/* \
         /var/tmp/* \
-        /opt/pyenv/{cache,sources,plugins/python-build/share/python-build/patches} \
-        ~/.cache/pip \
-    && find /opt/pyenv/versions -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true \
-    && find /opt/pyenv -name '*.pyc' -delete 2>/dev/null || true
+    && mkdir -p /github/{home,workspace,workflow}
 
-WORKDIR /workspace
+WORKDIR /github/workspace
