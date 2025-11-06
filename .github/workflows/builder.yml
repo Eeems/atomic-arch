@@ -44,20 +44,21 @@ jobs:
             "${RUNNER_TEMP:-}/_temp/.docker/config.json" \
             "${HOME}/.docker/config.json"
           do
-            if ! [[ -f "$path" ]]; then
+            if [[ ! -f "$path" ]]; then
               continue
             fi
             CONFIG="$path"
             echo "Masking auths in $CONFIG"
-            jq -r '.auths // empty \
-            | to_entries[] \
-            | .value.auth' "$CONFIG" \
+            jq -r '.auths | to_entries[] | .value.auth' "$CONFIG" \
             | while IFS= read -r auth; do
               [[ "$auth" == "null" ]] && continue
               token=$(echo "$auth" | base64 -d | cut -d: -f2)
               [[ -n "$token" ]] && echo "::add-mask::$token"
             done
           done
+          if [[ -z "$CONFIG" ]]; then
+            echo "No Docker config.json found – nothing to mask"
+          fi
 
       - name: Generate tags
         id: meta
