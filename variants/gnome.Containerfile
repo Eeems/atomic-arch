@@ -1,4 +1,6 @@
 #syntax=docker/dockerfile:1.4
+ARG HASH
+
 FROM eeems/atomic-arch:base
 
 ARG \
@@ -23,7 +25,7 @@ RUN systemctl enable gdm
 
 COPY overlay/gnome /
 
-ARG VERSION_ID HASH
+ARG VERSION_ID
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \

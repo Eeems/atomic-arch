@@ -1,4 +1,6 @@
 #syntax=docker/dockerfile:1.4
+ARG HASH
+
 FROM eeems/atomic-arch:rootfs
 
 ARG \
@@ -82,7 +84,7 @@ RUN \
   && chmod 400 /etc/sudoers \
   && chmod 644 /etc/pam.d/sudo{,-i}
 
-ARG VERSION_ID HASH
+ARG VERSION_ID
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \

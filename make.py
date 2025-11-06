@@ -38,6 +38,7 @@ import _os.podman  # noqa: E402 #pyright:ignore [reportMissingImports]
 import _os.system  # noqa: E402 #pyright:ignore [reportMissingImports]
 
 podman = cast(Callable[..., None], _os.podman.podman)  # pyright:ignore [reportUnknownMemberType]
+podman_cmd = cast(Callable[..., list[str]], _os.podman.podman_cmd)  # pyright:ignore [reportUnknownMemberType]
 _execute = cast(Callable[..., int], _os.system._execute)  # pyright:ignore [reportUnknownMemberType]
 execute = cast(Callable[..., None], _os.system.execute)  # pyright:ignore [reportUnknownMemberType]
 chronic = cast(Callable[..., None], _os.system.chronic)  # pyright:ignore [reportUnknownMemberType]
@@ -56,7 +57,12 @@ def hash(target: str) -> str:
     if "-" in target and not os.path.exists(containerfile):
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
-        labels = image_labels(f"{IMAGE}:{base_variant}", False)
+        image = f"{IMAGE}:{base_variant}"
+        image_exists = (
+            _execute(shlex.join(podman_cmd("image", "exists", f"docker.io/{image}")))
+            > 0
+        )
+        labels = image_labels(image, image_exists)
         m.update(labels["hash"].encode("utf-8"))
 
     with open(containerfile, "rb") as f:

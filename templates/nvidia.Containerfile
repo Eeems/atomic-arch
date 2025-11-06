@@ -24,6 +24,4 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN VARIANT="${VARIANT}" \
-  VARIANT_ID="${VARIANT_ID}" \
-  /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant

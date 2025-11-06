@@ -1,4 +1,6 @@
 #syntax=docker/dockerfile:1.4
+ARG HASH
+
 FROM eeems/atomic-arch:atomic
 
 ARG \
@@ -39,7 +41,7 @@ RUN systemctl enable zerotier-one
 
 COPY overlay/eeems /
 
-ARG VERSION_ID HASH
+ARG VERSION_ID
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \
