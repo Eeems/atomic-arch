@@ -33,6 +33,8 @@ RUN /usr/lib/system/initialize_pacman \
   v4l2loopback-dkms \
   pyenv \
   spotify \
+  podman-docker \
+  podman-compose \
   && /usr/lib/system/install_aur_packages \
   wego \
   && /usr/lib/system/remove_pacman_files
