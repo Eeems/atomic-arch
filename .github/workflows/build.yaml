@@ -84,6 +84,7 @@ jobs:
           elif [ $res -ne 0 ];then
             exit 1
           else
+            sudo ./make.py push rootfs
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
@@ -137,6 +138,7 @@ jobs:
           elif [ $res -ne 0 ];then
             exit 1
           else
+          sudo ./make.py push base
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
@@ -187,6 +189,7 @@ jobs:
           elif [ $res -ne 0 ];then
             exit 1
           else
+          sudo ./make.py push atomic
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
@@ -237,6 +240,7 @@ jobs:
           elif [ $res -ne 0 ];then
             exit 1
           else
+            sudo ./make.py push gnome
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
@@ -287,6 +291,7 @@ jobs:
           elif [ $res -ne 0 ];then
             exit 1
           else
+            sudo ./make.py push eeems
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
@@ -348,6 +353,7 @@ jobs:
           elif [ $res -ne 0 ];then
             exit 1
           else
+            sudo ./make.py push ${{ matrix.variant }}-system76
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
@@ -414,6 +420,7 @@ jobs:
           elif [ $res -ne 0 ];then
             exit 1
           else
+            sudo ./make.py push ${{ matrix.variant }}-nvidia
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
@@ -483,6 +490,7 @@ jobs:
           elif [ $res -ne 0 ];then
             exit 1
           else
+            sudo ./make.py push ${{ matrix.variant }}-slim
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
