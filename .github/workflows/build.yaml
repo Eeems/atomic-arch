@@ -293,9 +293,20 @@ jobs:
         env:
           updates: ${{ needs.atomic.outputs.Updates}}
   system76:
-    name: atomic-arch:system76 image
+    name: atomic-arch:${{ matrix.variant }}-system76
     runs-on: ubuntu-latest
-    needs: [eeems]
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - atomic
+          - gnome
+          - eeems
+    needs:
+      - base
+      - atomic
+      - gnome
+      - eeems
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -327,12 +338,12 @@ jobs:
             res = 2
           else
             set +e
-            sudo ./make.py checkupdates --target=system76
+            sudo ./make.py checkupdates --target=${{ matrix.variant }}-system76
             res=$?
             set -e
           fi
           if [ $res -eq 2 ];then
-            sudo ./make.py build --push system76
+            sudo ./make.py build --push ${{ matrix.variant }}-system76
             echo "Updates=true" >> $GITHUB_OUTPUT
           elif [ $res -ne 0 ];then
             exit 1
@@ -353,7 +364,9 @@ jobs:
           - atomic
           - gnome
           - eeems
-          - system76
+          - atomic-system76
+          - gnome-system76
+          - eeems-system76
     needs:
       - base
       - atomic
@@ -417,7 +430,9 @@ jobs:
           - atomic
           - gnome
           - eeems
-          - system76
+          - atomic-system76
+          - gnome-system76
+          - eeems-system76
     needs:
       - base
       - atomic
@@ -484,7 +499,9 @@ jobs:
           - atomic
           - gnome
           - eeems
-          - system76
+          - atomic-system76
+          - gnome-system76
+          - eeems-system76
         subvariant:
           - ""
           - -nvidia

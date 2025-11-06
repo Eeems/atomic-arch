@@ -1,11 +1,9 @@
 #syntax=docker/dockerfile:1.4
 ARG HASH
 
-FROM eeems/atomic-arch:eeems
+ARG BASE_VARIANT_ID
 
-ARG \
-  VARIANT="System76" \
-  VARIANT_ID="system76"
+FROM eeems/atomic-arch:${BASE_VARIANT_ID}
 
 RUN /usr/lib/system/add_pacman_repository \
   --key=A64228CCD26972801C2CE6E3EC931EA46980BA1B \
@@ -34,7 +32,11 @@ RUN systemctl enable \
 
 COPY overlay/system76 /
 
-ARG VERSION_ID
+ARG \
+  VARIANT \
+  VARIANT_ID \
+  VERSION_ID \
+  HASH
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \
