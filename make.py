@@ -111,7 +111,25 @@ def build(target: str):
 
 
 def push(target: str):
-    podman("push", f"{IMAGE}:{target}")
+    image = f"{IMAGE}:{target}"
+    labels = image_labels(image, False)
+    if labels.get("os-release.VERSION", None):
+        version = labels["os-release.VERSION"]
+        tag = f"{image}_{version}"
+        tags = [tag]
+        podman("tag", image, tag)
+        podman("push", tag)
+
+        version_id = labels.get("os-release.VERSION_ID", None)
+        if version_id and version != version_id:
+            tag = f"{image}_{version}.{version_id}"
+            tags.append(tag)
+            podman("tag", image, tag)
+            podman("push", tag)
+
+        podman("untag", image, *tags)
+
+    podman("push", image)
 
 
 def pull(target: str):
