@@ -13,15 +13,16 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         gnupg \
-        # Builder dependencies
+        ostree \
+        podman \
+        build-essential \
+        pkg-config \
         python3-dev \
         libpython3-dev \
         libdbus-1-dev \
         libglib2.0-dev \
         libcairo2-dev \
         libgirepository-2.0-dev \
-        ostree \
-        podman \
     # Cleanup
     && apt-get autoremove -y \
     && apt-get clean \
