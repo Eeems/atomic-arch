@@ -36,6 +36,17 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           registry: docker.io
 
+      - name: Mask the Docker password (JWT)
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/.docker
+        run: |
+          TOKEN=$(jq -r '.auths["docker.io"].auth' "${DOCKER_CONFIG}/config.json" | base64 -d | cut -d: -f2)
+          if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
+            echo "No token found – nothing to mask"
+            exit 0
+          fi
+          echo "::add-mask::$TOKEN"
+
       - name: Generate tags
         id: meta
         run: |
