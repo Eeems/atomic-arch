@@ -45,49 +45,10 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-      - name: Add pacman cache
-        run: |
-          sudo mkdir -p \
-            /var/cache/pacman \
-            /var/lib/pacman \
-            /etc/pacman.d/gnupg
       - name: Build
-        id: build
-        run: |
-          set +e
-          output=$(sudo ./make.py checkupdates)
-          res=$?
-          echo $output
-          set -e
-          if [ $res -eq 2 ];then
-            if [[ "$output" == *"mirrorlist "* ]]; then
-              sudo ./make.py rootfs --push
-            else
-              sudo ./make.py build --push rootfs
-            fi
-            echo "Updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-            sudo ./make.py push rootfs
-            echo "No Updates"
-            echo "Updates=false" >> $GITHUB_OUTPUT
-          fi
+        uses: ./.github/actions/build
+        with:
+          image: rootfs
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: |
@@ -100,49 +61,10 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-      - name: Add pacman cache
-        run: |
-          sudo mkdir -p \
-            /var/cache/pacman \
-            /var/lib/pacman \
-            /etc/pacman.d/gnupg
       - name: Build
-        run: |
-          if [[ "$updates" == "true" ]]; then
-            echo "Base image updated"
-            res = 2
-          else
-            set +e
-            sudo ./make.py checkupdates --target=base
-            res=$?
-            set -e
-          fi
-          if [ $res -eq 2 ];then
-            sudo ./make.py build --push base
-            echo "Updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-          sudo ./make.py push base
-            echo "No Updates"
-            echo "Updates=false" >> $GITHUB_OUTPUT
-          fi
-        env:
+        uses: ./.github/actions/build
+        with:
+          image: base
           updates: ${{ needs.rootfs.outputs.Updates}}
   atomic:
     name: atomic-arch:atomic image
@@ -151,49 +73,10 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-      - name: Add pacman cache
-        run: |
-          sudo mkdir -p \
-            /var/cache/pacman \
-            /var/lib/pacman \
-            /etc/pacman.d/gnupg
       - name: Build
-        run: |
-          if [[ "$updates" == "true" ]]; then
-            echo "Base image updated"
-            res = 2
-          else
-            set +e
-            sudo ./make.py checkupdates --target=atomic
-            res=$?
-            set -e
-          fi
-          if [ $res -eq 2 ];then
-            sudo ./make.py build --push atomic
-            echo "Updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-          sudo ./make.py push atomic
-            echo "No Updates"
-            echo "Updates=false" >> $GITHUB_OUTPUT
-          fi
-        env:
+        uses: ./.github/actions/build
+        with:
+          image: atomic
           updates: ${{ needs.base.outputs.Updates}}
   gnome:
     name: atomic-arch:gnome image
@@ -202,49 +85,10 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-      - name: Add pacman cache
-        run: |
-          sudo mkdir -p \
-            /var/cache/pacman \
-            /var/lib/pacman \
-            /etc/pacman.d/gnupg
       - name: Build
-        run: |
-          if [[ "$updates" == "true" ]]; then
-            echo "Base image updated"
-            res = 2
-          else
-            set +e
-            sudo ./make.py checkupdates --target=gnome
-            res=$?
-            set -e
-          fi
-          if [ $res -eq 2 ];then
-            sudo ./make.py build --push gnome
-            echo "Updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-            sudo ./make.py push gnome
-            echo "No Updates"
-            echo "Updates=false" >> $GITHUB_OUTPUT
-          fi
-        env:
+        uses: ./.github/actions/build
+        with:
+          image: gnome
           updates: ${{ needs.base.outputs.Updates}}
   eeems:
     name: atomic-arch:eeems image
@@ -253,49 +97,10 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-      - name: Add pacman cache
-        run: |
-          sudo mkdir -p \
-            /var/cache/pacman \
-            /var/lib/pacman \
-            /etc/pacman.d/gnupg
       - name: Build
-        run: |
-          if [[ "$updates" == "true" ]]; then
-            echo "Base image updated"
-            res = 2
-          else
-            set +e
-            sudo ./make.py checkupdates --target=eeems
-            res=$?
-            set -e
-          fi
-          if [ $res -eq 2 ];then
-            sudo ./make.py build --push eeems
-            echo "Updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-            sudo ./make.py push eeems
-            echo "No Updates"
-            echo "Updates=false" >> $GITHUB_OUTPUT
-          fi
-        env:
+        uses: ./.github/actions/build
+        with:
+          image: eeems
           updates: ${{ needs.atomic.outputs.Updates}}
   system76:
     name: atomic-arch:${{ matrix.variant }}-system76
@@ -315,50 +120,11 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-      - name: Add pacman cache
-        run: |
-          sudo mkdir -p \
-            /var/cache/pacman \
-            /var/lib/pacman \
-            /etc/pacman.d/gnupg
       - name: Build
-        run: |
-          if [[ "$updates" == "true" ]]; then
-            echo "Base image updated"
-            res = 2
-          else
-            set +e
-            sudo ./make.py checkupdates --target=${{ matrix.variant }}-system76
-            res=$?
-            set -e
-          fi
-          if [ $res -eq 2 ];then
-            sudo ./make.py build --push ${{ matrix.variant }}-system76
-            echo "Updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-            sudo ./make.py push ${{ matrix.variant }}-system76
-            echo "No Updates"
-            echo "Updates=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          updates: ${{ needs.atomic.outputs.Updates}}
+        uses: ./.github/actions/build
+        with:
+          image: ${{ matrix.variant }}-system76
+          updates: ${{ needs[matrix.variant].outputs.Updates}}
   nvidia:
     name: atomic-arch:${{ matrix.variant }}-nvidia
     runs-on: ubuntu-latest
@@ -382,50 +148,11 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-      - name: Add pacman cache
-        run: |
-          sudo mkdir -p \
-            /var/cache/pacman \
-            /var/lib/pacman \
-            /etc/pacman.d/gnupg
       - name: Build
-        run: |
-          if [[ "$updates" == "true" ]]; then
-            echo "Base image updated"
-            res = 2
-          else
-            set +e
-            sudo ./make.py checkupdates --target=${{ matrix.variant }}-nvidia
-            res=$?
-            set -e
-          fi
-          if [ $res -eq 2 ];then
-            sudo ./make.py build --push ${{ matrix.variant }}-nvidia
-            echo "Updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-            sudo ./make.py push ${{ matrix.variant }}-nvidia
-            echo "No Updates"
-            echo "Updates=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          updates: ${{ needs.atomic.outputs.Updates}}
+        uses: ./.github/actions/build
+        with:
+          image: ${{ matrix.variant }}-nvidia
+          updates: ${{ needs[matrix.variant].outputs.Updates}}
   slim:
     name: atomic-arch:${{ matrix.variant }}-slim
     runs-on: ubuntu-latest
@@ -449,53 +176,11 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-      - name: Free up space
-        if: ${{ contains('atomic eeems system76', matrix.variant) }}
-        uses: ./.github/actions/cleanup
-      - name: Add pacman cache
-        run: |
-          sudo mkdir -p \
-            /var/cache/pacman \
-            /var/lib/pacman \
-            /etc/pacman.d/gnupg
       - name: Build
-        run: |
-          if [[ "$updates" == "true" ]]; then
-            echo "Base image updated"
-            res = 2
-          else
-            set +e
-            sudo ./make.py checkupdates --target=${{ matrix.variant }}-slim
-            res=$?
-            set -e
-          fi
-          if [ $res -eq 2 ];then
-            sudo ./make.py build --push ${{ matrix.variant }}-slim
-            echo "Updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-            sudo ./make.py push ${{ matrix.variant }}-slim
-            echo "No Updates"
-            echo "Updates=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          updates: ${{ needs.atomic.outputs.Updates}}
+        uses: ./.github/actions/build
+        with:
+          image: ${{ matrix.variant }}-slim
+          updates: ${{ needs[matrix.variant].outputs.Updates}}
   iso:
     name: atomic-arch:${{ matrix.variant }}${{ matrix.subvariant }} iso
     runs-on: ubuntu-latest

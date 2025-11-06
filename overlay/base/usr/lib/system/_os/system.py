@@ -158,6 +158,7 @@ def checkupdates(image: str | None = None) -> list[str]:
     from .podman import context_hash
     from .podman import image_labels
     from .podman import image_info
+    from .podman import image_exists
 
     if image is None:
         image = baseImage()
@@ -169,7 +170,9 @@ def checkupdates(image: str | None = None) -> list[str]:
         updates.append(f"Systemfile {current_hash[:9]} -> {new_hash[:9]}")
 
     mirrorlist: list[str] | None = None
-    if image_info(image, remote=False).get("Digest", []):
+    if image_exists(image, remote=False) and image_info(image, remote=False).get(
+        "Digest", []
+    ):
         with open("/usr/lib/os-release", "r") as f:
             local_info = {
                 x[0]: x[1]
