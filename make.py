@@ -48,6 +48,7 @@ is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [report
 image_hash = cast(Callable[[str], str], _os.podman.image_hash)  # pyright:ignore [reportUnknownMemberType]
 image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_info)  # pyright:ignore [reportUnknownMemberType]
 image_labels = cast(Callable[[str, bool], dict[str, str]], _os.podman.image_labels)  # pyright:ignore [reportUnknownMemberType]
+image_exists = cast(Callable[[str, bool], bool], _os.podman.image_exists)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
 
@@ -58,11 +59,7 @@ def hash(target: str) -> str:
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
         image = f"{IMAGE}:{base_variant}"
-        image_exists = (
-            _execute(shlex.join(podman_cmd("image", "exists", f"docker.io/{image}")))
-            > 0
-        )
-        labels = image_labels(image, image_exists)
+        labels = image_labels(image, not image_exists(image, False))
         m.update(labels["hash"].encode("utf-8"))
 
     with open(containerfile, "rb") as f:
@@ -87,7 +84,8 @@ def build(target: str):
     if "-" in target and not os.path.exists(containerfile):
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
-        labels = image_labels(f"{IMAGE}:{base_variant}", False)
+        image = f"{IMAGE}:{base_variant}"
+        labels = image_labels(image, not image_exists(image, False))
         build_args["BASE_VARIANT_ID"] = f"{base_variant}"
         build_args["VARIANT"] = f"{labels['os-release.VARIANT']} ({template})"
         build_args["VARIANT_ID"] = f"{labels['os-release.VARIANT_ID']}-{template}"
@@ -262,17 +260,23 @@ def do_checkupdates(args: argparse.Namespace):
 
     target = cast(str, args.target)
     image = f"eeems/atomic-arch:{target}"
-    mirror = [
-        x.split(" = ", 1)[1]
-        for x in in_system_output(
-            "cat",
-            "/etc/pacman.d/mirrorlist",
-            entrypoint="",
-            target=image,
-        )
-        .decode("utf-8")
-        .splitlines()
-    ][0]
+    exists = image_exists(image, True)
+    if exists:
+        mirror = [
+            x.split(" = ", 1)[1]
+            for x in in_system_output(
+                "cat",
+                "/etc/pacman.d/mirrorlist",
+                entrypoint="",
+                target=image,
+            )
+            .decode("utf-8")
+            .splitlines()
+        ][0]
+
+    else:
+        mirror = "https://archive.archlinux.org/repos/2025/11/06/$repo/os/$arch"
+
     m = re.match(r"^(.+)\/(\d{4}\/\d{2}\/\d{2})\/\$repo\/os\/\$arch$", mirror)
     assert m
     current = m.group(2)
@@ -291,10 +295,13 @@ def do_checkupdates(args: argparse.Namespace):
             sys.exit(1)
 
     new_hash = hash(target)
-    current_hash = image_hash(image)
+    current_hash = image_hash(image) if exists else "(none)"
     if current_hash != new_hash:
         print(f"context {current_hash[:9]} -> {new_hash[:9]}")
         has_updates = True
+
+    if not exists:
+        sys.exit(2)
 
     res = in_system(
         "-ec",

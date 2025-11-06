@@ -184,6 +184,27 @@ def image_hash(image: str, remote: bool = True) -> str:
     return image_labels(image, remote=remote).get("hash", "0")
 
 
+def image_exists(image: str, remote: bool = True) -> bool:
+    image_exists = not _execute(shlex.join(podman_cmd("image", "exists", image)))
+    if image_exists or not remote:
+        return image_exists
+
+    image, tag = image.rsplit(":", 1)
+    data: dict[str, str | list[str]] = json.loads(  # pyright:ignore [reportAny]
+        subprocess.check_output(
+            [
+                "skopeo",
+                "list-tags",
+                f"docker://docker.io/{image}",
+            ]
+        )
+    )
+    assert isinstance(data, dict), f"Unexpected data {data}"
+    tags = data.get("Tags", [])
+    assert isinstance(tags, list), f"Tags is not a list: {tags}"
+    return tag in tags
+
+
 CONTAINER_POST_STEPS = r"""
 RUN fc-cache -f
 
