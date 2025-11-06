@@ -1,9 +1,9 @@
 #syntax=docker/dockerfile:1.4
+FROM eeems/atomic-arch:eeems
+
 ARG \
   VARIANT="System76" \
   VARIANT_ID="system76"
-
-FROM eeems/atomic-arch:eeems
 
 RUN /usr/lib/system/add_pacman_repository \
   --key=A64228CCD26972801C2CE6E3EC931EA46980BA1B \

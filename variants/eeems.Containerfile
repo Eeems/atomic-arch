@@ -1,9 +1,9 @@
 #syntax=docker/dockerfile:1.4
+FROM eeems/atomic-arch:atomic
+
 ARG \
   VARIANT="Eeems" \
   VARIANT_ID="eeems"
-
-FROM eeems/atomic-arch:atomic
 
 RUN /usr/lib/system/add_pacman_repository \
   --keyfile=https://download.sublimetext.com/sublimehq-pub.gpg \

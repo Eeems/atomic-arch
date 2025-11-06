@@ -1,9 +1,9 @@
 #syntax=docker/dockerfile:1.4
+FROM eeems/atomic-arch:rootfs
+
 ARG \
   VARIANT="Base" \
   VARIANT_ID="base"
-
-FROM eeems/atomic-arch:rootfs
 
 RUN /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_packages \
