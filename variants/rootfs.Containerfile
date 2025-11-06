@@ -77,20 +77,3 @@ RUN  echo 'NAME="Atomic Arch"' > /usr/lib/os-release \
   && echo "VARIANT_ID=base" >> /usr/lib/os-release
 
 ENTRYPOINT [ "/bin/bash" ]
-
-ONBUILD ARG \
-  VARIANT \
-  VARIANT_ID \
-  VERSION_ID \
-  HASH
-
-ONBUILD LABEL \
-  os-release.VARIANT="${VARIANT}" \
-  os-release.VARIANT_ID="${VARIANT_ID}" \
-  os-release.VERSION_ID="${VERSION_ID}" \
-  org.opencontainers.image.ref.name="${VARIANT_ID}" \
-  hash="${HASH}"
-
-ONBUILD RUN VARIANT="${VARIANT}" \
-  VARIANT_ID="${VARIANT_ID}" \
-  /usr/lib/system/set_variant

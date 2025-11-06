@@ -31,3 +31,18 @@ RUN systemctl enable \
   com.system76.Scheduler
 
 COPY overlay/system76 /
+
+ARG \
+  VERSION_ID \
+  HASH
+
+LABEL \
+  os-release.VARIANT="${VARIANT}" \
+  os-release.VARIANT_ID="${VARIANT_ID}" \
+  os-release.VERSION_ID="${VERSION_ID}" \
+  org.opencontainers.image.ref.name="${VARIANT_ID}" \
+  hash="${HASH}"
+
+RUN VARIANT="${VARIANT}" \
+  VARIANT_ID="${VARIANT_ID}" \
+  /usr/lib/system/set_variant

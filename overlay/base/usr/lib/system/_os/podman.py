@@ -25,7 +25,7 @@ from .console import bytes_to_stdout
 from .console import bytes_to_stderr
 
 
-def podman_cmd(*args: str):
+def podman_cmd(*args: str) -> list[str]:
     if _execute("systemd-detect-virt --quiet --container") == 0:
         return ["podman", "--remote", *args]
 
