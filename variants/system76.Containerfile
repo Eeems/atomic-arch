@@ -32,9 +32,7 @@ RUN systemctl enable \
 
 COPY overlay/system76 /
 
-ARG \
-  VERSION_ID \
-  HASH
+ARG VERSION_ID HASH
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \
@@ -43,6 +41,4 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN VARIANT="${VARIANT}" \
-  VARIANT_ID="${VARIANT_ID}" \
-  /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant
