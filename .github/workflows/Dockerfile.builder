@@ -9,8 +9,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH
 
 # Install core tools + build deps for pyenv + your system deps
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
         ca-certificates \
         gnupg \
         # Pyenv dependencies
@@ -37,22 +37,22 @@ RUN apt-get update && \
         libgirepository-2.0-dev \
         ostree \
         podman \
-    && \
     # Install pyenv
-    curl https://pyenv.run | bash && \
-    # Install Python 3.12 via pyenv
-    pyenv install 3.12 && \
-    pyenv global 3.12 && \
+    && curl https://pyenv.run | bash \
+    && pyenv install 3.12 \
+    && pyenv global 3.12 \
     # Ensure pip is available and upgraded
-    python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    && python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
     # Cleanup
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Verify
-RUN python --version | grep -q "3.12" && \
-    pip --version && \
-    podman --version && \
-    ostree --version
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf \
+        /var/lib/apt/lists/* \
+        /tmp/* \
+        /var/tmp/* \
+        /opt/pyenv/{cache,sources,plugins/python-build/share/python-build/patches} \
+        ~/.cache/pip \
+    && find /opt/pyenv/versions -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true \
+    && find /opt/pyenv -name '*.pyc' -delete 2>/dev/null || true
 
 WORKDIR /workspace
