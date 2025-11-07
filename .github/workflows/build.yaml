@@ -33,7 +33,7 @@ jobs:
         --device /dev/fuse
         --tmpfs /tmp
         --tmpfs /run
-        -v /var/lib/containers:/var/lib/containers:U
+        -v /var/lib/containers:/var/lib/containers
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
