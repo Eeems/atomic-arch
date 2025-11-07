@@ -32,7 +32,6 @@ jobs:
         --device /dev/fuse
         --tmpfs /tmp
         --tmpfs /run
-        --tmpfs /var/lib/containers
         -v /var/lib/containers:/var/lib/containers
     steps:
       - name: Checkout the repository
