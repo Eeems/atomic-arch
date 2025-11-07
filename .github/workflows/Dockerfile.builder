@@ -46,11 +46,26 @@ RUN apt-get update \
         libxmlsec1-dev \
         libffi-dev \
         liblzma-dev \
+    # Install docker-ce
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        docker-ce-cli \
     # Install python 3.12
     && curl https://pyenv.run | bash \
     && pyenv install 3.12 \
     && pyenv global 3.12 \
-    && pip install --upgrade pip setuptools requests wheel \
+    && pyenv exec python -m pip install --root-user-action ignore --upgrade \
+        pip \
+        setuptools \
+        requests \
+        wheel \
     # Cleanup
     && pip cache purge \
     && apt-get autoremove -y \

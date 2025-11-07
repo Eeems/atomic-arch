@@ -1,4 +1,10 @@
-name: Free up space in the runner
+name: Cleanup
+description: Free up space in the runner
+inputs:
+  root:
+    description: Path to root directory
+    default: /
+    required: false
 runs:
   using: "composite"
   steps:
@@ -13,17 +19,18 @@ runs:
         docker rmi $(docker image ls -aq) || true
         docker system prune --force
         export DEBIAN_FRONTEND="noninteractive"
-        sudo apt-get autoremove -y
-        sudo apt-get autoclean -y
-        sudo rm -rf /usr/lib/jvm
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/share/swift
-        sudo rm -rf /usr/local/.ghcup
-        sudo rm -rf /usr/local/julia*
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /usr/local/share/chromium
-        sudo rm -rf /opt/microsoft /opt/google
-        sudo rm -rf /opt/az
-        sudo rm -rf /usr/local/share/powershell
+        sudo apt-get -o Dir=${{ inputs.root }} autoremove -y
+        sudo apt-get -o Dir=${{ inputs.root }} autoclean -y
+        sudo rm -rf \
+          ${{ inputs.root }}usr/lib/jvm \
+          ${{ inputs.root }}usr/share/dotnet \
+          ${{ inputs.root }}usr/share/swift \
+          ${{ inputs.root }}usr/local/.ghcup \
+          ${{ inputs.root }}usr/local/julia* \
+          ${{ inputs.root }}usr/local/lib/android \
+          ${{ inputs.root }}usr/local/share/chromium \
+          ${{ inputs.root }}opt/microsoft /opt/google \
+          ${{ inputs.root }}opt/az \
+          ${{ inputs.root }}usr/local/share/powershell
         echo
         df -h

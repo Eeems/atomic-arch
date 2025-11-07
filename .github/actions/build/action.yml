@@ -1,4 +1,5 @@
 name: Build an image
+description: Build an atomic-arch image
 inputs:
   image:
     description: Image to build
