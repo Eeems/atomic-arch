@@ -16,6 +16,8 @@ RUN apt-get update \
         ostree \
         podman \
         sudo \
+        meson \
+        ninja-build \
         build-essential \
         pkg-config \
         python3-dev \
