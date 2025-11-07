@@ -43,14 +43,6 @@ RUN apt-get update \
     && curl https://pyenv.run | bash \
     && pyenv install 3.12 \
     && pyenv global 3.12 \
-    # Configure Podman for rootful use in containers
-    && useradd -m -u 1001 -s /bin/bash runner \
-    && echo "runner:runner" | passwd --stdin runner \
-    && usermod -aG sudo runner \
-    && echo "runner ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/runner \
-    # Ensure containers.conf allows rootful + storage
-    && mkdir -p /etc/containers \
-    && echo -e "[engine]\nrunroot = \"/tmp/podman-run\"\nstorageroot = \"/var/lib/containers/storage\"\n" > /etc/containers/containers.conf \
     # Cleanup
     && apt-get autoremove -y \
     && apt-get clean \
@@ -59,6 +51,13 @@ RUN apt-get update \
         /tmp/* \
         /var/tmp/* \
     && mkdir -p /github/{home,workspace,workflow}
+
+RUN useradd -m -u 1001 -s /bin/bash runner \
+    && echo 'runner:runner' | chpasswd \
+    && usermod -aG sudo runner \
+    && echo "runner ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/runner \
+    && mkdir -p /etc/containers \
+    && echo -e "[engine]\nrunroot = \"/tmp/podman-run\"\nstorageroot = \"/var/lib/containers/storage\"\n" > /etc/containers/containers.conf
 
 USER 1001
 WORKDIR /github/workspace
