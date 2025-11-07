@@ -15,6 +15,7 @@ RUN apt-get update \
         gnupg \
         ostree \
         podman \
+        sudo \
         build-essential \
         pkg-config \
         python3-dev \
@@ -38,9 +39,17 @@ RUN apt-get update \
         libxmlsec1-dev \
         libffi-dev \
         liblzma-dev \
+    # Install python 3.12
     && curl https://pyenv.run | bash \
     && pyenv install 3.12 \
     && pyenv global 3.12 \
+    # Configure Podman for rootful use in containers
+    && echo "runner:runner" | chpasswd \
+    && adduser runner sudo \
+    && echo "runner ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/runner \
+    # Ensure containers.conf allows rootful + storage
+    && mkdir -p /etc/containers \
+    && echo -e "[engine]\nrunroot = \"/tmp/podman-run\"\nstorageroot = \"/var/lib/containers/storage\"\n" > /etc/containers/containers.conf \
     # Cleanup
     && apt-get autoremove -y \
     && apt-get clean \
@@ -50,4 +59,5 @@ RUN apt-get update \
         /var/tmp/* \
     && mkdir -p /github/{home,workspace,workflow}
 
+USER 1001
 WORKDIR /github/workspace
