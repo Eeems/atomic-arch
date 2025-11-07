@@ -114,18 +114,19 @@ def push(target: str):
     image = f"{IMAGE}:{target}"
     labels = image_labels(image, False)
     if labels.get("os-release.VERSION", None):
+        tags: list[str] = []
         version = labels["os-release.VERSION"]
-        tag = f"{image}_{version}"
-        tags = [tag]
-        podman("tag", image, tag)
-        podman("push", tag)
-
         version_id = labels.get("os-release.VERSION_ID", None)
         if version_id and version != version_id:
             tag = f"{image}_{version}.{version_id}"
             tags.append(tag)
             podman("tag", image, tag)
             podman("push", tag)
+
+        tag = f"{image}_{version}"
+        tags.append(tag)
+        podman("tag", image, tag)
+        podman("push", tag)
 
         podman("untag", image, *tags)
 
