@@ -1,17 +1,12 @@
 name: Build builder image
 on:
-  pull_request:
+  pull_request: &on-filter
     branches:
       - master
     paths:
       - .github/workflows/builder.yml
       - .github/workflows/Dockerfile.builder
-  push:
-    branches:
-      - master
-    paths:
-      - .github/workflows/builder.yml
-      - .github/workflows/Dockerfile.builder
+  push: *on-filter
   workflow_dispatch:
   schedule:
     - cron: "0 0 * * 0"

@@ -1,11 +1,18 @@
 name: Build images
 on:
-  pull_request:
+  pull_request: &on-filter
     branches:
       - master
-  push:
-    branches:
-      - master
+    paths:
+      - .github/actions/cleanup
+      - .github/actions/build
+      - make.py
+      - seccomp.json
+      - .contianerignore
+      - overlay
+      - templates
+      - variants
+  push: *on-filter
   workflow_dispatch:
   schedule:
     - cron: "0 23 * * *"
