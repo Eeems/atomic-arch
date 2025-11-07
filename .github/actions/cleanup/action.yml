@@ -19,18 +19,19 @@ runs:
         docker rmi $(docker image ls -aq) || true
         docker system prune --force
         export DEBIAN_FRONTEND="noninteractive"
-        sudo apt-get -o Dir=${{ inputs.root }} autoremove -y
-        sudo apt-get -o Dir=${{ inputs.root }} autoclean -y
-        sudo rm -rf \
-          ${{ inputs.root }}usr/lib/jvm \
-          ${{ inputs.root }}usr/share/dotnet \
-          ${{ inputs.root }}usr/share/swift \
-          ${{ inputs.root }}usr/local/.ghcup \
-          ${{ inputs.root }}usr/local/julia* \
-          ${{ inputs.root }}usr/local/lib/android \
-          ${{ inputs.root }}usr/local/share/chromium \
-          ${{ inputs.root }}opt/microsoft /opt/google \
-          ${{ inputs.root }}opt/az \
-          ${{ inputs.root }}usr/local/share/powershell
+        sudo apt-get -o Dir='${{ inputs.root }}' autoremove -y
+        sudo apt-get -o Dir='${{ inputs.root }}' autoclean -y
+        sudo rm -vrf \
+          '${{ inputs.root }}usr/lib/jvm' \
+          '${{ inputs.root }}usr/share/dotnet' \
+          '${{ inputs.root }}usr/share/swift' \
+          '${{ inputs.root }}usr/local/.ghcup' \
+          '${{ inputs.root }}usr/local/julia*' \
+          '${{ inputs.root }}usr/local/lib/android' \
+          '${{ inputs.root }}usr/local/share/chromium' \
+          '${{ inputs.root }}opt/microsoft /opt/google' \
+          '${{ inputs.root }}opt/az' \
+          '${{ inputs.root }}usr/local/share/powershell' \
+        | wc -l
         echo
         df -h

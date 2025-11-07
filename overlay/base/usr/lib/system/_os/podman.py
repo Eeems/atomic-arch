@@ -190,6 +190,13 @@ def image_exists(image: str, remote: bool = True) -> bool:
         return image_exists
 
     image, tag = image.rsplit(":", 1)
+    return tag in image_tags(image)
+
+
+def image_tags(image: str) -> list[str]:
+    if ":" in image:
+        image, _ = image.rsplit(":", 1)
+
     data: dict[str, str | list[str]] = json.loads(  # pyright:ignore [reportAny]
         subprocess.check_output(
             [
@@ -202,7 +209,17 @@ def image_exists(image: str, remote: bool = True) -> bool:
     assert isinstance(data, dict), f"Unexpected data {data}"
     tags = data.get("Tags", [])
     assert isinstance(tags, list), f"Tags is not a list: {tags}"
-    return tag in tags
+    return tags
+
+
+def image_digest(image: str) -> str:
+    return (
+        subprocess.check_output(
+            ["skopeo", "inspect", f"docker://docker.io/{image}", "--format={{.Digest}}"]
+        )
+        .strip()
+        .decode("utf-8")
+    )
 
 
 CONTAINER_POST_STEPS = r"""

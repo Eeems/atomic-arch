@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+from itertools import pairwise
 import sys
 import shlex
 import shutil
@@ -8,6 +9,8 @@ import atexit
 import re
 import tempfile
 import json
+import string
+import subprocess
 
 from glob import iglob
 from hashlib import sha256
@@ -49,6 +52,8 @@ image_hash = cast(Callable[[str], str], _os.podman.image_hash)  # pyright:ignore
 image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_info)  # pyright:ignore [reportUnknownMemberType]
 image_labels = cast(Callable[[str, bool], dict[str, str]], _os.podman.image_labels)  # pyright:ignore [reportUnknownMemberType]
 image_exists = cast(Callable[[str, bool], bool], _os.podman.image_exists)  # pyright:ignore [reportUnknownMemberType]
+image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:ignore [reportUnknownMemberType]
+image_digest = cast(Callable[[str], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
 
@@ -138,6 +143,127 @@ def push(target: str):
 
 def pull(target: str):
     podman("pull", f"{IMAGE}:{target}")
+
+
+def hex_to_base62(hex_digest: str) -> str:
+    if hex_digest.startswith("sha256:"):
+        hex_digest = hex_digest[7:]
+
+    return (
+        "".join(
+            (string.digits + string.ascii_lowercase + string.ascii_uppercase)[
+                int(hex_digest, 16) // (62**i) % 62
+            ]
+            for i in range(50)
+        )[::-1].lstrip("0")
+        or "0"
+    )
+
+
+def base62_to_hex(base62_str: str) -> str:
+    assert base62_str, "Invalid base62 string"
+    alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    char_to_value = {char: idx for idx, char in enumerate(alphabet)}
+    value = 0
+    for char in base62_str:
+        if char not in char_to_value:
+            raise ValueError(f"Invalid Base62 character: '{char}'")
+        value = value * 62 + char_to_value[char]
+
+    hex_str = hex(value)[2:]
+    assert hex_str, "Invalid base62 string"
+    return hex_str
+
+
+def delta(target: str):
+    tags = image_tags(IMAGE)
+    target_tags = [
+        x
+        for x in tags
+        if x.startswith(f"{target}_")
+        and (target == "rootfs" or len(x[len(target) + 1 :]) > 10)
+    ]
+    target_tags.sort()
+    digests = {x: hex_to_base62(image_digest(f"{IMAGE}:{x}")) for x in target_tags}
+    diff_tags = [
+        x
+        for x in tags
+        if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
+    ]
+    # diffs: dict[str, set[str]] = {}
+    # for tag in diff_tags:
+    #     digestA = tag[6:43]
+    #     digestB = tag[50:]
+    #     if digestA not in diffs:
+    #         diffs[digestA] = set()
+
+    #     diffs[digestA].add(digestB)
+    #     if digestB not in diffs:
+    #         diffs[digestB] = set()
+
+    #     diffs[digestB].add(digestA)
+
+    for a, b in pairwise(target_tags):
+        tag = f"_diff-{digests[a]}-{digests[b]}"
+        if tag in diff_tags:
+            continue
+
+        imageA = f"{IMAGE}:{a}"
+        imageB = f"{IMAGE}:{b}"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            podman("pull", imageA)
+            old_oci_path = os.path.join(tmpdir, "old.oci")
+            podman("save", imageA, "-o", old_oci_path)
+            podman("pull", imageB)
+
+            podman_proc = subprocess.Popen(
+                podman_cmd("save", imageB, "--quiet"),
+                stdout=subprocess.PIPE,
+            )
+            assert podman_proc.stdout is not None
+            xdelta_proc = subprocess.Popen(
+                ["xdelta3", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
+                stdin=podman_proc.stdout,
+                stdout=subprocess.PIPE,
+            )
+            podman_proc.stdout.close()
+            assert xdelta_proc.stdout is not None
+            zstd_proc = subprocess.Popen(
+                ["zstd", "-19", "-T0", "-o", os.path.join(tmpdir, "diff.xd3.zstd")],
+                stdin=xdelta_proc.stdout,
+                stdout=subprocess.PIPE,
+            )
+            xdelta_proc.stdout.close()
+            _ = zstd_proc.communicate()
+            for proc in [zstd_proc, xdelta_proc, podman_proc]:
+                if proc.wait() != 0:
+                    raise subprocess.CalledProcessError(proc.returncode, proc.args)
+
+            containerfile = os.path.join(tmpdir, "Containerfile")
+            with open(containerfile, "w") as f:
+                _ = f.write(f"""\
+FROM scratch
+COPY diff.xd3.zstd /diff.xd3.zstd
+LABEL atomic.patch.prev="sha256:{base62_to_hex(digests[a])}" \\
+      atomic.patch.ref="sha256:{base62_to_hex(digests[b])}" \\
+      atomic.patch.format="xdelta3+zstd"
+""")
+            imageD = f"docker.io/{IMAGE}:{tag}"
+            podman(
+                "build",
+                f"--tag={imageD}",
+                f"--file={containerfile}",
+                "--force-rm",
+                tmpdir,
+            )
+            execute(
+                "skopeo",
+                "copy",
+                f"containers-storage:{imageD}",
+                f"docker-archive:/tmp/{tag}.oci",
+                # f"docker://{imageD}"
+            )
+            podman("rmi", imageA, imageB, imageD)
 
 
 def do_build(args: argparse.Namespace):
@@ -464,6 +590,11 @@ def do_hash(args: argparse.Namespace):
         print(f"{target}: {hash(target)[:9]}")
 
 
+def do_delta(args: argparse.Namespace):
+    for target in cast(list[str], args.target):
+        delta(target)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers()
@@ -524,6 +655,10 @@ if __name__ == "__main__":
     subparser = subparsers.add_parser("hash")
     _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
     subparser.set_defaults(func=do_hash)
+
+    subparser = subparsers.add_parser("delta")
+    _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
+    subparser.set_defaults(func=do_delta)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):
