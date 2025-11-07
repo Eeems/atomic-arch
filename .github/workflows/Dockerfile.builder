@@ -44,9 +44,10 @@ RUN apt-get update \
     && pyenv install 3.12 \
     && pyenv global 3.12 \
     # Configure Podman for rootful use in containers
-    && echo "runner:runner" | chpasswd \
-    && adduser runner sudo \
-    && echo "runner ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/runner \
+    && useradd -m -u 1001 -s /bin/bash runner \
+    && echo "runner:runner" | passwd --stdin runner \
+    && usermod -aG sudo runner \
+    && echo "runner ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/runner \
     # Ensure containers.conf allows rootful + storage
     && mkdir -p /etc/containers \
     && echo -e "[engine]\nrunroot = \"/tmp/podman-run\"\nstorageroot = \"/var/lib/containers/storage\"\n" > /etc/containers/containers.conf \
