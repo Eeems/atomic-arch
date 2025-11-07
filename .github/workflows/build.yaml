@@ -34,11 +34,11 @@ jobs:
         --tmpfs /tmp
         --tmpfs /run
         -v /var/lib/containers:/var/lib/containers
+    env:
+      TMPDIR: ${{ runner.temp }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-      - name: Force pyenv python
-        run: echo "PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH" >> $GITHUB_ENV
       - name: Cache venv
         uses: actions/cache@v4
         with:
@@ -50,6 +50,8 @@ jobs:
     name: Build atomic-arch:rootfs
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     needs: [check]
     permissions:
       contents: write
@@ -71,6 +73,8 @@ jobs:
     name: atomic-arch:base image
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     needs: [rootfs]
     steps:
       - name: Checkout the repository
@@ -86,6 +90,8 @@ jobs:
     name: atomic-arch:atomic image
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     needs: [base]
     steps:
       - name: Checkout the repository
@@ -101,6 +107,8 @@ jobs:
     name: atomic-arch:gnome image
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     needs: [base]
     steps:
       - name: Checkout the repository
@@ -116,6 +124,8 @@ jobs:
     name: atomic-arch:eeems image
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     needs: [atomic]
     steps:
       - name: Checkout the repository
@@ -131,6 +141,8 @@ jobs:
     name: atomic-arch:${{ matrix.variant }}-system76
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     strategy:
       fail-fast: false
       matrix:
@@ -157,6 +169,8 @@ jobs:
     name: atomic-arch:${{ matrix.variant }}-nvidia
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     strategy:
       fail-fast: false
       matrix:
@@ -188,6 +202,8 @@ jobs:
     name: atomic-arch:${{ matrix.variant }}-slim
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     strategy:
       fail-fast: false
       matrix:
@@ -219,6 +235,8 @@ jobs:
     name: atomic-arch:${{ matrix.variant }}${{ matrix.subvariant }} iso
     runs-on: ubuntu-latest
     container: *builder
+    env:
+      TMPDIR: ${{ runner.temp }}
     strategy:
       fail-fast: false
       matrix:

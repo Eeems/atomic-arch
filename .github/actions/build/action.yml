@@ -30,9 +30,6 @@ runs:
           /var/cache/pacman \
           /var/lib/pacman \
           /etc/pacman.d/gnupg
-    - name: Force pyenv python
-      shell: bash
-      run: echo "PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH" >> $GITHUB_ENV
     - name: Build
       id: build
       shell: bash
