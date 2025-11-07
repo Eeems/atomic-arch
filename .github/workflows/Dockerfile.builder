@@ -71,8 +71,10 @@ RUN mkdir /github \
     && printf '[engine]\nrunroot = "/tmp/podman-run"\nstorageroot = "/var/lib/containers/storage"\n' > /etc/containers/containers.conf \
     && printf 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf \
     && touch /github/home/.docker/config.json \
-    && chown -R 1000:0 /opt/pyenv /github \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
+
+COPY entrypoint.sh /entrypoint.sh
 
 USER 1000
 WORKDIR /github/workspace
+ENTRYPOINT ["/entrypoint.sh"]
