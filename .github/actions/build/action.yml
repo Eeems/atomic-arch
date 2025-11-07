@@ -3,6 +3,12 @@ inputs:
   image:
     description: Image to build
     required: true
+  username:
+    description: Docker username
+    required: true
+  password:
+    description: Docker password
+    required: true
   updates:
     description: If previous builds had an update
     required: false
@@ -14,8 +20,8 @@ runs:
     - name: Login to dockerhub
       uses: redhat-actions/podman-login@v1
       with:
-        username: ${{ secrets.DOCKER_USER }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
         registry: docker.io
     - name: Add pacman cache
       shell: bash
@@ -24,11 +30,13 @@ runs:
           /var/cache/pacman \
           /var/lib/pacman \
           /etc/pacman.d/gnupg
+    - name: Force pyenv python
+      shell: bash
+      run: echo "PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH" >> $GITHUB_ENV
     - name: Build
       id: build
       shell: bash
       run: |
-        export PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH
         if [[ "$updates" == "true" ]]; then
             echo "Previous image updated"
             res = 2
