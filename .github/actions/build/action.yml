@@ -27,8 +27,6 @@ runs:
       id: build
       shell: bash
       run: |
-        sudo mkdir -p /var/lib/containers/storage
-        sudo chown -R 1001:0 /var/lib/containers/storage
         if [[ "$updates" == "true" ]]; then
             echo "Previous image updated"
             res = 2
