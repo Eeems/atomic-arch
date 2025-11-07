@@ -17,6 +17,7 @@ RUN apt-get update \
         podman \
         sudo \
         meson \
+        uidmap \
         ninja-build \
         build-essential \
         pkg-config \
