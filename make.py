@@ -190,6 +190,8 @@ def delta(target: str):
         for x in tags
         if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
     ]
+
+    # TODO generate diffs for between even more images
     # diffs: dict[str, set[str]] = {}
     # for tag in diff_tags:
     #     digestA = tag[6:43]
@@ -260,8 +262,7 @@ LABEL atomic.patch.prev="sha256:{base62_to_hex(digests[a])}" \\
                 "skopeo",
                 "copy",
                 f"containers-storage:{imageD}",
-                f"docker-archive:/tmp/{tag}.oci",
-                # f"docker://{imageD}"
+                f"docker://{imageD}",
             )
             podman("rmi", imageA, imageB, imageD)
 

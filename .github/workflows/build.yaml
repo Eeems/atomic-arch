@@ -228,7 +228,7 @@ jobs:
     name: atomic-arch:${{ matrix.variant }}${{ matrix.subvariant }} iso
     runs-on: ubuntu-latest
     container: *builder
-    strategy:
+    strategy: &all-variants
       fail-fast: false
       matrix:
         variant:
@@ -243,7 +243,7 @@ jobs:
           - ""
           - -nvidia
           - -slim
-    needs:
+    needs: &all-builds
       - base
       - atomic
       - gnome
@@ -291,3 +291,33 @@ jobs:
         with:
           name: atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}.iso
           path: /var/lib/system/atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}-*.iso
+  diffs:
+    name: Generate diffs for ${{ matrix.variant }}${{ matrix.subvariant }}
+    runs-on: ubuntu-latest
+    container: *builder
+    strategy: *all-variants
+    needs: *all-builds
+    steps:
+      - name: Ensure .docker exists
+        run: |
+          mkdir -p /github/home/.docker
+          if ! [ -f /github/home/.docker/config.json ];then
+            echo '{"auths":{}}' > /github/home/.docker/config.json
+          fi
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+          auth_file_path: /run/containers/0/auth.json
+      - name: Build
+        id: build
+        run: |
+          mkdir -p /run/podman
+          podman system service --time 0 unix:///run/podman/podman.sock &
+          ./make.py diff ${{ matrix.variant }}${{ matrix.subvariant }}
+          kill $(jobs -p)
+        env:
+          updates: ${{ inputs.updates }}
+          TMPDIR: ${{ runner.temp }}
