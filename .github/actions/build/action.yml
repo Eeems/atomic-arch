@@ -32,17 +32,17 @@ runs:
             res = 2
           else
             set +e
-            sudo ./make.py checkupdates --target=${{ inputs.image }}
+            ./make.py checkupdates --target=${{ inputs.image }}
             res=$?
             set -e
           fi
           if [ $res -eq 2 ];then
-            sudo ./make.py build --push ${{ inputs.image }}
+            ./make.py build --push ${{ inputs.image }}
             echo "Updates=true" >> $GITHUB_OUTPUT
           elif [ $res -ne 0 ];then
             exit 1
           else
-            sudo ./make.py push ${{ inputs.image }}
+            ./make.py push ${{ inputs.image }}
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi

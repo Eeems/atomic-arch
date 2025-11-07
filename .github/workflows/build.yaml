@@ -34,6 +34,7 @@ jobs:
         --tmpfs /tmp
         --tmpfs /run
         --userns=host
+        --user 0
         -v /var/lib/containers:/var/lib/containers
     steps:
       - name: Checkout the repository
@@ -273,14 +274,14 @@ jobs:
           docker rmi $(docker image ls -aq) || true
           docker system prune --force
           export DEBIAN_FRONTEND="noninteractive"
-          sudo apt-get autoremove -y
-          sudo apt-get autoclean -y
+          apt-get autoremove -y
+          apt-get autoclean -y
       - name: Build
         run: |
           if [ ! -f /etc/containers/seccomp.json ];then
-            sudo cp seccomp.json /etc/containers/seccomp.json
+            cp seccomp.json /etc/containers/seccomp.json
           fi
-          sudo ./make.py iso ${{ matrix.variant }}${{ matrix.subvariant }}
+          ./make.py iso ${{ matrix.variant }}${{ matrix.subvariant }}
         env:
           TMPDIR: ${{ runner.temp }}
       - name: Upload iso

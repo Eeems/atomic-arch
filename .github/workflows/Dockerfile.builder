@@ -72,8 +72,4 @@ RUN mkdir /github \
     && printf 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
 
-COPY entrypoint.sh /entrypoint.sh
-
-USER 1000
-WORKDIR /github/workspace
-ENTRYPOINT ["/entrypoint.sh"]
+USER 0
