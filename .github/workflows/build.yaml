@@ -14,8 +14,19 @@ jobs:
   check:
     name: Ensure config is valid
     runs-on: ubuntu-latest
-    container:
+    container: &builder
       image: docker.io/eeems/atomic-arch:_builder
+      options: >-
+        --privileged
+        --security-opt seccomp=unconfined
+        --security-opt apparmor=unconfined
+        --cap-add=SYS_ADMIN
+        --cap-add=NET_ADMIN
+        --device /dev/fuse
+        --tmpfs /tmp
+        --tmpfs /run
+        --tmpfs /var/lib/containers
+        -v /var/lib/containers:/var/lib/containers
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -31,8 +42,7 @@ jobs:
   rootfs:
     name: Build atomic-arch:rootfs
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     needs: [check]
     permissions:
       contents: write
@@ -53,8 +63,7 @@ jobs:
   base:
     name: atomic-arch:base image
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     needs: [rootfs]
     steps:
       - name: Checkout the repository
@@ -69,8 +78,7 @@ jobs:
   atomic:
     name: atomic-arch:atomic image
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     needs: [base]
     steps:
       - name: Checkout the repository
@@ -85,8 +93,7 @@ jobs:
   gnome:
     name: atomic-arch:gnome image
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     needs: [base]
     steps:
       - name: Checkout the repository
@@ -101,8 +108,7 @@ jobs:
   eeems:
     name: atomic-arch:eeems image
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     needs: [atomic]
     steps:
       - name: Checkout the repository
@@ -117,8 +123,7 @@ jobs:
   system76:
     name: atomic-arch:${{ matrix.variant }}-system76
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     strategy:
       fail-fast: false
       matrix:
@@ -144,8 +149,7 @@ jobs:
   nvidia:
     name: atomic-arch:${{ matrix.variant }}-nvidia
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     strategy:
       fail-fast: false
       matrix:
@@ -176,8 +180,7 @@ jobs:
   slim:
     name: atomic-arch:${{ matrix.variant }}-slim
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     strategy:
       fail-fast: false
       matrix:
@@ -208,8 +211,7 @@ jobs:
   iso:
     name: atomic-arch:${{ matrix.variant }}${{ matrix.subvariant }} iso
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/eeems/atomic-arch:_builder
+    container: *builder
     strategy:
       fail-fast: false
       matrix:
