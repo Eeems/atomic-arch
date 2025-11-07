@@ -69,6 +69,7 @@ RUN useradd -m -u 1001 -s /bin/bash -d /github/home runner \
         /etc/pacman.d/gnupg \
     && printf '[engine]\nrunroot = "/tmp/podman-run"\nstorageroot = "/var/lib/containers/storage"\n' > /etc/containers/containers.conf \
     && printf 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf \
+    && touch /github/home/.docker/config.json \
     && chown -R 1001:0 /opt/pyenv /github \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
 

@@ -3,6 +3,8 @@ ARG ARCHIVE_YEAR=2025
 ARG ARCHIVE_MONTH=11
 ARG ARCHIVE_DAY=06
 ARG PACSTRAP_TAG=20250427.0.341977
+ARG HASH
+ARG VERSION_ID
 
 FROM docker.io/library/archlinux:base-devel-${PACSTRAP_TAG} AS pacstrap
 
@@ -55,10 +57,10 @@ LABEL \
   org.opencontainers.image.ref.name="rootfs" \
   hash="${HASH}" \
   mirrorlist="[ \
-    \"https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
-    \"https://america.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
-    \"https://asia.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
-    \"https://europe.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\" \
+  \"https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+  \"https://america.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+  \"https://asia.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
+  \"https://europe.archive.pkgbuild.com/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\" \
   ]"
 
 WORKDIR /
