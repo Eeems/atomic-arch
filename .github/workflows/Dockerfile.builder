@@ -54,8 +54,9 @@ RUN apt-get update \
         /tmp/* \
         /var/tmp/*
 
-RUN useradd -m -u 1001 -s /bin/bash -d /github/home runner \
-    && mkdir -p /github/{workspace,workflow} \
+RUN mkdir /github \
+    && useradd -m -u 1001 -s /bin/bash -d /github/home runner \
+    && mkdir -p /github/{workspace,workflow} /github/home/.docker \
     && echo 'runner:runner' | chpasswd \
     && usermod -aG sudo runner \
     && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
