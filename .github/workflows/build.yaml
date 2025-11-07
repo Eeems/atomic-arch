@@ -291,8 +291,8 @@ jobs:
         with:
           name: atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}.iso
           path: /var/lib/system/atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}-*.iso
-  diffs:
-    name: Generate diffs for ${{ matrix.variant }}${{ matrix.subvariant }}
+  delta:
+    name: Generate deltas for ${{ matrix.variant }}${{ matrix.subvariant }}
     runs-on: ubuntu-latest
     container: *builder
     strategy: *all-variants
@@ -316,7 +316,7 @@ jobs:
         run: |
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
-          ./make.py diff ${{ matrix.variant }}${{ matrix.subvariant }}
+          ./make.py delta ${{ matrix.variant }}${{ matrix.subvariant }}
           kill $(jobs -p)
         env:
           updates: ${{ inputs.updates }}
