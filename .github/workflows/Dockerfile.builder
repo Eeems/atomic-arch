@@ -55,9 +55,8 @@ RUN apt-get update \
         /var/tmp/*
 
 RUN mkdir /github \
-    && userdel "$(id -nu 1000)" \
-    && useradd -m -u 1000 -s /bin/bash -d /github/home runner \
-    && mkdir -p /github/{workspace,workflow} /github/home/.docker \
+    && usermod --login runner "$(id -nu 1000)" \
+    && mkdir -p /github/{workspace,workflow,home} \
     && echo 'runner:runner' | chpasswd \
     && usermod -aG sudo runner \
     && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
@@ -71,7 +70,6 @@ RUN mkdir /github \
         /etc/pacman.d/gnupg \
     && printf '[engine]\nrunroot = "/tmp/podman-run"\nstorageroot = "/var/lib/containers/storage"\n' > /etc/containers/containers.conf \
     && printf 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf \
-    && touch /github/home/.docker/config.json \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
 
 COPY entrypoint.sh /entrypoint.sh
