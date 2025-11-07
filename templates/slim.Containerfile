@@ -37,7 +37,7 @@ ARG \
   PRETTY_NAME \
   ID \
   HOME_URL \
-  BUG_REPORT_URL \
+  BUG_REPORT_URL
 
 LABEL \
   os-release.NAME="Atomic Arch" \
