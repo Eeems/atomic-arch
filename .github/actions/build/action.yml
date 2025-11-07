@@ -23,6 +23,7 @@ runs:
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
         registry: docker.io
+        auth_file_path: /run/containers/0/auth.json
     - name: Build
       id: build
       shell: bash

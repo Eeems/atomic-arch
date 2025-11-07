@@ -6,7 +6,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYENV_ROOT=/opt/pyenv \
-    PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH
+    PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH \
+    XDG_RUNTIME_DIR=/run/user/0
 
 # Install core tools + build deps for pyenv + your system deps
 RUN apt-get update \
@@ -18,6 +19,7 @@ RUN apt-get update \
         sudo \
         meson \
         uidmap \
+        netavark \
         ninja-build \
         build-essential \
         pkg-config \
@@ -69,6 +71,7 @@ RUN mkdir /github \
         /var/lib/pacman \
         /etc/pacman.d/gnupg \
     && printf '[engine]\nrunroot = "/tmp/podman-run"\nstorageroot = "/var/lib/containers/storage"\n' > /etc/containers/containers.conf \
+    && printf '[network]\nnetwork_backend = "netavark"\n' >> /etc/containers/containers.conf \
     && printf 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
 
