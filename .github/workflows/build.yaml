@@ -45,7 +45,7 @@ jobs:
           path: .venv
           key: venv-${{ hashFiles('.github/workflows/Dockerfile.builder') }}-${{ hashFiles('make.py') }}
       - name: Ensure config is valid
-        run: ./make.py check
+        run: sudo ./make.py check
   rootfs:
     name: Build atomic-arch:rootfs
     runs-on: ubuntu-latest
