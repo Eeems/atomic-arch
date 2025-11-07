@@ -5,14 +5,14 @@ on:
       - master
     paths:
       - .github/workflows/build.yaml
-      - .github/actions/cleanup
-      - .github/actions/build
+      - ".github/actions/cleanup/**"
+      - ".github/actions/build/**"
       - make.py
       - seccomp.json
       - .contianerignore
-      - overlay
-      - templates
-      - variants
+      - "overlay/**"
+      - "templates/**"
+      - "variants/**"
   push: *on-filter
   workflow_dispatch:
   schedule:
