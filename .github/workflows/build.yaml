@@ -212,6 +212,8 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
+      - name: Free up space
+        uses: ./.github/actions/cleanup
       - name: Build
         uses: ./.github/actions/build
         with:
@@ -269,15 +271,8 @@ jobs:
       - name: Install python dependencies
         run: |
           pip install dbus-python
-      - name: Clean up system
-        run: |
-          rm -rf .git/
-          docker system prune --force
-          docker rmi $(docker image ls -aq) || true
-          docker system prune --force
-          export DEBIAN_FRONTEND="noninteractive"
-          apt-get autoremove -y
-          apt-get autoclean -y
+      - name: Free up space
+        uses: ./.github/actions/cleanup
       - name: Build
         run: |
           if [ ! -f /etc/containers/seccomp.json ];then
