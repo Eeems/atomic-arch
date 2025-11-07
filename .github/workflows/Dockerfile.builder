@@ -58,9 +58,18 @@ RUN useradd -m -u 1001 -s /bin/bash runner \
     && echo 'runner:runner' | chpasswd \
     && usermod -aG sudo runner \
     && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
-    && mkdir -p /etc/containers /tmp/podman-run /var/lib/containers/storage \
+    && mkdir -p \
+        /etc/containers \
+        /tmp/podman-run \
+        /var/lib/containers/storage \
+        /var/cache/podman \
+        /var/cache/pacman \
+        /var/lib/pacman \
+        /etc/pacman.d/gnupg \
     && printf '[engine]\nrunroot = "/tmp/podman-run"\nstorageroot = "/var/lib/containers/storage"\n' > /etc/containers/containers.conf \
-    && chown -R 1001:0 /opt/pyenv
+    && printf 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf \
+    && chown -R 1001:0 /opt/pyenv \
+    && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
 
 USER 1001
 WORKDIR /github/workspace
