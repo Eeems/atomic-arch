@@ -55,6 +55,7 @@ RUN apt-get update \
         /var/tmp/*
 
 RUN mkdir /github \
+    && userdel "$(id -nu 1000)" \
     && useradd -m -u 1000 -s /bin/bash -d /github/home runner \
     && mkdir -p /github/{workspace,workflow} /github/home/.docker \
     && echo 'runner:runner' | chpasswd \
