@@ -57,7 +57,8 @@ RUN useradd -m -u 1001 -s /bin/bash runner \
     && usermod -aG sudo runner \
     && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
     && mkdir -p /etc/containers \
-    && echo -e "[engine]\nrunroot = \"/tmp/podman-run\"\nstorageroot = \"/var/lib/containers/storage\"\n" > /etc/containers/containers.conf
+    && echo -e "[engine]\nrunroot = \"/tmp/podman-run\"\nstorageroot = \"/var/lib/containers/storage\"\n" > /etc/containers/containers.conf \
+    && chown -R 1001:0 /opt/pyenv
 
 USER 1001
 WORKDIR /github/workspace
