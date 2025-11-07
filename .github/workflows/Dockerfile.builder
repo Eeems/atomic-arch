@@ -52,10 +52,10 @@ RUN apt-get update \
     && rm -rf \
         /var/lib/apt/lists/* \
         /tmp/* \
-        /var/tmp/* \
-    && mkdir -p /github/{home,workspace,workflow}
+        /var/tmp/*
 
-RUN useradd -m -u 1001 -s /bin/bash runner \
+RUN useradd -m -u 1001 -s /bin/bash -d /github/home runner \
+    && mkdir -p /github/{workspace,workflow} \
     && echo 'runner:runner' | chpasswd \
     && usermod -aG sudo runner \
     && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
@@ -69,7 +69,7 @@ RUN useradd -m -u 1001 -s /bin/bash runner \
         /etc/pacman.d/gnupg \
     && printf '[engine]\nrunroot = "/tmp/podman-run"\nstorageroot = "/var/lib/containers/storage"\n' > /etc/containers/containers.conf \
     && printf 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf \
-    && chown -R 1001:0 /opt/pyenv \
+    && chown -R 1001:0 /opt/pyenv /github \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
 
 USER 1001
