@@ -17,6 +17,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Ensure .docker exists
+      shell: bash
+      run: |
+        mkdir -p /github/home/.docker
+        if ! [ -f /github/home/.docker/config.json ];then
+          echo "{}" > /github/home/.docker/config.json
+        fi
     - name: Login to dockerhub
       uses: redhat-actions/podman-login@v1
       with:
