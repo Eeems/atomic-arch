@@ -122,15 +122,18 @@ def push(target: str):
             tags.append(tag)
             podman("tag", image, tag)
             podman("push", tag)
+            print(f"Pushed {tag}")
 
         tag = f"{image}_{version}"
         tags.append(tag)
         podman("tag", image, tag)
         podman("push", tag)
+        print(f"Pushed {tag}")
 
         podman("untag", image, *tags)
 
     podman("push", image)
+    print(f"Pushed {image}")
 
 
 def pull(target: str):
