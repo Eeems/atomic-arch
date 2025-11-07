@@ -55,7 +55,7 @@ RUN apt-get update \
 RUN useradd -m -u 1001 -s /bin/bash runner \
     && echo 'runner:runner' | chpasswd \
     && usermod -aG sudo runner \
-    && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT"\n' > /etc/sudoers.d/runner \
+    && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
     && mkdir -p /etc/containers \
     && echo -e "[engine]\nrunroot = \"/tmp/podman-run\"\nstorageroot = \"/var/lib/containers/storage\"\n" > /etc/containers/containers.conf
 
