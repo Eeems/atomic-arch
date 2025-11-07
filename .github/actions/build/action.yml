@@ -35,6 +35,8 @@ runs:
       id: build
       shell: bash
       run: |
+        mkdir -p /run/podman
+        podman system service --time 0 unix:///run/podman/podman.sock &
         if [[ "$updates" == "true" ]]; then
             echo "Previous image updated"
             res=2
@@ -54,6 +56,7 @@ runs:
             echo "No Updates"
             echo "Updates=false" >> $GITHUB_OUTPUT
           fi
+          kill $(jobs -p)
       env:
         updates: ${{ inputs.updates }}
         TMPDIR: ${{ runner.temp }}

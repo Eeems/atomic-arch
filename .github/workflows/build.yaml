@@ -34,7 +34,6 @@ jobs:
         --tmpfs /tmp
         --tmpfs /run
         --userns=host
-        --user 0
         -v /var/lib/containers:/var/lib/containers
     steps:
       - name: Checkout the repository

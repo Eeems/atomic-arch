@@ -6,8 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYENV_ROOT=/opt/pyenv \
-    PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH \
-    XDG_RUNTIME_DIR=/run/user/0
+    PATH=/opt/pyenv/shims:/opt/pyenv/bin:$PATH
 
 # Install core tools + build deps for pyenv + your system deps
 RUN apt-get update \
@@ -20,6 +19,9 @@ RUN apt-get update \
         meson \
         uidmap \
         netavark \
+        skopeo \
+        fuse-overlayfs \
+        containernetworking-plugins \
         ninja-build \
         build-essential \
         pkg-config \
@@ -48,7 +50,9 @@ RUN apt-get update \
     && curl https://pyenv.run | bash \
     && pyenv install 3.12 \
     && pyenv global 3.12 \
+    && pip install --upgrade pip setuptools requests wheel \
     # Cleanup
+    && pip cache purge \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf \
@@ -58,11 +62,11 @@ RUN apt-get update \
 
 RUN mkdir /github \
     && usermod --login runner "$(id -nu 1000)" \
-    && mkdir -p /github/{workspace,workflow,home} \
     && echo 'runner:runner' | chpasswd \
     && usermod -aG sudo runner \
     && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
     && mkdir -p \
+        /github/{workspace,workflow,home} \
         /etc/containers \
         /tmp/podman-run \
         /var/lib/containers/storage \
@@ -70,9 +74,16 @@ RUN mkdir /github \
         /var/cache/pacman \
         /var/lib/pacman \
         /etc/pacman.d/gnupg \
-    && printf '[engine]\nrunroot = "/tmp/podman-run"\nstorageroot = "/var/lib/containers/storage"\n' > /etc/containers/containers.conf \
-    && printf '[network]\nnetwork_backend = "netavark"\n' >> /etc/containers/containers.conf \
-    && printf 'unqualified-search-registries = ["docker.io"]' > /etc/containers/registries.conf.d/10-docker.conf \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
+
+RUN <<EOF cat > /etc/containers/registries.conf.d/10-docker.conf
+unqualified-search-registries = ["docker.io"]
+EOF
+
+RUN <<EOF cat > /etc/containers/containers.conf
+[engine]
+runroot = "/tmp/podman-run"
+storageroot = "/var/lib/containers/storage"
+EOF
 
 USER 0
