@@ -15,7 +15,6 @@ RUN apt-get update \
         gnupg \
         ostree \
         podman \
-        uidmap \
         sudo \
         meson \
         ninja-build \
@@ -61,8 +60,7 @@ RUN useradd -m -u 1001 -s /bin/bash runner \
     && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
     && mkdir -p /etc/containers /tmp/podman-run /var/lib/containers/storage \
     && printf '[engine]\nrunroot = "/tmp/podman-run"\nstorageroot = "/var/lib/containers/storage"\n' > /etc/containers/containers.conf \
-    && podman unshare chown -R 100000:100000 /tmp/podman-run /var/lib/containers/storage \
-    && chown -R 1001:0 /opt/pyenv /etc/containers /tmp/podman-run /var/lib/containers/storage
+    && chown -R 1001:0 /opt/pyenv
 
 USER 1001
 WORKDIR /github/workspace
