@@ -8,6 +8,10 @@ on:
         type: string
         required: true
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   run:
     name: atomic-arch:${{ inputs.variant }} deltas

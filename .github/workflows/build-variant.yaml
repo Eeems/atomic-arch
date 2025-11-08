@@ -24,6 +24,7 @@ on:
 permissions:
   contents: read
   actions: write
+  packages: write
 
 jobs:
   run:
