@@ -34,7 +34,7 @@ jobs:
     name: atomic-arch:${{ inputs.variant }} image
     runs-on: ubuntu-latest
     outputs:
-      updates: ${{ steps.updates.outputs.updates }}
+      updates: ${{ steps.build.outputs.updates }}
     container:
       image: docker.io/eeems/atomic-arch:_builder
       options: >-
@@ -139,18 +139,8 @@ jobs:
             Automated rootfs update
             skip-checks:true
 
-      - name: Set updates
-        id: updates
-        run: |
-          VALUE=$(echo '${{ toJson(steps) }}' | \
-            jq -r '[
-              .["build"]?.outputs."updates",
-              .["rootfs"]?.outputs."updates"
-            ] | map(select(. != null)) | .[0] // "default"')
-          echo "updates=$VALUE" >> $GITHUB_OUTPUT
-
       - name: Trigger ISO and delta builds
-        if: ${{ steps.updates.outputs.updates }}
+        if: ${{ steps.build.outputs.updates }}
         run: |
           gh workflow run iso.yaml \
             --ref ${{ github.ref }} \
