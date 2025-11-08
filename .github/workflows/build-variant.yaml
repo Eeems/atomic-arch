@@ -1,0 +1,151 @@
+name: Build an image
+
+on:
+  workflow_call:
+    inputs:
+      variant:
+        type: string
+        required: true
+      updates:
+        type: boolean
+        required: false
+        default: false
+      cleanup:
+        type: boolean
+        required: false
+        default: false
+
+    outputs:
+      updates:
+        value: ${{ jobs.run.updates.updates }}
+
+jobs:
+  run:
+    name: atomic-arch:${{ inputs.variant }} image
+    runs-on: ubuntu-latest
+    container:
+      image: docker.io/eeems/atomic-arch:_builder
+      options: >-
+        --privileged
+        --security-opt seccomp=unconfined
+        --security-opt apparmor=unconfined
+        --cap-add=SYS_ADMIN
+        --cap-add=NET_ADMIN
+        --device /dev/fuse
+        --tmpfs /tmp
+        --tmpfs /run
+        --userns=host
+        -v /var/lib/containers:/var/lib/containers
+        -v /:/run/host
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Ensure .docker exists
+        run: |
+          mkdir -p /github/home/.docker
+          if ! [ -f /github/home/.docker/config.json ];then
+            echo '{"auths":{}}' > /github/home/.docker/config.json
+          fi
+
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+          auth_file_path: /run/containers/0/auth.json
+
+      - name: Free up space
+        if: ${{ inputs.cleanup }}
+        uses: ./.github/actions/cleanup
+        with:
+          root: /run/host
+
+      - name: Build
+        id: build
+        if: ${{ inputs.variant != "rootfs" }}
+        run: |
+          mkdir -p /run/podman
+          podman system service --time 0 unix:///run/podman/podman.sock &
+          if [[ "$updates" == "true" ]]; then
+            echo "Previous image updated"
+            res=2
+          else
+            set +e
+            ./make.py checkupdates --target=${{ inputs.variant }}
+            res=$?
+            set -e
+          fi
+          if [ $res -eq 2 ];then
+            ./make.py build --push ${{ inputs.variant }}
+            echo "updates=true" >> $GITHUB_OUTPUT
+          elif [ $res -ne 0 ];then
+            exit 1
+          else
+            ./make.py push ${{ inputs.variant }}
+            echo "No Updates"
+            echo "updates=false" >> $GITHUB_OUTPUT
+          fi
+          kill $(jobs -p)
+        env:
+          updates: ${{ inputs.updates }}
+          TMPDIR: ${{ runner.temp }}
+
+      - name: Build
+        if: ${{ inputs.variant == "rootfs" }}
+        id: rootfs
+        run: |
+          mkdir -p /run/podman
+          podman system service --time 0 unix:///run/podman/podman.sock &
+          set +e
+          output=$(sudo ./make.py checkupdates)
+          res=$?
+          echo $output
+          set -e
+          if [ $res -eq 2 ];then
+            if [[ "$output" == *"mirrorlist "* ]]; then
+              sudo ./make.py rootfs --push
+            else
+              sudo ./make.py build --push rootfs
+            fi
+            echo "updates=true" >> $GITHUB_OUTPUT
+          elif [ $res -ne 0 ];then
+            exit 1
+          else
+            echo "No Updates"
+            echo "updates=false" >> $GITHUB_OUTPUT
+          fi
+          git config --global --add safe.directory "$(realpath .)"
+          kill $(jobs -p)
+
+      - name: Auto commit any updates
+        if: ${{ inputs.variant == "rootfs" }}
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: |
+            Automated rootfs update
+            skip-checks:true
+
+      - name: Set updates
+        id: updates
+        run: |
+          VALUE=$(echo '${{ toJson(steps) }}' | \
+            jq -r '[
+              .["build"]?.outputs."updates",
+              .["rootfs"]?.outputs."updates"
+            ] | map(select(. != null)) | .[0] // "default"')
+          echo "updates=$VALUE" >> $GITHUB_OUTPUT
+
+      - name: Trigger ISO and delta builds
+        if: ${{ jobs.run.updates.updates }}
+        run: |
+          gh workflow run iso.yaml \
+            --ref ${{ github.ref }} \
+            -f variant=${{ inputs.variant }}
+
+          gh workflow run delta.yaml \
+            --ref ${{ github.ref }} \
+            -f variant=${{ inputs.variant }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}

@@ -1,0 +1,56 @@
+name: Generate deltas
+
+on:
+  workflow_call:
+    inputs:
+      variant:
+        type: string
+        required: true
+
+jobs:
+  run:
+    name: atomic-arch:${{ inputs.variant }} iso
+    runs-on: ubuntu-latest
+    container:
+      image: docker.io/eeems/atomic-arch:_builder
+      options: >-
+        --privileged
+        --security-opt seccomp=unconfined
+        --security-opt apparmor=unconfined
+        --cap-add=SYS_ADMIN
+        --cap-add=NET_ADMIN
+        --device /dev/fuse
+        --tmpfs /tmp
+        --tmpfs /run
+        --userns=host
+        -v /var/lib/containers:/var/lib/containers
+        -v /:/run/host
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Ensure .docker exists
+        run: |
+          mkdir -p /github/home/.docker
+          if ! [ -f /github/home/.docker/config.json ];then
+            echo '{"auths":{}}' > /github/home/.docker/config.json
+          fi
+
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+          auth_file_path: /run/containers/0/auth.json
+
+      - name: Build
+        id: build
+        run: |
+          mkdir -p /run/podman
+          podman system service --time 0 unix:///run/podman/podman.sock &
+          ./make.py delta ${{ matrix.variant }}${{ matrix.subvariant }}
+          kill $(jobs -p)
+        env:
+          updates: ${{ inputs.updates }}
+          TMPDIR: ${{ runner.temp }}

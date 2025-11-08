@@ -5,8 +5,10 @@ on:
       - master
     paths:
       - .github/workflows/build.yaml
+      - .github/workflows/iso.yaml
+      - .github/workflows/delta.yaml
+      - .github/workflows/build-variant.yaml
       - ".github/actions/cleanup/**"
-      - ".github/actions/build/**"
       - make.py
       - seccomp.json
       - .contianerignore
@@ -22,7 +24,7 @@ jobs:
   check:
     name: Ensure config is valid
     runs-on: ubuntu-latest
-    container: &builder
+    container:
       image: docker.io/eeems/atomic-arch:_builder
       options: >-
         --privileged
@@ -48,277 +50,139 @@ jobs:
         run: ./make.py check
         env:
           TMPDIR: ${{ runner.temp }}
+
   rootfs:
-    name: Build atomic-arch:rootfs
-    runs-on: ubuntu-latest
-    container: *builder
-    needs: [check]
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Build
-        uses: ./.github/actions/build
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image: rootfs
-      - name: Ignore git repo permission concerns
-        run: git config --global --add safe.directory "$(realpath .)"
-      - name: Auto commit any updates
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: |
-            Automated rootfs update
-            skip-checks:true
+    needs: check
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+
   base:
-    name: atomic-arch:base image
-    runs-on: ubuntu-latest
-    container: *builder
-    needs: [rootfs]
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Build
-        uses: ./.github/actions/build
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image: base
-          updates: ${{ needs.rootfs.outputs.Updates}}
+    needs: rootfs
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  base-nvidia:
+    needs: base
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  base-slim:
+    needs: base
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+      cleanup: true
+
   atomic:
-    name: atomic-arch:atomic image
-    runs-on: ubuntu-latest
-    container: *builder
-    needs: [base]
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Build
-        uses: ./.github/actions/build
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image: atomic
-          updates: ${{ needs.base.outputs.Updates}}
+    needs: base
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  atomic-nvidia:
+    needs: atomic
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  atomic-slim:
+    needs: atomic
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+      cleanup: true
+
+  atomic-system76:
+    needs: atomic
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  atomic-system76-nvidia:
+    needs: atomic-system76
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
   gnome:
-    name: atomic-arch:gnome image
-    runs-on: ubuntu-latest
-    container: *builder
-    needs: [base]
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Build
-        uses: ./.github/actions/build
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image: gnome
-          updates: ${{ needs.base.outputs.Updates}}
+    needs: base
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  gnome-nvidia:
+    needs: gnome
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  gnome-slim:
+    needs: gnome
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+      cleanup: true
+
+  gnome-system76:
+    needs: gnome
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  gnome-system76-nvidia:
+    needs: gnome-system76
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
   eeems:
-    name: atomic-arch:eeems image
-    runs-on: ubuntu-latest
-    container: *builder
-    needs: [atomic]
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Build
-        uses: ./.github/actions/build
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image: eeems
-          updates: ${{ needs.atomic.outputs.Updates}}
-  system76:
-    name: atomic-arch:${{ matrix.variant }}-system76
-    runs-on: ubuntu-latest
-    container: *builder
-    strategy:
-      fail-fast: false
-      matrix:
-        variant:
-          - atomic
-          - gnome
-          - eeems
-    needs:
-      - base
-      - atomic
-      - gnome
-      - eeems
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Build
-        uses: ./.github/actions/build
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image: ${{ matrix.variant }}-system76
-          updates: ${{ needs[matrix.variant].outputs.Updates}}
-  nvidia:
-    name: atomic-arch:${{ matrix.variant }}-nvidia
-    runs-on: ubuntu-latest
-    container: *builder
-    strategy:
-      fail-fast: false
-      matrix:
-        variant:
-          - base
-          - atomic
-          - gnome
-          - eeems
-          - atomic-system76
-          - gnome-system76
-          - eeems-system76
-    needs:
-      - base
-      - atomic
-      - gnome
-      - eeems
-      - system76
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Build
-        uses: ./.github/actions/build
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image: ${{ matrix.variant }}-nvidia
-          updates: ${{ needs[matrix.variant].outputs.Updates}}
-  slim:
-    name: atomic-arch:${{ matrix.variant }}-slim
-    runs-on: ubuntu-latest
-    container: *builder
-    strategy:
-      fail-fast: false
-      matrix:
-        variant:
-          - base
-          - atomic
-          - gnome
-          - eeems
-          - atomic-system76
-          - gnome-system76
-          - eeems-system76
-    needs:
-      - base
-      - atomic
-      - gnome
-      - eeems
-      - system76
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Free up space
-        uses: ./.github/actions/cleanup
-        with:
-          root: /run/host
-      - name: Build
-        uses: ./.github/actions/build
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          image: ${{ matrix.variant }}-slim
-          updates: ${{ needs[matrix.variant].outputs.Updates}}
-  iso:
-    name: atomic-arch:${{ matrix.variant }}${{ matrix.subvariant }} iso
-    runs-on: ubuntu-latest
-    container: *builder
-    strategy: &all-variants
-      fail-fast: false
-      matrix:
-        variant:
-          - base
-          - atomic
-          - gnome
-          - eeems
-          - atomic-system76
-          - gnome-system76
-          - eeems-system76
-        subvariant:
-          - ""
-          - -nvidia
-          - -slim
-    needs: &all-builds
-      - base
-      - atomic
-      - gnome
-      - eeems
-      - system76
-      - nvidia
-      - slim
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-      - name: Install dependencies
-        uses: Eeems-Org/apt-cache-action@v1
-        with:
-          packages: >
-            ostree
-            podman
-            libdbus-1-dev
-            libdbus-glib-1-dev
-      - name: Install python dependencies
-        run: |
-          pip install dbus-python
-      - name: Free up space
-        uses: ./.github/actions/cleanup
-        with:
-          root: /run/host
-      - name: Build
-        run: |
-          if [ ! -f /etc/containers/seccomp.json ];then
-            cp seccomp.json /etc/containers/seccomp.json
-          fi
-          ./make.py iso ${{ matrix.variant }}${{ matrix.subvariant }}
-        env:
-          TMPDIR: ${{ runner.temp }}
-      - name: Upload iso
-        uses: actions/upload-artifact@v4
-        with:
-          name: atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}.iso
-          path: /var/lib/system/atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}-*.iso
-  delta:
-    name: Generate deltas for ${{ matrix.variant }}${{ matrix.subvariant }}
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
-    container: *builder
-    strategy: *all-variants
-    needs: *all-builds
-    steps:
-      - name: Ensure .docker exists
-        run: |
-          mkdir -p /github/home/.docker
-          if ! [ -f /github/home/.docker/config.json ];then
-            echo '{"auths":{}}' > /github/home/.docker/config.json
-          fi
-      - name: Login to dockerhub
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-          auth_file_path: /run/containers/0/auth.json
-      - name: Build
-        id: build
-        run: |
-          mkdir -p /run/podman
-          podman system service --time 0 unix:///run/podman/podman.sock &
-          ./make.py delta ${{ matrix.variant }}${{ matrix.subvariant }}
-          kill $(jobs -p)
-        env:
-          updates: ${{ inputs.updates }}
-          TMPDIR: ${{ runner.temp }}
+    needs: atomic
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  eeems-nvidia:
+    needs: eeems
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  eeems-slim:
+    needs: eeems
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+      cleanup: true
+
+  eeems-system76:
+    needs: eeems
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}
+
+  eeems-system76-nvidia:
+    needs: eeems-system76
+    uses: ./.github/workflows/build-variant.yml
+    with:
+      variant: ${{ github.job }}
+      updates: ${{ needs.outputs.updates}}

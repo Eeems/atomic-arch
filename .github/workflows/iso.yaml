@@ -1,0 +1,64 @@
+name: Build an iso
+
+on:
+  workflow_call:
+    inputs:
+      variant:
+        type: string
+        required: true
+
+    outputs:
+      updates:
+        value: ${{ jobs.run.updates.updates}}
+
+iso:
+  name: atomic-arch:${{ inputs.variant }} iso
+  runs-on: ubuntu-latest
+  container:
+    image: docker.io/eeems/atomic-arch:_builder
+    options: >-
+      --privileged
+      --security-opt seccomp=unconfined
+      --security-opt apparmor=unconfined
+      --cap-add=SYS_ADMIN
+      --cap-add=NET_ADMIN
+      --device /dev/fuse
+      --tmpfs /tmp
+      --tmpfs /run
+      --userns=host
+      -v /var/lib/containers:/var/lib/containers
+      -v /:/run/host
+  steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+
+    - name: Login to dockerhub
+      uses: redhat-actions/podman-login@v1
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        registry: docker.io
+
+    - name: Install python dependencies
+      run: |
+        pip install dbus-python
+
+    - name: Free up space
+      uses: ./.github/actions/cleanup
+      with:
+        root: /run/host
+
+    - name: Build
+      run: |
+        if [ ! -f /etc/containers/seccomp.json ];then
+          cp seccomp.json /etc/containers/seccomp.json
+        fi
+        ./make.py iso ${{ inputs.variant }}
+      env:
+        TMPDIR: ${{ runner.temp }}
+
+    - name: Upload iso
+      uses: actions/upload-artifact@v4
+      with:
+        name: atomic-arch-${{ inputs.variant }}.iso
+        path: /var/lib/system/atomic-arch-${{ inputs.variant }}-*.iso
