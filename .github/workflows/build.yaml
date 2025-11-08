@@ -20,6 +20,10 @@ on:
   schedule:
     - cron: "0 23 * * *"
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   check:
     name: Ensure config is valid

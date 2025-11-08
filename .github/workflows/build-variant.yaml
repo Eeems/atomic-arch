@@ -23,6 +23,10 @@ on:
       updates:
         value: ${{ jobs.run.outputs.updates }}
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   run:
     name: atomic-arch:${{ inputs.variant }} image
