@@ -68,6 +68,7 @@ RUN apt-get update \
         setuptools \
         requests \
         wheel \
+        dbus-python \
     # Cleanup
     && pip cache purge \
     && apt-get autoremove -y \
