@@ -4,7 +4,7 @@ on:
     branches:
       - master
     paths:
-      - .github/workflows/builder.yml
+      - .github/workflows/builder.yaml
       - .github/workflows/Dockerfile.builder
   push: *on-filter
   workflow_dispatch:
@@ -27,9 +27,9 @@ jobs:
       - name: Login to dockerhub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
+          username: ${{github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
 
       - name: Mask the Docker password (JWT)
         run: |
@@ -58,7 +58,7 @@ jobs:
       - name: Generate tags
         id: meta
         run: |
-          IMAGE_NAME=docker.io/eeems/atomic-arch:_builder
+          IMAGE_NAME=ghcr.io/eeems/atomic-arch:_builder
           echo "image=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "tags=${IMAGE_NAME}-${{ github.sha }},${IMAGE_NAME}" >> $GITHUB_OUTPUT
 
