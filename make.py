@@ -623,7 +623,7 @@ if __name__ == "__main__":
     subparser.set_defaults(func=do_hash)
 
     subparser = subparsers.add_parser("delta")
-    _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
+    _ = subparser.add_argument("target", action="extend", nargs="+", type=str)
     _ = subparser.add_argument("--push", action="store_true")
     _ = subparser.add_argument("--no-pull", action="store_false", dest="pull")
     _ = subparser.add_argument("--no-clean", action="store_false", dest="clean")
