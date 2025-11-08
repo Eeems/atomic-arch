@@ -148,3 +148,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
           VARIANT: ${{ inputs.variant }}
+
+      - name: Trivy cache
+        uses: actions/cache@v4
+        with:
+          path: ./.trivy
+
+      - name: Scan container
+        shell: bash
+        run: |
+          podman system service --time 0 unix:///run/podman/podman.sock &
+          ./make.py scan ${{ inputs.variant }}
+          kill $(jobs -p) || true
