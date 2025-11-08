@@ -70,7 +70,9 @@ jobs:
 
       - name: Build
         id: build
+        shell: bash
         run: |
+          git config --global --add safe.directory "$(realpath .)"
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
           if [[ "$VARIANT" == "rootfs" ]];then
@@ -89,10 +91,10 @@ jobs:
             elif [ $res -ne 0 ];then
               exit 1
             else
+              ./make.py push ${{ inputs.variant }}
               echo "No Updates"
               echo "updates=false" >> $GITHUB_OUTPUT
             fi
-            git config --global --add safe.directory "$(realpath .)"
           else
             if [[ "$updates" == "true" ]]; then
               echo "Previous image updated"
