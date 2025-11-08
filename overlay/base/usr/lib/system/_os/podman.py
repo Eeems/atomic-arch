@@ -3,10 +3,12 @@ import atexit
 import os
 import shlex
 import shutil
+import string
 import tarfile
 import subprocess
 import json
 
+from tempfile import TemporaryDirectory
 from time import time
 from hashlib import sha256
 from glob import iglob
@@ -212,11 +214,23 @@ def image_tags(image: str) -> list[str]:
     return tags
 
 
-def image_digest(image: str) -> str:
-    return (
-        subprocess.check_output(
-            ["skopeo", "inspect", f"docker://docker.io/{image}", "--format={{.Digest}}"]
+def image_digest(image: str, remote: bool = True) -> str:
+    if remote:
+        return (
+            subprocess.check_output(
+                [
+                    "skopeo",
+                    "inspect",
+                    f"docker://docker.io/{image}",
+                    "--format={{.Digest}}",
+                ]
+            )
+            .strip()
+            .decode("utf-8")
         )
+
+    return (
+        subprocess.check_output(["podman", "inspect", image, "--format={{.Digest}}"])
         .strip()
         .decode("utf-8")
     )
@@ -330,3 +344,67 @@ def export(
         atexit.unregister(exitFunc1)
         podman("rm", name, onstdout=onstdout, onstderr=onstderr)
         os.chdir(cwd)
+
+
+def hex_to_base62(hex_digest: str) -> str:
+    if hex_digest.startswith("sha256:"):
+        hex_digest = hex_digest[7:]
+
+    return (
+        "".join(
+            (string.digits + string.ascii_lowercase + string.ascii_uppercase)[
+                int(hex_digest, 16) // (62**i) % 62
+            ]
+            for i in range(50)
+        )[::-1].lstrip("0")
+        or "0"
+    )
+
+
+def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
+    digestA = image_digest(imageA)
+    digestB = image_digest(imageB)
+    with TemporaryDirectory() as tmpdir:
+        old_oci_path = os.path.join(tmpdir, "old.oci")
+        podman("save", imageA, "-o", old_oci_path)
+
+        podman_proc = subprocess.Popen(
+            podman_cmd("save", imageB, "--quiet"),
+            stdout=subprocess.PIPE,
+        )
+        assert podman_proc.stdout is not None
+        xdelta_proc = subprocess.Popen(
+            ["xdelta3", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
+            stdin=podman_proc.stdout,
+            stdout=subprocess.PIPE,
+        )
+        podman_proc.stdout.close()
+        assert xdelta_proc.stdout is not None
+        zstd_proc = subprocess.Popen(
+            ["zstd", "-19", "-T0", "-o", os.path.join(tmpdir, "diff.xd3.zstd")],
+            stdin=xdelta_proc.stdout,
+            stdout=subprocess.PIPE,
+        )
+        xdelta_proc.stdout.close()
+        _ = zstd_proc.communicate()
+        for proc in [zstd_proc, xdelta_proc, podman_proc]:
+            if proc.wait() != 0:
+                raise subprocess.CalledProcessError(proc.returncode, proc.args)
+
+        containerfile = os.path.join(tmpdir, "Containerfile")
+        with open(containerfile, "w") as f:
+            _ = f.write(f"""\
+FROM scratch
+COPY diff.xd3.zstd /diff.xd3.zstd
+LABEL atomic.patch.prev="{digestA}" \\
+  atomic.patch.ref="{digestB}" \\
+  atomic.patch.format="xdelta3+zstd"
+""")
+        podman(
+            "build",
+            f"--tag={imageD}",
+            f"--file={containerfile}",
+            "--force-rm",
+            f"--pull={'newer' if pull else 'never'}",
+            tmpdir,
+        )

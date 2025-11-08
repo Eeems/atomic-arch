@@ -293,6 +293,7 @@ jobs:
           path: /var/lib/system/atomic-arch-${{ matrix.variant }}${{ matrix.subvariant }}-*.iso
   delta:
     name: Generate deltas for ${{ matrix.variant }}${{ matrix.subvariant }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     container: *builder
     strategy: *all-variants

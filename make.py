@@ -10,14 +10,13 @@ import re
 import tempfile
 import json
 import string
-import subprocess
 
 from glob import iglob
 from hashlib import sha256
 from typing import cast
 from datetime import datetime
 from datetime import UTC
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 _osDir = tempfile.mkdtemp()
 os.makedirs(os.path.join(_osDir, "lib/system"))
@@ -53,7 +52,8 @@ image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_inf
 image_labels = cast(Callable[[str, bool], dict[str, str]], _os.podman.image_labels)  # pyright:ignore [reportUnknownMemberType]
 image_exists = cast(Callable[[str, bool], bool], _os.podman.image_exists)  # pyright:ignore [reportUnknownMemberType]
 image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:ignore [reportUnknownMemberType]
-image_digest = cast(Callable[[str], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
+image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
+create_delta = cast(Callable[[str, str, str, bool], None], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 
 
@@ -175,96 +175,46 @@ def base62_to_hex(base62_str: str) -> str:
     return hex_str
 
 
-def delta(target: str):
+def get_missing_deltas(target: str) -> Iterable[tuple[str, str]]:
     tags = image_tags(IMAGE)
     target_tags = [
         x
         for x in tags
         if x.startswith(f"{target}_")
         and (target == "rootfs" or len(x[len(target) + 1 :]) > 10)
+        and x
+        not in [
+            x
+            for x in tags
+            if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
+        ]
     ]
     target_tags.sort()
-    digests = {x: hex_to_base62(image_digest(f"{IMAGE}:{x}")) for x in target_tags}
-    diff_tags = [
-        x
-        for x in tags
-        if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
-    ]
+    return pairwise(target_tags)
 
-    # TODO generate diffs for between even more images
-    # diffs: dict[str, set[str]] = {}
-    # for tag in diff_tags:
-    #     digestA = tag[6:43]
-    #     digestB = tag[50:]
-    #     if digestA not in diffs:
-    #         diffs[digestA] = set()
 
-    #     diffs[digestA].add(digestB)
-    #     if digestB not in diffs:
-    #         diffs[digestB] = set()
+def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
+    imageA = f"{IMAGE}:{a}"
+    imageB = f"{IMAGE}:{b}"
+    if pull:
+        podman("pull", imageA)
+        podman("pull", imageB)
 
-    #     diffs[digestB].add(digestA)
+    digestA = hex_to_base62(image_digest(imageA, False))
+    digestB = hex_to_base62(image_digest(imageB, False))
+    assert digestA != digestB, "There is nothing to diff"
+    imageD = f"docker.io/{IMAGE}:_diff-{digestA}-{digestB}"
+    create_delta(imageA, imageB, imageD, pull)
+    if push:
+        execute(
+            "skopeo",
+            "copy",
+            f"containers-storage:{imageD}",
+            f"docker://{imageD}",
+        )
 
-    for a, b in pairwise(target_tags):
-        tag = f"_diff-{digests[a]}-{digests[b]}"
-        if tag in diff_tags:
-            continue
-
-        imageA = f"{IMAGE}:{a}"
-        imageB = f"{IMAGE}:{b}"
-        with tempfile.TemporaryDirectory() as tmpdir:
-            podman("pull", imageA)
-            old_oci_path = os.path.join(tmpdir, "old.oci")
-            podman("save", imageA, "-o", old_oci_path)
-            podman("pull", imageB)
-
-            podman_proc = subprocess.Popen(
-                podman_cmd("save", imageB, "--quiet"),
-                stdout=subprocess.PIPE,
-            )
-            assert podman_proc.stdout is not None
-            xdelta_proc = subprocess.Popen(
-                ["xdelta3", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
-                stdin=podman_proc.stdout,
-                stdout=subprocess.PIPE,
-            )
-            podman_proc.stdout.close()
-            assert xdelta_proc.stdout is not None
-            zstd_proc = subprocess.Popen(
-                ["zstd", "-19", "-T0", "-o", os.path.join(tmpdir, "diff.xd3.zstd")],
-                stdin=xdelta_proc.stdout,
-                stdout=subprocess.PIPE,
-            )
-            xdelta_proc.stdout.close()
-            _ = zstd_proc.communicate()
-            for proc in [zstd_proc, xdelta_proc, podman_proc]:
-                if proc.wait() != 0:
-                    raise subprocess.CalledProcessError(proc.returncode, proc.args)
-
-            containerfile = os.path.join(tmpdir, "Containerfile")
-            with open(containerfile, "w") as f:
-                _ = f.write(f"""\
-FROM scratch
-COPY diff.xd3.zstd /diff.xd3.zstd
-LABEL atomic.patch.prev="sha256:{base62_to_hex(digests[a])}" \\
-      atomic.patch.ref="sha256:{base62_to_hex(digests[b])}" \\
-      atomic.patch.format="xdelta3+zstd"
-""")
-            imageD = f"docker.io/{IMAGE}:{tag}"
-            podman(
-                "build",
-                f"--tag={imageD}",
-                f"--file={containerfile}",
-                "--force-rm",
-                tmpdir,
-            )
-            execute(
-                "skopeo",
-                "copy",
-                f"containers-storage:{imageD}",
-                f"docker://{imageD}",
-            )
-            podman("rmi", imageA, imageB, imageD)
+    if clean:
+        podman("rmi", imageA, imageB, imageD)
 
 
 def do_build(args: argparse.Namespace):
@@ -592,8 +542,23 @@ def do_hash(args: argparse.Namespace):
 
 
 def do_delta(args: argparse.Namespace):
-    for target in cast(list[str], args.target):
-        delta(target)
+    push = cast(bool, args.push)
+    pull = cast(bool, args.pull)
+    clean = cast(bool, args.clean)
+    targets = cast(list[str], args.target)
+    if not cast(bool, args.explicit):
+        for target in targets:
+            for a, b in get_missing_deltas(target):
+                delta(a, b, pull, push, clean)
+
+        return
+
+    if len(targets) != 2:
+        print("When --explicit is set, you must specify two explicit tags")
+        sys.exit(1)
+
+    imageA, imageB = targets
+    delta(imageA, imageB, pull, push, clean)
 
 
 if __name__ == "__main__":
@@ -659,6 +624,10 @@ if __name__ == "__main__":
 
     subparser = subparsers.add_parser("delta")
     _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
+    _ = subparser.add_argument("--push", action="store_true")
+    _ = subparser.add_argument("--no-pull", action="store_false", dest="pull")
+    _ = subparser.add_argument("--no-clean", action="store_false", dest="clean")
+    _ = subparser.add_argument("--explicit", action="store_true")
     subparser.set_defaults(func=do_delta)
 
     args = parser.parse_args()
