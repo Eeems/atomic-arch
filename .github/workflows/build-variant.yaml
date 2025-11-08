@@ -7,6 +7,8 @@ on:
         required: true
       DOCKER_PASSWORD:
         required: true
+      DISPATCH_PAT:
+        required: true
     inputs:
       variant:
         type: string
@@ -158,4 +160,4 @@ jobs:
             --ref ${{ github.ref }} \
             -f variant=${{ inputs.variant }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}

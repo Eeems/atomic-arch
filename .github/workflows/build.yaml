@@ -20,7 +20,7 @@ on:
   schedule:
     - cron: "0 23 * * *"
 
-permissions: &permissions
+permissions:
   contents: read
   actions: write
 
@@ -60,7 +60,6 @@ jobs:
     needs: check
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: rootfs
 
@@ -69,7 +68,6 @@ jobs:
     needs: rootfs
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: base
       updates: ${{ needs.outputs.updates}}
@@ -79,7 +77,6 @@ jobs:
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: base-nvidia
       updates: ${{ needs.outputs.updates}}
@@ -89,7 +86,6 @@ jobs:
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: base-slim
       updates: ${{ needs.outputs.updates}}
@@ -100,7 +96,6 @@ jobs:
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: atomic
       updates: ${{ needs.outputs.updates}}
@@ -110,7 +105,6 @@ jobs:
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: atomic-nvidia
       updates: ${{ needs.outputs.updates}}
@@ -120,7 +114,6 @@ jobs:
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: atomic-slim
       updates: ${{ needs.outputs.updates}}
@@ -131,7 +124,6 @@ jobs:
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: atomic-system76
       updates: ${{ needs.outputs.updates}}
@@ -141,7 +133,6 @@ jobs:
     needs: atomic-system76
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: atomic-system76-nvidia
       updates: ${{ needs.outputs.updates}}
@@ -151,7 +142,6 @@ jobs:
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: gnome
       updates: ${{ needs.outputs.updates}}
@@ -161,7 +151,6 @@ jobs:
     needs: gnome
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: gnome-nvidia
       updates: ${{ needs.outputs.updates}}
@@ -171,7 +160,6 @@ jobs:
     needs: gnome
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: gnome-slim
       updates: ${{ needs.outputs.updates}}
@@ -182,7 +170,6 @@ jobs:
     needs: gnome
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: gnome-system76
       updates: ${{ needs.outputs.updates}}
@@ -192,7 +179,6 @@ jobs:
     needs: gnome-system76
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: gnome-system76-nvidia
       updates: ${{ needs.outputs.updates}}
@@ -202,7 +188,6 @@ jobs:
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: eeems
       updates: ${{ needs.outputs.updates}}
@@ -212,7 +197,6 @@ jobs:
     needs: eeems
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: eeems-nvidia
       updates: ${{ needs.outputs.updates}}
@@ -222,7 +206,6 @@ jobs:
     needs: eeems
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: eeems-slim
       updates: ${{ needs.outputs.updates}}
@@ -233,7 +216,6 @@ jobs:
     needs: eeems
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: eeems-system76
       updates: ${{ needs.outputs.updates}}
@@ -243,7 +225,6 @@ jobs:
     needs: eeems-system76
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
     with:
       variant: eeems-system76-nvidia
       updates: ${{ needs.outputs.updates}}
