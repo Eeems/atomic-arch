@@ -17,6 +17,7 @@ RUN apt-get update \
         podman \
         sudo \
         jq \
+        gh \
         meson \
         uidmap \
         netavark \
