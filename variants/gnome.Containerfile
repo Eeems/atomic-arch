@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1.4
 ARG HASH
 
-FROM eeems/atomic-arch:base
+FROM ghcr.io/eeems/atomic-arch:base
 
 ARG \
   VARIANT="GNOME" \
