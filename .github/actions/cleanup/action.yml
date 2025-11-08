@@ -11,27 +11,29 @@ runs:
     - name: Free up space
       shell: bash
       run: |
-        df -h
-        echo
-        echo Freeing up space
-        rm -rf .git/
-        docker system prune --force
-        docker rmi $(docker image ls -aq) || true
-        docker system prune --force
-        export DEBIAN_FRONTEND="noninteractive"
-        sudo apt-get -o Dir='${{ inputs.root }}' autoremove -y
-        sudo apt-get -o Dir='${{ inputs.root }}' autoclean -y
-        sudo rm -vrf \
-          '${{ inputs.root }}usr/lib/jvm' \
-          '${{ inputs.root }}usr/share/dotnet' \
-          '${{ inputs.root }}usr/share/swift' \
-          '${{ inputs.root }}usr/local/.ghcup' \
-          '${{ inputs.root }}usr/local/julia*' \
-          '${{ inputs.root }}usr/local/lib/android' \
-          '${{ inputs.root }}usr/local/share/chromium' \
-          '${{ inputs.root }}opt/microsoft /opt/google' \
-          '${{ inputs.root }}opt/az' \
-          '${{ inputs.root }}usr/local/share/powershell' \
-        | wc -l
-        echo
-        df -h
+        chroot ${{ inputs.root }} /bin/bash -x <<'EOF'
+          df -h
+          echo
+          echo Freeing up space
+          rm -rf .git/
+          docker system prune --force
+          docker rmi $(docker image ls -aq) || true
+          docker system prune --force
+          export DEBIAN_FRONTEND="noninteractive"
+          sudo apt-get autoremove -y
+          sudo apt-get autoclean -y
+          sudo rm -vrf \
+            /usr/lib/jvm \
+            /usr/share/dotnet \
+            /usr/share/swift \
+            /usr/local/.ghcup \
+            /usr/local/julia* \
+            /usr/local/lib/android \
+            /usr/local/share/chromium \
+            /opt/microsoft /opt/google \
+            /opt/az \
+            /usr/local/share/powershell \
+          | wc -l
+          echo
+          df -h
+        EOF
