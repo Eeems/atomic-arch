@@ -7,8 +7,6 @@ on:
         required: true
       DOCKER_PASSWORD:
         required: true
-      GH_TOKEN:
-        required: true
     inputs:
       variant:
         type: string
@@ -155,4 +153,4 @@ jobs:
               -f variant=${{ inputs.variant }}
           EOF
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
