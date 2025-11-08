@@ -1,14 +1,10 @@
 name: Generate deltas
 
 on:
-  workflow_call:
-    secrets:
-      DOCKER_USER:
-        required: true
-      DOCKER_PASSWORD:
-        required: true
+  workflow_dispatch:
     inputs:
       variant:
+        description: Which variant to generate deltas for
         type: string
         required: true
 

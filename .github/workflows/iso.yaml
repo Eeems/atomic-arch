@@ -1,14 +1,10 @@
 name: Build an iso
 
 on:
-  workflow_call:
-    secrets:
-      DOCKER_USER:
-        required: true
-      DOCKER_PASSWORD:
-        required: true
+  workflow_dispatch:
     inputs:
       variant:
+        description: Which variant to generate an ISO for
         type: string
         required: true
 
