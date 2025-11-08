@@ -142,12 +142,15 @@ jobs:
       - name: Trigger ISO and delta builds
         if: ${{ steps.build.outputs.updates }}
         run: |
-          gh workflow run iso.yaml \
-            --ref ${{ github.ref }} \
-            -f variant=${{ inputs.variant }}
+          if [[ "$VARIANT" != "rootfs" ]];then
+            gh workflow run iso.yaml \
+              --ref ${{ github.ref }} \
+              -f variant=${{ inputs.variant }}
+          fi
 
           gh workflow run delta.yaml \
             --ref ${{ github.ref }} \
             -f variant=${{ inputs.variant }}
         env:
           GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+          VARIANT: ${{ inputs.variant }}
