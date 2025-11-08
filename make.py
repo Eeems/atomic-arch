@@ -64,7 +64,7 @@ def hash(target: str) -> str:
     if "-" in target and not os.path.exists(containerfile):
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
-        image = f"{IMAGE}:{base_variant}"
+        image = f"{REGISTRY}/{IMAGE}:{base_variant}"
         labels = image_labels(image, not image_exists(image, False))
         m.update(labels["hash"].encode("utf-8"))
 
@@ -90,7 +90,7 @@ def build(target: str):
     if "-" in target and not os.path.exists(containerfile):
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
-        image = f"{IMAGE}:{base_variant}"
+        image = f"{REGISTRY}/{IMAGE}:{base_variant}"
         labels = image_labels(image, not image_exists(image, False))
         build_args["BASE_VARIANT_ID"] = f"{base_variant}"
         build_args["VARIANT"] = f"{labels['os-release.VARIANT']} ({template})"
@@ -117,20 +117,20 @@ def build(target: str):
 
 
 def push(target: str):
-    image = f"{IMAGE}:{target}"
+    image = f"{REGISTRY}/{IMAGE}:{target}"
     labels = image_labels(image, False)
     if labels.get("os-release.VERSION", None):
         tags: list[str] = []
         version = labels["os-release.VERSION"]
         version_id = labels.get("os-release.VERSION_ID", None)
         if version_id and version != version_id:
-            tag = f"{REGISTRY}/{image}_{version}.{version_id}"
+            tag = f"{image}_{version}.{version_id}"
             tags.append(tag)
             podman("tag", image, tag)
             podman("push", tag)
             print(f"Pushed {tag}")
 
-        tag = f"{REGISTRY}/{image}_{version}"
+        tag = f"{image}_{version}"
         tags.append(tag)
         podman("tag", image, tag)
         podman("push", tag)
@@ -138,7 +138,7 @@ def push(target: str):
 
         podman("untag", image, *tags)
 
-    podman("push", f"{REGISTRY}/{image}")
+    podman("push", image)
     print(f"Pushed {image}")
 
 
@@ -195,8 +195,8 @@ def get_missing_deltas(target: str) -> Iterable[tuple[str, str]]:
 
 
 def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
-    imageA = f"{IMAGE}:{a}"
-    imageB = f"{IMAGE}:{b}"
+    imageA = f"{REGISTRY}/{IMAGE}:{a}"
+    imageB = f"{REGISTRY}/{IMAGE}:{b}"
     if pull:
         podman("pull", imageA)
         podman("pull", imageB)
@@ -530,7 +530,7 @@ def do_inspect(args: argparse.Namespace):
     print(
         json.dumps(
             {
-                x: image_info(f"{IMAGE}:{x}", remote)
+                x: image_info(f"{REGISTRY}/{IMAGE}:{x}", remote)
                 for x in cast(list[str], args.target)
             }
         )
