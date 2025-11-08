@@ -52,12 +52,14 @@ jobs:
           TMPDIR: ${{ runner.temp }}
 
   rootfs:
+    name: Build atomic-arch:${{ github.job }} image
     needs: check
     uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
 
   base:
+    name: Build atomic-arch:${{ github.job }} image
     needs: rootfs
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -65,6 +67,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   base-nvidia:
+    name: Build atomic-arch:${{ github.job }} image
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -72,6 +75,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   base-slim:
+    name: Build atomic-arch:${{ github.job }} image
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -80,6 +84,7 @@ jobs:
       cleanup: true
 
   atomic:
+    name: Build atomic-arch:${{ github.job }} image
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -87,6 +92,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   atomic-nvidia:
+    name: Build atomic-arch:${{ github.job }} image
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -94,6 +100,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   atomic-slim:
+    name: Build atomic-arch:${{ github.job }} image
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -102,6 +109,7 @@ jobs:
       cleanup: true
 
   atomic-system76:
+    name: Build atomic-arch:${{ github.job }} image
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -109,6 +117,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   atomic-system76-nvidia:
+    name: Build atomic-arch:${{ github.job }} image
     needs: atomic-system76
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -116,6 +125,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   gnome:
+    name: Build atomic-arch:${{ github.job }} image
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -123,6 +133,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   gnome-nvidia:
+    name: Build atomic-arch:${{ github.job }} image
     needs: gnome
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -130,6 +141,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   gnome-slim:
+    name: Build atomic-arch:${{ github.job }} image
     needs: gnome
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -138,6 +150,7 @@ jobs:
       cleanup: true
 
   gnome-system76:
+    name: Build atomic-arch:${{ github.job }} image
     needs: gnome
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -145,6 +158,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   gnome-system76-nvidia:
+    name: Build atomic-arch:${{ github.job }} image
     needs: gnome-system76
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -152,6 +166,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   eeems:
+    name: Build atomic-arch:${{ github.job }} image
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -159,6 +174,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   eeems-nvidia:
+    name: Build atomic-arch:${{ github.job }} image
     needs: eeems
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -166,6 +182,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   eeems-slim:
+    name: Build atomic-arch:${{ github.job }} image
     needs: eeems
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -174,6 +191,7 @@ jobs:
       cleanup: true
 
   eeems-system76:
+    name: Build atomic-arch:${{ github.job }} image
     needs: eeems
     uses: ./.github/workflows/build-variant.yaml
     with:
@@ -181,6 +199,7 @@ jobs:
       updates: ${{ needs.outputs.updates}}
 
   eeems-system76-nvidia:
+    name: Build atomic-arch:${{ github.job }} image
     needs: eeems-system76
     uses: ./.github/workflows/build-variant.yaml
     with:
