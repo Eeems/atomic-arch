@@ -70,7 +70,7 @@ jobs:
     secrets: inherit
     with:
       variant: base
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.rootfs.outputs.updates}}
 
   base-nvidia:
     name: Build atomic-arch:base-nvidia image
@@ -79,7 +79,7 @@ jobs:
     secrets: inherit
     with:
       variant: base-nvidia
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.base.outputs.updates}}
 
   base-slim:
     name: Build atomic-arch:base-slim image
@@ -88,7 +88,7 @@ jobs:
     secrets: inherit
     with:
       variant: base-slim
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.base.outputs.updates}}
       cleanup: true
 
   atomic:
@@ -98,7 +98,7 @@ jobs:
     secrets: inherit
     with:
       variant: atomic
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.base.outputs.updates}}
 
   atomic-nvidia:
     name: Build atomic-arch:atomic-nvidia image
@@ -107,7 +107,7 @@ jobs:
     secrets: inherit
     with:
       variant: atomic-nvidia
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.atomic.outputs.updates}}
 
   atomic-slim:
     name: Build atomic-arch:atomic-slim image
@@ -116,7 +116,7 @@ jobs:
     secrets: inherit
     with:
       variant: atomic-slim
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.atomic.outputs.updates}}
       cleanup: true
 
   atomic-system76:
@@ -126,7 +126,7 @@ jobs:
     secrets: inherit
     with:
       variant: atomic-system76
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.atomic.outputs.updates}}
 
   atomic-system76-nvidia:
     name: Build atomic-arch:atomic-system76-nvidia image
@@ -135,7 +135,7 @@ jobs:
     secrets: inherit
     with:
       variant: atomic-system76-nvidia
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.atomic-system76.outputs.updates}}
 
   gnome:
     name: Build atomic-arch:gnome image
@@ -144,7 +144,7 @@ jobs:
     secrets: inherit
     with:
       variant: gnome
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.base.outputs.updates}}
 
   gnome-nvidia:
     name: Build atomic-arch:gnome-nvidia image
@@ -153,7 +153,7 @@ jobs:
     secrets: inherit
     with:
       variant: gnome-nvidia
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.gnome.outputs.updates}}
 
   gnome-slim:
     name: Build atomic-arch:gnome-slim image
@@ -162,7 +162,7 @@ jobs:
     secrets: inherit
     with:
       variant: gnome-slim
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.gnome.outputs.updates}}
       cleanup: true
 
   gnome-system76:
@@ -172,7 +172,7 @@ jobs:
     secrets: inherit
     with:
       variant: gnome-system76
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.gnome.outputs.updates}}
 
   gnome-system76-nvidia:
     name: Build atomic-arch:gnome-system76-nvidia image
@@ -181,7 +181,7 @@ jobs:
     secrets: inherit
     with:
       variant: gnome-system76-nvidia
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.gnome-system76.outputs.updates}}
 
   eeems:
     name: Build atomic-arch:eeems image
@@ -190,7 +190,7 @@ jobs:
     secrets: inherit
     with:
       variant: eeems
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.atomic.outputs.updates}}
 
   eeems-nvidia:
     name: Build atomic-arch:eeems-nvidia image
@@ -199,7 +199,7 @@ jobs:
     secrets: inherit
     with:
       variant: eeems-nvidia
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.eeems.outputs.updates}}
 
   eeems-slim:
     name: Build atomic-arch:eeems-slim image
@@ -208,7 +208,7 @@ jobs:
     secrets: inherit
     with:
       variant: eeems-slim
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.eeems.outputs.updates}}
       cleanup: true
 
   eeems-system76:
@@ -218,7 +218,7 @@ jobs:
     secrets: inherit
     with:
       variant: eeems-system76
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.eeems.outputs.updates}}
 
   eeems-system76-nvidia:
     name: Build atomic-arch:eeems-system76-nvidia image
@@ -227,4 +227,4 @@ jobs:
     secrets: inherit
     with:
       variant: eeems-system76-nvidia
-      updates: ${{ needs.outputs.updates}}
+      updates: ${{ needs.eeems-system76.outputs.updates}}
