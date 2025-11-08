@@ -101,9 +101,15 @@ unqualified-search-registries = ["docker.io"]
 EOF
 
 RUN <<EOF cat > /etc/containers/containers.conf
+unqualified-search-registries = ["docker.io"]
+
 [engine]
 runroot = "/tmp/podman-run"
 storageroot = "/var/lib/containers/storage"
+
+[aliases]
+"eeems/atomic-arch"="ghcr.io/eeems/atomic-arch"
+"system"="localhost/system"
 EOF
 
 USER 0
