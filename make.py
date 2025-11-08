@@ -175,7 +175,7 @@ def base62_to_hex(base62_str: str) -> str:
 
 
 def get_missing_deltas(target: str) -> Iterable[tuple[str, str]]:
-    tags = image_tags(IMAGE)
+    tags = image_tags(f"{REGISTRY}/{IMAGE}")
     target_tags = [
         x
         for x in tags
@@ -233,7 +233,7 @@ def do_iso(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        _ = in_system("build", target=f"{IMAGE}:{target}", check=True)
+        _ = in_system("build", target=f"{REGISTRY}/{IMAGE}:{target}", check=True)
         _ = in_system("iso", check=True)
 
 
@@ -310,7 +310,7 @@ def do_run(args: argparse.Namespace):
     ret = in_system(
         "-c",
         shlex.join(cast(list[str], args.arg)),
-        target=f"{IMAGE}:{cast(str, args.target)}",
+        target=f"{REGISTRY}/{IMAGE}:{cast(str, args.target)}",
         entrypoint="/bin/bash",
     )
     if ret:
@@ -342,7 +342,7 @@ def do_scan(args: argparse.Namespace):
     ret = in_system(
         "-c",
         "/usr/lib/system/install_packages trivy && trivy rootfs --skip-dirs=/ostree --skip-dirs=/sysroot --skip-dirs=/var/lib/system /",
-        target=f"{IMAGE}:{cast(str, args.target)}",
+        target=f"{REGISTRY}/{IMAGE}:{cast(str, args.target)}",
         entrypoint="/bin/bash",
     )
     if ret:
@@ -357,7 +357,7 @@ def do_checkupdates(args: argparse.Namespace):
         sys.exit(1)
 
     target = cast(str, args.target)
-    image = f"eeems/atomic-arch:{target}"
+    image = f"{REGISTRY}/{IMAGE}:{target}"
     exists = image_exists(image, True)
     if exists:
         mirror = [
