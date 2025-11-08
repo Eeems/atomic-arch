@@ -17,12 +17,14 @@ on:
 
     outputs:
       updates:
-        value: ${{ jobs.run.updates.updates }}
+        value: ${{ jobs.run.outputs.updates }}
 
 jobs:
   run:
     name: atomic-arch:${{ inputs.variant }} image
     runs-on: ubuntu-latest
+    outputs:
+      updates: ${{ steps.updates.outputs.updates }}
     container:
       image: docker.io/eeems/atomic-arch:_builder
       options: >-
