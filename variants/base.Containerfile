@@ -53,6 +53,7 @@ RUN /usr/lib/system/initialize_pacman \
   python-requests \
   python-dbus \
   distrobox \
+  xdelta3 \
   && /usr/lib/system/remove_pacman_files \
   && rm /usr/bin/su \
   && ln -s /usr/bin/su{-rs,} \

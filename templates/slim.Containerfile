@@ -4,6 +4,21 @@ ARG BASE_VARIANT_ID
 FROM eeems/atomic-arch:${BASE_VARIANT_ID} AS build
 
 RUN /usr/lib/system/initialize_pacman \
+  && echo "[system] Running bleachbit" \
+  && ! [ -d /var/roothome ] \
+  && mkdir -p /var/roothome/.config \
+  && chronic pacman -S --noconfirm bleachbit \
+  && chronic bleachbit --clean \
+  system.cache \
+  system.custom \
+  system.desktop_entry \
+  system.localizations \
+  system.recent_documents \
+  system.rotated_logs \
+  system.tmp \
+  system.trash \
+  && chronic pacman -R --noconfirm bleachbit \
+  && rm -rf /var/roothome \
   && echo "[system] Removing orphaned packages" \
   && pacman -Qqd | chronic pacman -Rsu --noconfirm - \
   && /usr/lib/system/remove_pacman_files \
