@@ -343,6 +343,7 @@ def do_scan(args: argparse.Namespace):
     summary_file = os.environ.get("GITHUB_STEP_SUMMARY", None)
     if summary_file:
         volumes.append(f"{summary_file}:{summary_file}")
+        os.makedirs(".trivy", exist_ok=True)
         volumes.append("./.trivy:/trivy")
 
     ret = in_system(
