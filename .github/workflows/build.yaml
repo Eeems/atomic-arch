@@ -21,7 +21,7 @@ on:
     - cron: "0 23 * * *"
 
 permissions:
-  contents: read
+  contents: write
   actions: write
   packages: write
 
