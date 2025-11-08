@@ -4,10 +4,10 @@ ARG BASE_VARIANT_ID
 FROM ghcr.io/eeems/atomic-arch:${BASE_VARIANT_ID} AS build
 
 RUN /usr/lib/system/initialize_pacman \
-  && echo "[system] Running bleachbit" \
-  && ! [ -d /var/roothome ] \
+  && echo "[system] Installing bleachbit" \
   && mkdir -p /var/roothome/.config \
   && chronic pacman -S --noconfirm bleachbit \
+  && echo "[system] Running bleachbit" \
   && chronic bleachbit --clean \
   system.cache \
   system.custom \
@@ -17,8 +17,8 @@ RUN /usr/lib/system/initialize_pacman \
   system.rotated_logs \
   system.tmp \
   system.trash \
+  && echo "[system] Removing bleachbit" \
   && chronic pacman -R --noconfirm bleachbit \
-  && rm -rf /var/roothome \
   && echo "[system] Removing orphaned packages" \
   && pacman -Qqd | chronic pacman -Rsu --noconfirm - \
   && /usr/lib/system/remove_pacman_files \
