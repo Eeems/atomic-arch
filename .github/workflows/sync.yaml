@@ -10,6 +10,10 @@ on:
   schedule:
     - cron: "0 0 * * 0"
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

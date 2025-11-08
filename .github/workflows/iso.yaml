@@ -8,6 +8,10 @@ on:
         type: string
         required: true
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   run:
     name: atomic-arch:${{ inputs.variant }} iso
