@@ -64,7 +64,7 @@ jobs:
 
       - name: Build
         id: build
-        if: ${{ inputs.variant != "rootfs" }}
+        if: ${{ inputs.variant != 'rootfs' }}
         run: |
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
@@ -93,7 +93,7 @@ jobs:
           TMPDIR: ${{ runner.temp }}
 
       - name: Build
-        if: ${{ inputs.variant == "rootfs" }}
+        if: ${{ inputs.variant == 'rootfs' }}
         id: rootfs
         run: |
           mkdir -p /run/podman
@@ -120,7 +120,7 @@ jobs:
           kill $(jobs -p)
 
       - name: Auto commit any updates
-        if: ${{ inputs.variant == "rootfs" }}
+        if: ${{ inputs.variant == 'rootfs' }}
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: |
