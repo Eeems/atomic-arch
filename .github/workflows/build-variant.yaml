@@ -144,6 +144,7 @@ jobs:
         if: ${{ steps.updates.outputs.updates }}
         run: |
           chroot /run/host /bin/bash -x <<'EOF'
+            cd "${{ github.workspace }}"
             gh workflow run iso.yaml \
               --ref ${{ github.ref }} \
               -f variant=${{ inputs.variant }}
