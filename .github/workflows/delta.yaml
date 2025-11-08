@@ -47,6 +47,7 @@ jobs:
 
       - name: Build
         id: build
+        shell: bash
         run: |
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &

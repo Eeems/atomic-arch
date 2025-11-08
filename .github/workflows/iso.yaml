@@ -45,10 +45,6 @@ jobs:
           registry: docker.io
           auth_file_path: /run/containers/0/auth.json
 
-      - name: Install python dependencies
-        run: |
-          pip install dbus-python
-
       - name: Free up space
         uses: ./.github/actions/cleanup
         with:
