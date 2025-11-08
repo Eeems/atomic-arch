@@ -23,6 +23,7 @@ RUN apt-get update \
         netavark \
         skopeo \
         xdelta3 \
+        zstd \
         fuse-overlayfs \
         containernetworking-plugins \
         ninja-build \
