@@ -140,7 +140,7 @@ jobs:
           echo "updates=$VALUE" >> $GITHUB_OUTPUT
 
       - name: Trigger ISO and delta builds
-        if: ${{ jobs.run.updates.updates }}
+        if: ${{ steps.updates.outputs.updates }}
         run: |
           gh workflow run iso.yaml \
             --ref ${{ github.ref }} \
