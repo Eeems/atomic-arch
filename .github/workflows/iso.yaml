@@ -2,14 +2,15 @@ name: Build an iso
 
 on:
   workflow_call:
+    secrets:
+      DOCKER_USER:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
     inputs:
       variant:
         type: string
         required: true
-
-    outputs:
-      updates:
-        value: ${{ jobs.run.updates.updates}}
 
 jobs:
   run:

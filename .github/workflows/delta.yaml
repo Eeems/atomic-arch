@@ -2,6 +2,11 @@ name: Generate deltas
 
 on:
   workflow_call:
+    secrets:
+      DOCKER_USER:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
     inputs:
       variant:
         type: string

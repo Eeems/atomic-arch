@@ -2,6 +2,11 @@ name: Build an image
 
 on:
   workflow_call:
+    secrets:
+      DOCKER_USER:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
     inputs:
       variant:
         type: string
@@ -14,7 +19,6 @@ on:
         type: boolean
         required: false
         default: false
-
     outputs:
       updates:
         value: ${{ jobs.run.outputs.updates }}
