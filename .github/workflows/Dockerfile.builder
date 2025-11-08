@@ -16,6 +16,7 @@ RUN apt-get update \
         ostree \
         podman \
         sudo \
+        jq \
         meson \
         uidmap \
         netavark \
