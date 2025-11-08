@@ -20,12 +20,6 @@ on:
   schedule:
     - cron: "0 23 * * *"
 
-# Ignore yaml-schema error here
-x-permissions: &permissions
-  contents: write
-  actions: write
-  packages: write
-
 jobs:
   check:
     name: Ensure config is valid
@@ -65,7 +59,10 @@ jobs:
     needs: check
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
-    permissions: *permissions
+    permissions: &permissions
+      contents: write
+      actions: write
+      packages: write
     with:
       variant: rootfs
 
