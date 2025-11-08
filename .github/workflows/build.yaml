@@ -29,7 +29,7 @@ jobs:
     name: Ensure config is valid
     runs-on: ubuntu-latest
     container:
-      image: docker.io/eeems/atomic-arch:_builder
+      image: ghcr.io/eeems/atomic-arch-builder:latest
       options: >-
         --privileged
         --security-opt seccomp=unconfined

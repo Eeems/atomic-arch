@@ -55,6 +55,7 @@ image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 create_delta = cast(Callable[[str, str, str, bool], None], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
+REGISTRY = cast(str, _os.REGISTRY)
 
 
 def hash(target: str) -> str:
@@ -105,7 +106,7 @@ def build(target: str):
 
     podman(
         "build",
-        f"--tag=docker.io/{IMAGE}:{target}",
+        f"--tag={REGISTRY}/{IMAGE}:{target}",
         *[f"--build-arg={k}={v}" for k, v in build_args.items()],
         "--force-rm",
         "--volume=/var/cache/pacman:/var/cache/pacman",
@@ -203,7 +204,7 @@ def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
     digestA = hex_to_base62(image_digest(imageA, False))
     digestB = hex_to_base62(image_digest(imageB, False))
     assert digestA != digestB, "There is nothing to diff"
-    imageD = f"docker.io/{IMAGE}:_diff-{digestA}-{digestB}"
+    imageD = f"{REGISTRY}/{IMAGE}:_diff-{digestA}-{digestB}"
     create_delta(imageA, imageB, imageD, pull)
     if push:
         execute(

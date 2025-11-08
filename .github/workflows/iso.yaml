@@ -13,7 +13,7 @@ jobs:
     name: atomic-arch:${{ inputs.variant }} iso
     runs-on: ubuntu-latest
     container:
-      image: docker.io/eeems/atomic-arch:_builder
+      image: ghcr.io/eeems/atomic-arch-builder:latest
       options: >-
         --privileged
         --security-opt seccomp=unconfined
@@ -40,9 +40,9 @@ jobs:
       - name: Login to dockerhub
         uses: redhat-actions/podman-login@v1
         with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
+          username: ${{github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
       - name: Free up space

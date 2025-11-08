@@ -18,6 +18,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 
 from . import SYSTEM_PATH
+from . import REGISTRY
 
 from .system import execute
 from .system import _execute  # pyright:ignore [reportPrivateUsage]
@@ -204,7 +205,7 @@ def image_tags(image: str) -> list[str]:
             [
                 "skopeo",
                 "list-tags",
-                f"docker://docker.io/{image}",
+                f"docker://{REGISTRY}/{image}",
             ]
         )
     )
@@ -221,7 +222,7 @@ def image_digest(image: str, remote: bool = True) -> str:
                 [
                     "skopeo",
                     "inspect",
-                    f"docker://docker.io/{image}",
+                    f"docker://{REGISTRY}/{image}",
                     "--format={{.Digest}}",
                 ]
             )
