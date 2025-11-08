@@ -124,13 +124,13 @@ def push(target: str):
         version = labels["os-release.VERSION"]
         version_id = labels.get("os-release.VERSION_ID", None)
         if version_id and version != version_id:
-            tag = f"{image}_{version}.{version_id}"
+            tag = f"{REGISTRY}/{image}_{version}.{version_id}"
             tags.append(tag)
             podman("tag", image, tag)
             podman("push", tag)
             print(f"Pushed {tag}")
 
-        tag = f"{image}_{version}"
+        tag = f"{REGISTRY}/{image}_{version}"
         tags.append(tag)
         podman("tag", image, tag)
         podman("push", tag)
@@ -138,12 +138,12 @@ def push(target: str):
 
         podman("untag", image, *tags)
 
-    podman("push", image)
+    podman("push", f"{REGISTRY}/{image}")
     print(f"Pushed {image}")
 
 
 def pull(target: str):
-    podman("pull", f"{IMAGE}:{target}")
+    podman("pull", f"{REGISTRY}/{IMAGE}:{target}")
 
 
 def hex_to_base62(hex_digest: str) -> str:
