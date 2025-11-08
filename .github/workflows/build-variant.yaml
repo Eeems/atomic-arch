@@ -105,15 +105,15 @@ jobs:
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
           set +e
-          output=$(sudo ./make.py checkupdates)
+          output=$(./make.py checkupdates)
           res=$?
           echo $output
           set -e
           if [ $res -eq 2 ];then
             if [[ "$output" == *"mirrorlist "* ]]; then
-              sudo ./make.py rootfs --push
+              ./make.py rootfs --push
             else
-              sudo ./make.py build --push rootfs
+              ./make.py build --push rootfs
             fi
             echo "updates=true" >> $GITHUB_OUTPUT
           elif [ $res -ne 0 ];then
