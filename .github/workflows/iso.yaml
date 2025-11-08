@@ -51,11 +51,15 @@ jobs:
           root: /run/host
 
       - name: Build
+        shell: bash
         run: |
+          mkdir -p /run/podman
+          podman system service --time 0 unix:///run/podman/podman.sock &
           if [ ! -f /etc/containers/seccomp.json ];then
             cp seccomp.json /etc/containers/seccomp.json
           fi
           ./make.py iso ${{ inputs.variant }}
+          kill $(jobs -p) || true
         env:
           TMPDIR: ${{ runner.temp }}
 

@@ -51,7 +51,7 @@ jobs:
         run: |
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
-          ./make.py delta ${{ inputs.variant }}
+          ./make.py delta --push ${{ inputs.variant }}
           kill $(jobs -p)
         env:
           updates: ${{ inputs.updates }}

@@ -546,19 +546,18 @@ def do_delta(args: argparse.Namespace):
     pull = cast(bool, args.pull)
     clean = cast(bool, args.clean)
     targets = cast(list[str], args.target)
-    if not cast(bool, args.explicit):
-        for target in targets:
-            for a, b in get_missing_deltas(target):
-                delta(a, b, pull, push, clean)
+    if cast(bool, args.explicit):
+        if len(targets) != 2:
+            print("When --explicit is set, you must specify two explicit tags")
+            sys.exit(1)
 
+        imageA, imageB = targets
+        delta(imageA, imageB, pull, push, clean)
         return
 
-    if len(targets) != 2:
-        print("When --explicit is set, you must specify two explicit tags")
-        sys.exit(1)
-
-    imageA, imageB = targets
-    delta(imageA, imageB, pull, push, clean)
+    for target in targets:
+        for a, b in get_missing_deltas(target):
+            delta(a, b, pull, push, clean)
 
 
 if __name__ == "__main__":
