@@ -53,27 +53,27 @@ jobs:
 
   rootfs:
     needs: check
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
 
   base:
     needs: rootfs
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   base-nvidia:
     needs: base
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   base-slim:
     needs: base
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
@@ -81,21 +81,21 @@ jobs:
 
   atomic:
     needs: base
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   atomic-nvidia:
     needs: atomic
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   atomic-slim:
     needs: atomic
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
@@ -103,35 +103,35 @@ jobs:
 
   atomic-system76:
     needs: atomic
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   atomic-system76-nvidia:
     needs: atomic-system76
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   gnome:
     needs: base
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   gnome-nvidia:
     needs: gnome
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   gnome-slim:
     needs: gnome
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
@@ -139,35 +139,35 @@ jobs:
 
   gnome-system76:
     needs: gnome
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   gnome-system76-nvidia:
     needs: gnome-system76
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   eeems:
     needs: atomic
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   eeems-nvidia:
     needs: eeems
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   eeems-slim:
     needs: eeems
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
@@ -175,14 +175,14 @@ jobs:
 
   eeems-system76:
     needs: eeems
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
 
   eeems-system76-nvidia:
     needs: eeems-system76
-    uses: ./.github/workflows/build-variant.yml
+    uses: ./.github/workflows/build-variant.yaml
     with:
       variant: ${{ github.job }}
       updates: ${{ needs.outputs.updates}}
