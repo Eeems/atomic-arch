@@ -70,60 +70,55 @@ jobs:
 
       - name: Build
         id: build
-        if: ${{ inputs.variant != 'rootfs' }}
         run: |
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
-          if [[ "$updates" == "true" ]]; then
-            echo "Previous image updated"
-            res=2
-          else
+          if [[ "$VARIANT" == "rootfs" ]];then
             set +e
-            ./make.py checkupdates --target=${{ inputs.variant }}
+            output=$(./make.py checkupdates)
             res=$?
+            echo $output
             set -e
-          fi
-          if [ $res -eq 2 ];then
-            ./make.py build --push ${{ inputs.variant }}
-            echo "updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
+            if [ $res -eq 2 ];then
+              if [[ "$output" == *"mirrorlist "* ]]; then
+                ./make.py rootfs --push
+              else
+                ./make.py build --push rootfs
+              fi
+              echo "updates=true" >> $GITHUB_OUTPUT
+            elif [ $res -ne 0 ];then
+              exit 1
+            else
+              echo "No Updates"
+              echo "updates=false" >> $GITHUB_OUTPUT
+            fi
+            git config --global --add safe.directory "$(realpath .)"
           else
-            ./make.py push ${{ inputs.variant }}
-            echo "No Updates"
-            echo "updates=false" >> $GITHUB_OUTPUT
+            if [[ "$updates" == "true" ]]; then
+              echo "Previous image updated"
+              res=2
+            else
+              set +e
+              ./make.py checkupdates --target=${{ inputs.variant }}
+              res=$?
+              set -e
+            fi
+            if [ $res -eq 2 ];then
+              ./make.py build --push ${{ inputs.variant }}
+              echo "updates=true" >> $GITHUB_OUTPUT
+            elif [ $res -ne 0 ];then
+              exit 1
+            else
+              ./make.py push ${{ inputs.variant }}
+              echo "No Updates"
+              echo "updates=false" >> $GITHUB_OUTPUT
+            fi
           fi
-          kill $(jobs -p)
+          kill $(jobs -p) || true
         env:
           updates: ${{ inputs.updates }}
           TMPDIR: ${{ runner.temp }}
-
-      - name: Build
-        if: ${{ inputs.variant == 'rootfs' }}
-        id: rootfs
-        run: |
-          mkdir -p /run/podman
-          podman system service --time 0 unix:///run/podman/podman.sock &
-          set +e
-          output=$(./make.py checkupdates)
-          res=$?
-          echo $output
-          set -e
-          if [ $res -eq 2 ];then
-            if [[ "$output" == *"mirrorlist "* ]]; then
-              ./make.py rootfs --push
-            else
-              ./make.py build --push rootfs
-            fi
-            echo "updates=true" >> $GITHUB_OUTPUT
-          elif [ $res -ne 0 ];then
-            exit 1
-          else
-            echo "No Updates"
-            echo "updates=false" >> $GITHUB_OUTPUT
-          fi
-          git config --global --add safe.directory "$(realpath .)"
-          kill $(jobs -p)
+          VARIANT: ${{ inputs.variant }}
 
       - name: Auto commit any updates
         if: ${{ inputs.variant == 'rootfs' }}
