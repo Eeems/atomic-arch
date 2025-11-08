@@ -14,7 +14,7 @@ on:
 
 jobs:
   run:
-    name: atomic-arch:${{ inputs.variant }} iso
+    name: atomic-arch:${{ inputs.variant }} deltas
     runs-on: ubuntu-latest
     container:
       image: docker.io/eeems/atomic-arch:_builder
