@@ -22,6 +22,7 @@ RUN apt-get update \
         uidmap \
         netavark \
         skopeo \
+        xdelta3 \
         fuse-overlayfs \
         containernetworking-plugins \
         ninja-build \
