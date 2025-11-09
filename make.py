@@ -388,6 +388,9 @@ def do_scan(args: argparse.Namespace):
                 --template "@/template" \
                 /trivy/report.json \
             > /trivy/report.md
+            trivy convert \
+                --format table \
+                /trivy/report.json
         fi
         """,
         target=f"{REGISTRY}/{IMAGE}:{cast(str, args.target)}",
