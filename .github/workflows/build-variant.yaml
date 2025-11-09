@@ -25,6 +25,7 @@ permissions:
   contents: write
   actions: write
   packages: write
+  security-events: write
 
 jobs:
   run:

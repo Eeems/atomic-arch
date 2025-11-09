@@ -63,6 +63,7 @@ jobs:
       contents: write
       actions: write
       packages: write
+      security-events: write
     with:
       variant: rootfs
 
