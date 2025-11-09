@@ -366,6 +366,7 @@ def do_scan(args: argparse.Namespace):
                 --skip-dirs=/ostree \
                 --skip-dirs=/sysroot \
                 --skip-dirs=/var/lib/system \
+                --skip-dirs=/trivy \
                 /
             trivy convert \
                 --format sarif \
