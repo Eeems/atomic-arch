@@ -1,4 +1,3 @@
-# Scan Summary
 {{- define "renderResult" -}}
     {{- if or (gt (len .Vulnerabilities) 0) (gt (len .Misconfigurations) 0) (gt (len .Secrets) 0) -}}
         ## /{{ escapeXML .Target }} ({{ .Type }})
@@ -58,12 +57,11 @@
         {{- end -}}{{/* if .Secrets */}}
     {{- end -}}{{/* if Any */}}
 {{- end -}}{{/* define */}}
-
-{{/* Main display loop */}}
+{{- ""}}{{/* Main display loop */}}{{"" -}}
 {{- if gt (len .) 0 -}}
+    # Scan Summary {{- "\n" }}
+    {{- "\n" -}}
     {{- range . -}}
         {{- template "renderResult" . -}}
     {{- end -}}
-{{- else -}}
-    No scan results found.
 {{- end -}}
