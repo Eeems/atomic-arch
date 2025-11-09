@@ -12,6 +12,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: delta-${{ inputs.variant }}
+  cancel-in-progress: true
+
 jobs:
   run:
     name: atomic-arch:${{ inputs.variant }} deltas
