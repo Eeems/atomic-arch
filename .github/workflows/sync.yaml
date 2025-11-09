@@ -64,12 +64,13 @@ jobs:
           from=ghcr.io
           to=docker.io
           while read -r tag;do
-            echo "Syncing $tag"
+            echo "::group::tag"
             skopeo copy \
               --multi-arch all \
               --retry-times 10 \
               "docker://$from/$image:$tag" \
               "docker://$to/$image:$tag"
+            echo "::endgroup::"
           done < <( \
             comm -23 \
               <(
