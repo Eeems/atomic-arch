@@ -153,6 +153,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ./.trivy
+          key: ${{ hashFiles('make.py') }}
 
       - name: Scan container
         shell: bash

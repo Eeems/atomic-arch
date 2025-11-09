@@ -339,19 +339,19 @@ def do_scan(args: argparse.Namespace):
         print("Must be run as root")
         sys.exit(1)
 
-    volumes: list[str] = []
-    summary_file = os.environ.get("GITHUB_STEP_SUMMARY", None)
+    os.makedirs(".trivy", exist_ok=True)
+    volumes: list[str] = ["./.trivy:/trivy"]
+    summary_file = os.environ.get("GITHUB_STEP_SUMMARY", "")
     if summary_file:
-        volumes.append(f"{summary_file}:{summary_file}")
-        os.makedirs(".trivy", exist_ok=True)
-        volumes.append("./.trivy:/trivy")
+        volumes.append(f"{summary_file}:/summary")
 
     ret = in_system(
         "-c",
-        """
+        f"""
         set -e
         /usr/lib/system/install_packages trivy
-        if [ -z ${GITHUB_STEP_SUMMARY+x} ]; then
+        GITHUB_STEP_SUMMARY={summary_file}
+        if [ -z ${{GITHUB_STEP_SUMMARY+x}} ]; then
             trivy rootfs \
                 --skip-dirs=/ostree \
                 --skip-dirs=/sysroot \
@@ -367,7 +367,7 @@ def do_scan(args: argparse.Namespace):
                 --skip-dirs=/var/lib/system \
                 /
             trivy report --markdown-file report.md trivy.json
-            cat report.md >> $GITHUB_STEP_SUMMARY
+            cat report.md >> /summary
         fi
         """,
         target=f"{REGISTRY}/{IMAGE}:{cast(str, args.target)}",
