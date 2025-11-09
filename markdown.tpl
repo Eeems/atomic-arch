@@ -1,3 +1,5 @@
+# Scan Summary
+
 {{- define "renderResult" }}
 {{- if (or (gt (len .Vulnerabilities) 0) (gt (len .Misconfigurations) 0) (gt (len .Secrets) 0)) }}
 ## Target: /{{ escapeXML .Target }}

@@ -161,6 +161,7 @@ jobs:
         run: |
           podman system service --time 0 unix:///run/podman/podman.sock &
           ./make.py scan ${{ inputs.variant }}
+          cat .trivy/report.md >> $GITHUB_STEP_SUMMARY
           kill $(jobs -p) || true
 
       - name: Upload Scan results to GitHub Security tab

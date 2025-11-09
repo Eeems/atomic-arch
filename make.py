@@ -341,9 +341,8 @@ def do_scan(args: argparse.Namespace):
 
     os.makedirs(".trivy", exist_ok=True)
     volumes: list[str] = ["./.trivy:/trivy"]
-    summary_file = os.environ.get("GITHUB_STEP_SUMMARY", "")
-    if summary_file:
-        volumes.append(f"{summary_file}:/summary")
+    in_ci = "CI" in os.environ
+    if in_ci:
         volumes.append("./markdown.tpl:/template")
 
     ret = in_system(
@@ -352,8 +351,7 @@ def do_scan(args: argparse.Namespace):
         set -e
         /usr/lib/system/initialize_pacman
         /usr/lib/system/install_packages trivy
-        GITHUB_STEP_SUMMARY="{summary_file}"
-        if [[ "$GITHUB_STEP_SUMMARY" == "" ]]; then
+        if [[ "{"x" if in_ci else ""}" == "" ]]; then
             trivy rootfs \
                 --cache-dir /trivy \
                 --skip-dirs=/ostree \
@@ -389,7 +387,7 @@ def do_scan(args: argparse.Namespace):
                 --format template \
                 --template "@/template" \
                 /trivy/report.json \
-            >> /summary
+            > /trivy/report.md
         fi
         """,
         target=f"{REGISTRY}/{IMAGE}:{cast(str, args.target)}",
