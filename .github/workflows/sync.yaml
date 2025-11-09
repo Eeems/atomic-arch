@@ -68,7 +68,7 @@ jobs:
           from=ghcr.io
           to=docker.io
           while read -r tag;do
-            echo "::group::tag"
+            echo "::group::$tag"
             skopeo copy \
               --multi-arch all \
               --retry-times 10 \
