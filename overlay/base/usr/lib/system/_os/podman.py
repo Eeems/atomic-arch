@@ -399,7 +399,8 @@ FROM scratch
 COPY diff.xd3.zstd /diff.xd3.zstd
 LABEL atomic.patch.prev="{digestA}" \\
   atomic.patch.ref="{digestB}" \\
-  atomic.patch.format="xdelta3+zstd"
+  atomic.patch.format="xdelta3+zstd" \\
+  org.opencontainers.image.description="Delta between {imageA} and {imageB}"
 """)
         podman(
             "build",

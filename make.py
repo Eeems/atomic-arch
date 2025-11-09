@@ -344,6 +344,7 @@ def do_scan(args: argparse.Namespace):
     summary_file = os.environ.get("GITHUB_STEP_SUMMARY", "")
     if summary_file:
         volumes.append(f"{summary_file}:/summary")
+        volumes.append("./markdown.tpl:/template")
 
     ret = in_system(
         "-c",
@@ -361,13 +362,20 @@ def do_scan(args: argparse.Namespace):
             trivy rootfs \
                 --cache-dir /trivy \
                 --format json \
-                --output /trivy.json \
+                --output /trivy/report.json \
                 --skip-dirs=/ostree \
                 --skip-dirs=/sysroot \
                 --skip-dirs=/var/lib/system \
                 /
-            trivy report --markdown-file report.md trivy.json
-            cat report.md >> /summary
+            trivy convert \
+                --format sarif \
+                /trivy/report.json \
+            > /trivy/report.sarif
+            trivy convert \
+                --format template \
+                --template "@/template" \
+                /trivy/report.json \
+            >> /summary
         fi
         """,
         target=f"{REGISTRY}/{IMAGE}:{cast(str, args.target)}",

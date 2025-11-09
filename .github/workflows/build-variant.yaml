@@ -161,3 +161,8 @@ jobs:
           podman system service --time 0 unix:///run/podman/podman.sock &
           ./make.py scan ${{ inputs.variant }}
           kill $(jobs -p) || true
+
+      - name: Upload Scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ".trivy/report.sarif"

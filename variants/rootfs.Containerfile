@@ -55,6 +55,7 @@ LABEL \
   org.opencontainers.image.authors="eeems@eeems.email" \
   org.opencontainers.image.source="https://github.com/Eeems/atomic-arch" \
   org.opencontainers.image.ref.name="rootfs" \
+  org.opencontainers.image.description="Atomic and immutable Linux distribution as a container." \
   hash="${HASH}" \
   mirrorlist="[ \
   \"https://archive.archlinux.org/repos/${ARCHIVE_YEAR}/${ARCHIVE_MONTH}/${ARCHIVE_DAY}/\$repo/os/\$arch\", \
