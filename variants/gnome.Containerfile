@@ -25,7 +25,7 @@ RUN systemctl enable gdm
 
 COPY overlay/gnome /
 
-ARG VERSION_ID
+ARG VERSION_ID HASH
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \

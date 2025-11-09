@@ -86,7 +86,7 @@ RUN \
   && chmod 400 /etc/sudoers \
   && chmod 644 /etc/pam.d/sudo{,-i}
 
-ARG VERSION_ID
+ARG VERSION_ID HASH
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \

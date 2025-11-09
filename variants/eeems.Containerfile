@@ -43,7 +43,7 @@ RUN systemctl enable zerotier-one
 
 COPY overlay/eeems /
 
-ARG VERSION_ID
+ARG VERSION_ID HASH
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \

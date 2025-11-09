@@ -452,9 +452,9 @@ def do_checkupdates(args: argparse.Namespace):
             sys.exit(1)
 
     new_hash = hash(target)
-    current_hash = image_hash(image) if exists else "(none)"
+    current_hash = image_hash(image) if exists else ""
     if current_hash != new_hash:
-        print(f"context {current_hash[:9]} -> {new_hash[:9]}")
+        print(f"context {current_hash[:9] or '(none)'} -> {new_hash[:9]}")
         has_updates = True
 
     if not exists:

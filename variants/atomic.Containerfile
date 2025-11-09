@@ -64,7 +64,7 @@ RUN systemctl enable \
 COPY overlay/atomic /
 RUN systemctl enable dconf
 
-ARG VERSION_ID
+ARG VERSION_ID HASH
 
 LABEL \
   os-release.VARIANT="${VARIANT}" \
