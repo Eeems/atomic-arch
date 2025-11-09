@@ -203,24 +203,34 @@ def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
     imageA = f"{REGISTRY}/{IMAGE}:{a}"
     imageB = f"{REGISTRY}/{IMAGE}:{b}"
     if pull:
+        ci_log(f"::group::pull {imageA}")
         podman("pull", imageA)
+        ci_log("::endgroup::")
+        ci_log(f"::group::pull {imageB}")
         podman("pull", imageB)
+        ci_log("::endgroup::")
 
     digestA = hex_to_base62(image_digest(imageA, False))
     digestB = hex_to_base62(image_digest(imageB, False))
     assert digestA != digestB, "There is nothing to diff"
     imageD = f"{REGISTRY}/{IMAGE}:_diff-{digestA}-{digestB}"
+    ci_log(f"::group::Create {imageD}")
     create_delta(imageA, imageB, imageD, pull)
+    ci_log("::endgroup::")
     if push:
+        ci_log("::group::push")
         execute(
             "skopeo",
             "copy",
             f"containers-storage:{imageD}",
             f"docker://{imageD}",
         )
+        ci_log("::endgroup::")
 
     if clean:
+        ci_log("::group::clean")
         podman("rmi", imageA, imageB, imageD)
+        ci_log("::endgroup::")
 
 
 def do_build(args: argparse.Namespace):
