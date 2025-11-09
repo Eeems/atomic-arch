@@ -80,44 +80,56 @@ jobs:
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
           if [[ "$VARIANT" == "rootfs" ]];then
+            echo "::group::checkupdates"
             set +e
             output=$(./make.py checkupdates)
             res=$?
             echo $output
             set -e
+            echo "::endgroup::"
             if [ $res -eq 2 ];then
+              echo "::group::build"
               if [[ "$output" == *"mirrorlist "* ]]; then
                 ./make.py rootfs --push
               else
                 ./make.py build --push rootfs
               fi
+              echo "::endgroup::"
               echo "updates=true" >> $GITHUB_OUTPUT
             elif [ $res -ne 0 ];then
               exit 1
             else
+              echo "::group::push"
               ./make.py push ${{ inputs.variant }}
               echo "No Updates"
               echo "updates=false" >> $GITHUB_OUTPUT
+              echo "::endgroup::"
             fi
           else
             if [[ "$updates" == "true" ]]; then
               echo "Previous image updated"
               res=2
             else
+              echo "::group::checkupdates"
               set +e
               ./make.py checkupdates --target=${{ inputs.variant }}
               res=$?
               set -e
+              echo "::endgroup::"
             fi
             if [ $res -eq 2 ];then
+              echo "::group::build"
               ./make.py build --push ${{ inputs.variant }}
               echo "updates=true" >> $GITHUB_OUTPUT
+              echo "::endgroup::"
             elif [ $res -ne 0 ];then
               exit 1
             else
+              echo "::group::push"
               ./make.py push ${{ inputs.variant }}
               echo "No Updates"
               echo "updates=false" >> $GITHUB_OUTPUT
+              echo "::endgroup::"
             fi
           fi
           kill $(jobs -p) || true

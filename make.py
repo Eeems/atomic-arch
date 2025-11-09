@@ -58,6 +58,13 @@ IMAGE = cast(str, _os.IMAGE)
 REGISTRY = cast(str, _os.REGISTRY)
 
 
+def ci_log(*args: str):
+    if "CI" not in os.environ:
+        return
+
+    print(*args)
+
+
 def hash(target: str) -> str:
     m = sha256()
     containerfile = f"variants/{target}.Containerfile"
@@ -608,7 +615,9 @@ def do_delta(args: argparse.Namespace):
 
     for target in targets:
         for a, b in get_missing_deltas(target):
+            ci_log(f"::group::Delta {a} to {b}")
             delta(a, b, pull, push, clean)
+            ci_log("::endgroup::")
 
 
 if __name__ == "__main__":
