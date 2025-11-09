@@ -351,12 +351,18 @@ def do_scan(args: argparse.Namespace):
         f"""
         set -e
         /usr/lib/system/install_packages trivy
-        GITHUB_STEP_SUMMARY={summary_file}
-        if [ -z ${{GITHUB_STEP_SUMMARY+x}} ]; then
+        GITHUB_STEP_SUMMARY="{summary_file}"
+        if [[ "$GITHUB_STEP_SUMMARY" == "" ]]; then
             trivy rootfs \
+                --cache-dir /trivy \
                 --skip-dirs=/ostree \
                 --skip-dirs=/sysroot \
                 --skip-dirs=/var/lib/system \
+                --skip-dirs=/usr/share/doc \
+                --skip-dirs=/usr/share/man \
+                --skip-dirs=/trivy \
+                --skip-files=/usr/bin/trivy \
+                --scanners vuln,misconfig,secret \
                 /
         else
             trivy rootfs \
@@ -366,7 +372,11 @@ def do_scan(args: argparse.Namespace):
                 --skip-dirs=/ostree \
                 --skip-dirs=/sysroot \
                 --skip-dirs=/var/lib/system \
+                --skip-dirs=/usr/share/doc \
+                --skip-dirs=/usr/share/man \
                 --skip-dirs=/trivy \
+                --skip-files=/usr/bin/trivy \
+                --scanners vuln,misconfig,secret \
                 /
             trivy convert \
                 --format sarif \
