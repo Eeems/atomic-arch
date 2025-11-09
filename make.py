@@ -214,7 +214,7 @@ def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
     digestB = hex_to_base62(image_digest(imageB, False))
     assert digestA != digestB, "There is nothing to diff"
     imageD = f"{REGISTRY}/{IMAGE}:_diff-{digestA}-{digestB}"
-    ci_log(f"::group::Create {imageD}")
+    ci_log(f"::group::delta {a} and {b}")
     create_delta(imageA, imageB, imageD, pull)
     ci_log("::endgroup::")
     if push:
@@ -625,9 +625,7 @@ def do_delta(args: argparse.Namespace):
 
     for target in targets:
         for a, b in get_missing_deltas(target):
-            ci_log(f"::group::Delta {a} to {b}")
             delta(a, b, pull, push, clean)
-            ci_log("::endgroup::")
 
 
 if __name__ == "__main__":
