@@ -363,6 +363,7 @@ def do_scan(args: argparse.Namespace):
                 --skip-dirs=/usr/share/man \
                 --skip-dirs=/trivy \
                 --skip-files=/usr/bin/trivy \
+                --skip-files=/usr/lib/qt6/mkspecs/features/data/testserver/Dockerfile \
                 --scanners vuln,misconfig,secret \
                 /
         else
@@ -377,6 +378,7 @@ def do_scan(args: argparse.Namespace):
                 --skip-dirs=/usr/share/man \
                 --skip-dirs=/trivy \
                 --skip-files=/usr/bin/trivy \
+                --skip-files=/usr/lib/qt6/mkspecs/features/data/testserver/Dockerfile \
                 --scanners vuln,misconfig,secret \
                 /
             trivy convert \

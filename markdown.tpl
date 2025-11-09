@@ -1,8 +1,6 @@
-# Scan results
-
 {{- define "renderResult" }}
 {{- if (or (gt (len .Vulnerabilities) 0) (gt (len .Misconfigurations) 0) (gt (len .Secrets) 0)) }}
-## Target: {{ escapeXML .Target }}
+## Target: /{{ escapeXML .Target }}
 
 **Type:** {{ .Type }}
 
@@ -23,7 +21,7 @@
 | ID | Title | Severity | Message |
 |----|-------|----------|---------|
 {{- range .Misconfigurations }}
-| {{ escapeXML .ID }} | {{ escapeXML .Title }} | {{ escapeXML .Severity }} | {{ escapeXML .Message }}<br>[Details]({{ escapeXML .PrimaryURL }}) |
+| {{ escapeXML .ID }} | {{ escapeXML .Title }} | {{ escapeXML .Severity }} | {{ escapeXML (printf "%.200s" .Message) }}<br>[Details]({{ escapeXML .PrimaryURL }}) |
 {{- end }}
 
 {{- end }}
@@ -34,7 +32,7 @@
 | Rule ID | Severity | Category | Match |
 |---------|----------|----------|-------|
 {{- range .Secrets }}
-| `{{ escapeXML .RuleID }}` | **{{ escapeXML .Severity }}** | {{ escapeXML .Category }} | `{{ escapeXML (truncate .Match 100) }}` |
+| `{{ escapeXML .RuleID }}` | **{{ escapeXML .Severity }}** | {{ escapeXML .Category }} | `{{ escapeXML (printf "%.100s" .Match) }}` |
 {{- end }}
 
 {{- end }}
@@ -42,6 +40,7 @@
 {{- else }}
 {{- end }}
 {{- end }}
+
 {{- if gt (len .) 0 }}
 {{- range . }}
 {{ template "renderResult" . }}
