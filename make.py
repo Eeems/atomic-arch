@@ -350,6 +350,7 @@ def do_scan(args: argparse.Namespace):
         "-c",
         f"""
         set -e
+        /usr/lib/system/initialize_pacman
         /usr/lib/system/install_packages trivy
         GITHUB_STEP_SUMMARY="{summary_file}"
         if [[ "$GITHUB_STEP_SUMMARY" == "" ]]; then
