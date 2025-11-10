@@ -74,6 +74,7 @@ jobs:
           podman system service --time 0 unix:///run/podman/podman.sock &
           ./make.py delta $args --push ${{ inputs.variant }}
           kill $(jobs -p)
+          rm -rf .tmp/*
         env:
           updates: ${{ inputs.updates }}
-          TMPDIR: ${{ runner.temp }}
+          TMPDIR: .tmp
