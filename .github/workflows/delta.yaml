@@ -57,6 +57,11 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
+      - name: Free up space
+        uses: ./.github/actions/cleanup
+        with:
+          root: /run/host
+
       - name: Build
         id: build
         shell: bash
