@@ -58,7 +58,6 @@ jobs:
           auth_file_path: /run/containers/0/auth.json
 
       - name: Free up space
-        if: ${{ inputs.recreate }}
         uses: ./.github/actions/cleanup
         with:
           root: /run/host
