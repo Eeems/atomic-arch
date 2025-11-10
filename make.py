@@ -214,12 +214,7 @@ def delta(a: str, b: str, allow_pull: bool, push: bool, clean: bool, imageD:str|
     ci_log("::endgroup::")
     if push:
         ci_log("::group::push")
-        execute(
-            "skopeo",
-            "copy",
-            f"containers-storage:{imageD}",
-            f"docker://{imageD}",
-        )
+        podman("push", imageD)
         ci_log("::endgroup::")
 
     if clean:
