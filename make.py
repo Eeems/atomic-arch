@@ -162,7 +162,7 @@ def base62_to_hex(base62_str: str) -> str:
     return hex_str
 
 
-def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, str]]:
+def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, str, str]]:
     tags = image_tags(f"{REGISTRY}/{IMAGE}")
     target_tags = [
         x
@@ -171,32 +171,28 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
         and (target == "rootfs" or len(x[len(target) + 1 :]) > 10)
     ]
     target_tags.sort()
-    if not missing_only:
-        for i in range(len(target_tags)):
-            for offset in range(1, 4):
-                if i + offset < len(target_tags):
-                    yield target_tags[i], target_tags[i + offset]
-
-        return
-
-    diff_tags = [
-        x
-        for x in tags
-        if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
-    ]
     digest_cache = {
         tag: hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{tag}", True))
         for tag in target_tags
     }
+    diff_tags = [
+        x
+        for x in tags
+        if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
+    ] if missing_only else []
     for i in range(len(target_tags)):
         for offset in range(1, 4):
             if i + offset < len(target_tags):
                 a, b = target_tags[i], target_tags[i + offset]
-                if f"_diff-{digest_cache[a]}-{digest_cache[b]}" not in diff_tags:
-                    yield a, b
+                if digest_cache[a] == digest_cache[b]:
+                    continue
+
+                t = f"_diff-{digest_cache[a]}-{digest_cache[b]}"
+                if t not in diff_tags:
+                    yield a, b, t
 
 
-def delta(a: str, b: str, allow_pull: bool, push: bool, clean: bool):
+def delta(a: str, b: str, allow_pull: bool, push: bool, clean: bool, imageD:str|None=None):
     imageA = f"{REGISTRY}/{IMAGE}:{a}"
     imageB = f"{REGISTRY}/{IMAGE}:{b}"
     if allow_pull:
@@ -207,10 +203,12 @@ def delta(a: str, b: str, allow_pull: bool, push: bool, clean: bool):
         pull(imageB)
         ci_log("::endgroup::")
 
-    digestA = hex_to_base62(image_digest(imageA, False))
-    digestB = hex_to_base62(image_digest(imageB, False))
-    assert digestA != digestB, "There is nothing to diff"
-    imageD = f"{REGISTRY}/{IMAGE}:_diff-{digestA}-{digestB}"
+    if imageD is None:
+        digestA = hex_to_base62(image_digest(imageA, False))
+        digestB = hex_to_base62(image_digest(imageB, False))
+        assert digestA != digestB, "There is nothing to diff"
+        imageD = f"{REGISTRY}/{IMAGE}:_diff-{digestA}-{digestB}"
+
     ci_log(f"::group::delta {a} and {b}")
     create_delta(imageA, imageB, imageD, allow_pull)
     ci_log("::endgroup::")
@@ -626,9 +624,24 @@ def do_delta(args: argparse.Namespace):
 
     missing_only = not cast(bool, args.force)
     for target in targets:
-        for a, b in get_deltas(target, missing_only=missing_only):
-            delta(a, b, pull, push, clean)
+        for a, b, t in get_deltas(target, missing_only=missing_only):
+            delta(a, b, pull, push, clean, imageD=t)
 
+def do_get_deltas(args: argparse.Namespace):
+    missing_only = cast(bool, args.missing)
+    output_json = cast(bool, args.json)
+    targets = cast(list[str], args.target)
+    tags = [
+        {'a': a, 'b': b, 'tag': tag}
+        for target in targets
+        for a, b, tag in get_deltas(target, missing_only=missing_only)
+    ]
+    if output_json:
+        print(json.dumps(tags))
+        return
+
+    for item in tags:
+        print(item['tag'])
 
 def do_test(_: argparse.Namespace):
     image_size = cast(Callable[[str], int], _os.podman.image_size)  # pyright: ignore[reportUnknownMemberType]
@@ -698,6 +711,12 @@ if __name__ == "__main__":
     subparser = subparsers.add_parser("hash")
     _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
     subparser.set_defaults(func=do_hash)
+
+    subparser = subparsers.add_parser("get-deltas")
+    _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
+    _ = subparser.add_argument("--missing", action="store_true")
+    _ = subparser.add_argument("--json", action="store_true")
+    subparser.set_defaults(func=do_get_deltas)
 
     subparser = subparsers.add_parser("delta")
     _ = subparser.add_argument("target", action="extend", nargs="+", type=str)

@@ -21,10 +21,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  run:
+  matrix:
     name: atomic-arch:${{ inputs.variant }} deltas
     runs-on: ubuntu-latest
-    container:
+    container: &container
       image: ghcr.io/eeems/atomic-arch-builder:latest
       options: >-
         --privileged
@@ -38,6 +38,52 @@ jobs:
         --userns=host
         -v /var/lib/containers:/var/lib/containers
         -v /:/run/host
+    outputs:
+      variant-matrix: ${{ steps.matrix.outputs.JSON_CONTENT }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Ensure .docker exists
+        run: |
+          mkdir -p /github/home/.docker
+          if ! [ -f /github/home/.docker/config.json ];then
+            echo '{"auths":{}}' > /github/home/.docker/config.json
+          fi
+
+      - name: Login to dockerhub
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          auth_file_path: /run/containers/0/auth.json
+
+      - name: Get matrix
+        id: matrix
+        shell: bash
+        run: |
+          args=""
+          if [[ "${{ inputs.recreate }}" != "true" ]];then
+            args="$args --missing"
+          fi
+          mkdir -p /run/podman
+          podman system service --time 0 unix:///run/podman/podman.sock &
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          ./make.py get-deltas --json $args ${{ inputs.variant }} \
+          | jq -c '{"include": .}' >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+          kill $(jobs -p)
+        env:
+          TMPDIR: ${{ runner.temp }}
+  run:
+    name: ${{ matrix.a }} to ${{matrix.b}}
+    runs-on: ubuntu-latest
+    container: *container
+    needs: matrix
+    strategy:
+      matrix: ${{ fromJson(needs.matrix.outputs.variant-matrix) }}
+      fail-fast: false
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -73,9 +119,8 @@ jobs:
           fi
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
-          ./make.py delta $args --push ${{ inputs.variant }}
+          ./make.py delta $args --push --explicit ${{ matrix.a }} ${{ matrix.b }}
           kill $(jobs -p)
           rm -rf .tmp/*
         env:
-          updates: ${{ inputs.updates }}
           TMPDIR: ${{ github.workspace }}/.tmp
