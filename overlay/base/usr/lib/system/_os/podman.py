@@ -439,7 +439,7 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
         tar_proc, tardir = _save_image(imageB)
         assert tar_proc.stdout is not None
         xdelta_proc = subprocess.Popen(
-            ["xdelta3", "-v", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
+            ["xdelta3", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
             stdin=tar_proc.stdout,
             stdout=subprocess.PIPE,
         )
@@ -458,15 +458,37 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
             tar_proc,
             cleanup=tardir.cleanup,
         )
+        labels: dict[str, str] = {
+            "description": f"Delta between {imageA} and {imageB}",
+            "ref.name": imageD,
+        }
+        src_labels = image_labels(imageB)
+        for label in [
+            "create",
+            "authors",
+            "url",
+            "documentation",
+            "source",
+            "vendor",
+            "licenses",
+            "base.digest",
+            "base.name",
+            "version",
+            "revision",
+        ]:
+            label = f"org.opencontainers.image.{label}"
+            if label in src_labels:
+                labels[label] = src_labels[label]
+
         containerfile = os.path.join(tmpdir, "Containerfile")
         with open(containerfile, "w") as f:
             _ = f.write(f"""\
 FROM scratch
 COPY diff.xd3.zstd /diff.xd3.zstd
-LABEL atomic.patch.prev="{digestA}" \\
+LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{v}" \\' for k, v in labels.items()])}
+  atomic.patch.prev="{digestA}" \\
   atomic.patch.ref="{digestB}" \\
   atomic.patch.format="xdelta3+zstd" \\
-  org.opencontainers.image.description="Delta between {imageA} and {imageB}"
 """)
         podman(
             "build",
@@ -526,3 +548,11 @@ def apply_delta(image: str, delta_image: str):
         xdelta3_proc.stdout.close()
         _ = podman_load_proc.communicate()
         _wait_for_processes(podman_load_proc, xdelta3_proc, podman_run_proc)
+
+
+def pull(image: str):  # pyright: ignore[reportUnusedParameter]
+    # TODO If we have a copy of the image locally,
+    # check to see if there is a _diff- tag that matches the digest for the
+    # Image to be pulled using image_digest, image_tags, and hex_to_base62
+    # If so, pull that instead, and then use apply_delta to apply it
+    pass

@@ -74,6 +74,7 @@ jobs:
     with:
       variant: base
       updates: ${{ fromJson(needs.rootfs.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   base-nvidia:
     name: Build atomic-arch:base-nvidia image
@@ -84,6 +85,7 @@ jobs:
     with:
       variant: base-nvidia
       updates: ${{ fromJson(needs.base.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   base-slim:
     name: Build atomic-arch:base-slim image
@@ -94,6 +96,7 @@ jobs:
     with:
       variant: base-slim
       updates: ${{ fromJson(needs.base.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
       cleanup: true
 
   atomic:
@@ -105,6 +108,7 @@ jobs:
     with:
       variant: atomic
       updates: ${{ fromJson(needs.base.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   atomic-nvidia:
     name: Build atomic-arch:atomic-nvidia image
@@ -115,6 +119,7 @@ jobs:
     with:
       variant: atomic-nvidia
       updates: ${{ fromJson(needs.atomic.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   atomic-slim:
     name: Build atomic-arch:atomic-slim image
@@ -125,6 +130,7 @@ jobs:
     with:
       variant: atomic-slim
       updates: ${{ fromJson(needs.atomic.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
       cleanup: true
 
   atomic-system76:
@@ -136,6 +142,7 @@ jobs:
     with:
       variant: atomic-system76
       updates: ${{ fromJson(needs.atomic.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   atomic-system76-nvidia:
     name: Build atomic-arch:atomic-system76-nvidia image
@@ -146,6 +153,7 @@ jobs:
     with:
       variant: atomic-system76-nvidia
       updates: ${{ fromJson(needs.atomic-system76.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   gnome:
     name: Build atomic-arch:gnome image
@@ -156,6 +164,7 @@ jobs:
     with:
       variant: gnome
       updates: ${{ fromJson(needs.base.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   gnome-nvidia:
     name: Build atomic-arch:gnome-nvidia image
@@ -166,6 +175,7 @@ jobs:
     with:
       variant: gnome-nvidia
       updates: ${{ fromJson(needs.gnome.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   gnome-slim:
     name: Build atomic-arch:gnome-slim image
@@ -176,6 +186,7 @@ jobs:
     with:
       variant: gnome-slim
       updates: ${{ fromJson(needs.gnome.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
       cleanup: true
 
   gnome-system76:
@@ -187,6 +198,7 @@ jobs:
     with:
       variant: gnome-system76
       updates: ${{ fromJson(needs.gnome.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   gnome-system76-nvidia:
     name: Build atomic-arch:gnome-system76-nvidia image
@@ -197,6 +209,7 @@ jobs:
     with:
       variant: gnome-system76-nvidia
       updates: ${{ fromJson(needs.gnome-system76.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   eeems:
     name: Build atomic-arch:eeems image
@@ -207,6 +220,7 @@ jobs:
     with:
       variant: eeems
       updates: ${{ fromJson(needs.atomic.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   eeems-nvidia:
     name: Build atomic-arch:eeems-nvidia image
@@ -217,6 +231,7 @@ jobs:
     with:
       variant: eeems-nvidia
       updates: ${{ fromJson(needs.eeems.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   eeems-slim:
     name: Build atomic-arch:eeems-slim image
@@ -227,6 +242,7 @@ jobs:
     with:
       variant: eeems-slim
       updates: ${{ fromJson(needs.eeems.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
       cleanup: true
 
   eeems-system76:
@@ -238,6 +254,7 @@ jobs:
     with:
       variant: eeems-system76
       updates: ${{ fromJson(needs.eeems.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
 
   eeems-system76-nvidia:
     name: Build atomic-arch:eeems-system76-nvidia image
@@ -248,3 +265,4 @@ jobs:
     with:
       variant: eeems-system76-nvidia
       updates: ${{ fromJson(needs.eeems-system76.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}

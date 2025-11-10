@@ -175,6 +175,8 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
         and (target == "rootfs" or len(x[len(target) + 1 :]) > 10)
     ]
     target_tags.sort()
+    # TODO instead of using pairwise, get pairwise, but also a pair for 3 in either
+    # direction of a tag
     if not missing_only:
         for a, b in pairwise(target_tags):
             yield a, b
@@ -223,7 +225,10 @@ def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
 
     if clean:
         ci_log("::group::clean")
-        podman("rmi", imageA, imageB, imageD)
+        podman("rmi", imageA, imageB)
+        if push:
+            podman("rmi", imageD)
+
         ci_log("::endgroup::")
 
 
