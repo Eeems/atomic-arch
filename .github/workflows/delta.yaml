@@ -61,9 +61,13 @@ jobs:
         id: build
         shell: bash
         run: |
+          args=""
+          if [[ "${{ inputs.recreate }}" == "true" ]];then
+            args="--force"
+          fi
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
-          ./make.py delta ${{ inputs.recreate ? "--force" : "" }} --push ${{ inputs.variant }}
+          ./make.py delta $args --push ${{ inputs.variant }}
           kill $(jobs -p)
         env:
           updates: ${{ inputs.updates }}
