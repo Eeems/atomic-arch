@@ -17,7 +17,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: delta-${{ inputs.variant }}
+  group: delta-${{ inputs.variant }}-${{ inputs.recreate }}
   cancel-in-progress: true
 
 jobs:
