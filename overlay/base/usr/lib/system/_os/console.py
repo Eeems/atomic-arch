@@ -2,8 +2,10 @@ import sys
 
 
 def bytes_to_stdout(line: bytes):
-    print(line.decode("utf-8"), end="")
+    _ = sys.stdout.buffer.write(line)
+    _ = sys.stdout.flush()
 
 
 def bytes_to_stderr(line: bytes):
-    print(line.decode("utf-8"), file=sys.stderr, end="")
+    _ = sys.stderr.buffer.write(line)
+    _ = sys.stderr.flush()

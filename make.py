@@ -9,7 +9,6 @@ import atexit
 import re
 import tempfile
 import json
-import string
 
 from glob import iglob
 from hashlib import sha256
@@ -54,6 +53,7 @@ image_exists = cast(Callable[[str, bool], bool], _os.podman.image_exists)  # pyr
 image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:ignore [reportUnknownMemberType]
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 create_delta = cast(Callable[[str, str, str, bool], None], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
+hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 REGISTRY = cast(str, _os.REGISTRY)
 
@@ -151,21 +151,6 @@ def pull(target: str):
     podman("pull", f"{REGISTRY}/{IMAGE}:{target}")
 
 
-def hex_to_base62(hex_digest: str) -> str:
-    if hex_digest.startswith("sha256:"):
-        hex_digest = hex_digest[7:]
-
-    return (
-        "".join(
-            (string.digits + string.ascii_lowercase + string.ascii_uppercase)[
-                int(hex_digest, 16) // (62**i) % 62
-            ]
-            for i in range(50)
-        )[::-1].lstrip("0")
-        or "0"
-    )
-
-
 def base62_to_hex(base62_str: str) -> str:
     assert base62_str, "Invalid base62 string"
     alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -181,22 +166,31 @@ def base62_to_hex(base62_str: str) -> str:
     return hex_str
 
 
-def get_missing_deltas(target: str) -> Iterable[tuple[str, str]]:
+def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, str]]:
     tags = image_tags(f"{REGISTRY}/{IMAGE}")
     target_tags = [
         x
         for x in tags
         if x.startswith(f"{target}_")
         and (target == "rootfs" or len(x[len(target) + 1 :]) > 10)
-        and x
-        not in [
-            x
-            for x in tags
-            if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
-        ]
     ]
     target_tags.sort()
-    return pairwise(target_tags)
+    if not missing_only:
+        for a, b in pairwise(target_tags):
+            yield a, b
+
+        return
+
+    diff_tags = [
+        x
+        for x in tags
+        if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
+    ]
+    for a, b in pairwise(target_tags):
+        digestA = hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{a}", True))
+        digestB = hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{b}", True))
+        if f"_diff-{digestA}-{digestB}" not in diff_tags:
+            yield a, b
 
 
 def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
@@ -623,9 +617,25 @@ def do_delta(args: argparse.Namespace):
         delta(imageA, imageB, pull, push, clean)
         return
 
+    missing_only = not cast(bool, args.force)
     for target in targets:
-        for a, b in get_missing_deltas(target):
+        for a, b in get_deltas(target, missing_only=missing_only):
             delta(a, b, pull, push, clean)
+
+
+def do_test(_: argparse.Namespace):
+    apply_delta = cast(Callable[[str, str], None], _os.podman.apply_delta)  # pyright: ignore[reportUnknownMemberType]
+
+    # image = f"{REGISTRY}/{IMAGE}@sha256:636cb6ec620620a45712e070e77dfcc9dd534bddd5ba1c4a1f4a0d1c0ae144fa"
+    # patch = f"{REGISTRY}/{IMAGE}:_diff-nzKDYVsNUXQQzt5oMnO5MgBZWpd8ekfm86BqIdrEyQa-oFjTIVpTsCJqu5QqIoyLX2JsEezUvs85vI4uGYtAImO"
+    # apply_delta(image, patch)
+
+    imageA = f"{REGISTRY}/{IMAGE}:rootfs"
+    imageB = f"{REGISTRY}/{IMAGE}:base"
+    imageD = "test-patch"
+    create_delta(imageA, imageB, imageD, False)
+    # podman("rmi", imageB)
+    apply_delta(imageA, imageD)
 
 
 if __name__ == "__main__":
@@ -695,7 +705,11 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--no-pull", action="store_false", dest="pull")
     _ = subparser.add_argument("--no-clean", action="store_false", dest="clean")
     _ = subparser.add_argument("--explicit", action="store_true")
+    _ = subparser.add_argument("--force", action="store_true")
     subparser.set_defaults(func=do_delta)
+
+    subparser = subparsers.add_parser("test")
+    subparser.set_defaults(func=do_test)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

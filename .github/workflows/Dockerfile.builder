@@ -61,10 +61,10 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         docker-ce-cli \
-    # Install python 3.12
+    # Install python 3.13
     && curl https://pyenv.run | bash \
-    && pyenv install 3.12 \
-    && pyenv global 3.12 \
+    && pyenv install 3.13 \
+    && pyenv global 3.13 \
     && pyenv exec python -m pip install --root-user-action ignore --upgrade \
         pip \
         setuptools \

@@ -7,6 +7,10 @@ on:
         description: Which variant to generate deltas for
         type: string
         required: true
+      recreate:
+        description: Recreate all deltas at the latest format
+        type: boolean
+        required: false
 
 permissions:
   contents: read

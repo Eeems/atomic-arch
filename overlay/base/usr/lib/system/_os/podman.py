@@ -222,7 +222,7 @@ def image_digest(image: str, remote: bool = True) -> str:
                 [
                     "skopeo",
                     "inspect",
-                    f"docker://{REGISTRY}/{image}",
+                    f"docker://{image}",
                     "--format={{.Digest}}",
                 ]
             )
@@ -362,24 +362,88 @@ def hex_to_base62(hex_digest: str) -> str:
     )
 
 
+def _save_image(image: str) -> tuple[subprocess.Popen[bytes], TemporaryDirectory[str]]:
+    print(f"Saving {image}")
+    tmpdir = TemporaryDirectory()
+    fifo = os.path.join(tmpdir.name, "fifo")
+    os.mkfifo(fifo)
+    tar_dir = os.path.join(tmpdir.name, "tar")
+    os.mkdir(tar_dir)
+    _wait_for_processes(
+        subprocess.Popen(
+            [
+                "skopeo",
+                "copy",
+                "--preserve-digests",
+                f"docker://{image}",
+                f"oci-archive:{fifo}",
+            ]
+        ),
+        subprocess.Popen(
+            ["tar", "--extract", f"--file={fifo}", f"--directory={tar_dir}"]
+        ),
+    )
+    tar_proc = subprocess.Popen(
+        [
+            "tar",
+            "--format=posix",
+            "--pax-option=exthdr.name=%d/PaxHeaders/%f,delete=atime,delete=ctime,delete=.*",
+            "--mtime=@0",
+            "--sort=name",
+            "--owner=0",
+            "--group=0",
+            "--numeric-owner",
+            "--create",
+            f"--directory={tar_dir}",
+            ".",
+        ],
+        stdout=subprocess.PIPE,
+    )
+    assert tar_proc.stdout is not None
+    return tar_proc, tmpdir
+
+
+def _wait_for_processes(
+    *processes: subprocess.Popen[bytes],
+    cleanup: Callable[[], None] | None = None,
+):
+    errors: list[subprocess.CalledProcessError] = []
+    for proc in processes:
+        if proc.wait() != 0:
+            errors.append(subprocess.CalledProcessError(proc.returncode, proc.args))
+
+    if cleanup is not None:
+        cleanup()
+
+    if errors:
+        raise ExceptionGroup("CalledProcessError", errors)
+
+
+def _save_image_to_file(image: str, path: str):
+    tar_proc, tmpdir = _save_image(image)
+    assert tar_proc.stdout is not None
+    with open(path, "wb") as f:
+        for line in tar_proc.stdout:
+            _ = f.write(line)
+            f.flush()
+
+    _wait_for_processes(tar_proc, cleanup=tmpdir.cleanup)
+
+
 def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
     digestA = image_digest(imageA)
     digestB = image_digest(imageB)
     with TemporaryDirectory() as tmpdir:
         old_oci_path = os.path.join(tmpdir, "old.oci")
-        podman("save", imageA, "-o", old_oci_path)
-
-        podman_proc = subprocess.Popen(
-            podman_cmd("save", imageB, "--quiet"),
-            stdout=subprocess.PIPE,
-        )
-        assert podman_proc.stdout is not None
+        _save_image_to_file(imageA, old_oci_path)
+        tar_proc, tardir = _save_image(imageB)
+        assert tar_proc.stdout is not None
         xdelta_proc = subprocess.Popen(
-            ["xdelta3", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
-            stdin=podman_proc.stdout,
+            ["xdelta3", "-v", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
+            stdin=tar_proc.stdout,
             stdout=subprocess.PIPE,
         )
-        podman_proc.stdout.close()
+        tar_proc.stdout.close()
         assert xdelta_proc.stdout is not None
         zstd_proc = subprocess.Popen(
             ["zstd", "-19", "-T0", "-o", os.path.join(tmpdir, "diff.xd3.zstd")],
@@ -388,10 +452,12 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
         )
         xdelta_proc.stdout.close()
         _ = zstd_proc.communicate()
-        for proc in [zstd_proc, xdelta_proc, podman_proc]:
-            if proc.wait() != 0:
-                raise subprocess.CalledProcessError(proc.returncode, proc.args)
-
+        _wait_for_processes(
+            zstd_proc,
+            xdelta_proc,
+            tar_proc,
+            cleanup=tardir.cleanup,
+        )
         containerfile = os.path.join(tmpdir, "Containerfile")
         with open(containerfile, "w") as f:
             _ = f.write(f"""\
@@ -410,3 +476,53 @@ LABEL atomic.patch.prev="{digestA}" \\
             f"--pull={'newer' if pull else 'never'}",
             tmpdir,
         )
+
+
+def apply_delta(image: str, delta_image: str):
+    if not image_exists(delta_image, False):
+        podman("pull", delta_image)
+
+    labels = image_labels(delta_image, False)
+    if labels.get("atomic.patch.format", "") != "xdelta3+zstd":
+        raise ValueError("Incompatible patch format")
+
+    digest = image_digest(image, True)
+    if labels.get("atomic.patch.prev", "") != digest:
+        raise ValueError("Patch does not apply to this image")
+
+    if not image_exists(image, False) or image_digest(image, False) != digest:
+        podman("pull", image)
+
+    with TemporaryDirectory() as tmpdir:
+        print("Saving old.oci")
+        old_oci_path = os.path.join(tmpdir, "old.oci")
+        _save_image_to_file(image, old_oci_path)
+        print("Patching old.oci")
+        podman_run_proc = subprocess.Popen(
+            podman_cmd(
+                "run",
+                "--rm",
+                *[
+                    f"--volume={x}:{x}:ro"
+                    for x in ["/usr", "/lib", "/lib64", "/bin", "/var"]
+                ],
+                delta_image,
+                *["zstdcat", "--decompress", "--keep", "/diff.xd3.zstd"],
+            ),
+            stdout=subprocess.PIPE,
+        )
+        assert podman_run_proc.stdout is not None
+        xdelta3_proc = subprocess.Popen(
+            ["xdelta3", "-d", "-s", old_oci_path, "-", "-"],
+            stdout=subprocess.PIPE,
+            stdin=podman_run_proc.stdout,
+        )
+        podman_run_proc.stdout.close()
+        assert xdelta3_proc.stdout is not None
+        podman_load_proc = subprocess.Popen(
+            podman_cmd("load"),
+            stdin=xdelta3_proc.stdout,
+        )
+        xdelta3_proc.stdout.close()
+        _ = podman_load_proc.communicate()
+        _wait_for_processes(podman_load_proc, xdelta3_proc, podman_run_proc)
