@@ -58,6 +58,7 @@ jobs:
           auth_file_path: /run/containers/0/auth.json
 
       - name: Free up space
+        if: ${{ inputs.recreate }}
         uses: ./.github/actions/cleanup
         with:
           root: /run/host
@@ -66,6 +67,7 @@ jobs:
         id: build
         shell: bash
         run: |
+          mkdir -p $TMPDIR
           args=""
           if [[ "${{ inputs.recreate }}" == "true" ]];then
             args="--force"
@@ -77,4 +79,4 @@ jobs:
           rm -rf .tmp/*
         env:
           updates: ${{ inputs.updates }}
-          TMPDIR: .tmp
+          TMPDIR: ${{ runner.workspace }}/.tmp
