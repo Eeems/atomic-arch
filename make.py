@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import argparse
-from itertools import pairwise
 import sys
 import shlex
 import shutil
@@ -175,11 +174,11 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
         and (target == "rootfs" or len(x[len(target) + 1 :]) > 10)
     ]
     target_tags.sort()
-    # TODO instead of using pairwise, get pairwise, but also a pair for 3 in either
-    # direction of a tag
     if not missing_only:
-        for a, b in pairwise(target_tags):
-            yield a, b
+        for i in range(len(target_tags)):
+            for offset in range(1, 4):
+                if i + offset < len(target_tags):
+                    yield target_tags[i], target_tags[i + offset]
 
         return
 
@@ -188,11 +187,16 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
         for x in tags
         if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
     ]
-    for a, b in pairwise(target_tags):
-        digestA = hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{a}", True))
-        digestB = hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{b}", True))
-        if f"_diff-{digestA}-{digestB}" not in diff_tags:
-            yield a, b
+    digest_cache = {
+        tag: hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{tag}", True))
+        for tag in target_tags
+    }
+    for i in range(len(target_tags)):
+        for offset in range(1, 4):
+            if i + offset < len(target_tags):
+                a, b = target_tags[i], target_tags[i + offset]
+                if f"_diff-{digest_cache[a]}-{digest_cache[b]}" not in diff_tags:
+                    yield a, b
 
 
 def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
@@ -496,8 +500,9 @@ def do_checkupdates(args: argparse.Namespace):
         sys.exit(2)
 
 
-def do_check(_: argparse.Namespace):
+def do_check(args: argparse.Namespace):
     failed = False
+    fix = cast(bool, args.fix)
     if shutil.which("niri") is not None:
         print("[check] Checking niri config", file=sys.stderr)
         cmd = shlex.join(
@@ -542,7 +547,7 @@ def do_check(_: argparse.Namespace):
             ";".join(
                 [
                     "source .venv/bin/activate",
-                    "ruff check .",
+                    f"ruff check {'--fix' if fix else ''} .",
                 ]
             ),
         ]
@@ -629,18 +634,10 @@ def do_delta(args: argparse.Namespace):
 
 
 def do_test(_: argparse.Namespace):
-    apply_delta = cast(Callable[[str, str], None], _os.podman.apply_delta)  # pyright: ignore[reportUnknownMemberType]
+    image_size = cast(Callable[[str], int], _os.podman.image_size)  # pyright: ignore[reportUnknownMemberType]
+    bytes_to_iec = cast(Callable[[int], str], _os.console.bytes_to_iec)  # pyright: ignore[reportUnknownMemberType]
 
-    # image = f"{REGISTRY}/{IMAGE}@sha256:636cb6ec620620a45712e070e77dfcc9dd534bddd5ba1c4a1f4a0d1c0ae144fa"
-    # patch = f"{REGISTRY}/{IMAGE}:_diff-nzKDYVsNUXQQzt5oMnO5MgBZWpd8ekfm86BqIdrEyQa-oFjTIVpTsCJqu5QqIoyLX2JsEezUvs85vI4uGYtAImO"
-    # apply_delta(image, patch)
-
-    imageA = f"{REGISTRY}/{IMAGE}:rootfs"
-    imageB = f"{REGISTRY}/{IMAGE}:base"
-    imageD = "test-patch"
-    create_delta(imageA, imageB, imageD, False)
-    # podman("rmi", imageB)
-    apply_delta(imageA, imageD)
+    print(bytes_to_iec(image_size(f"{REGISTRY}/{IMAGE}:base")))
 
 
 if __name__ == "__main__":
@@ -693,6 +690,7 @@ if __name__ == "__main__":
     subparser.set_defaults(func=do_checkupdates)
 
     subparser = subparsers.add_parser("check")
+    _ = subparser.add_argument("--fix", action="store_true")
     subparser.set_defaults(func=do_check)
 
     subparser = subparsers.add_parser("inspect")

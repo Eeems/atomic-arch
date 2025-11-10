@@ -237,6 +237,21 @@ def image_digest(image: str, remote: bool = True) -> str:
     )
 
 
+def image_size(image: str) -> int:
+    manifest: dict[str, list[dict[str, int]]] = json.loads(  # pyright: ignore[reportAny]
+        subprocess.check_output(
+            [
+                "skopeo",
+                "inspect",
+                f"docker://{image}",
+                "--raw",
+            ]
+        )
+    )
+    layers = manifest.get("layers", [])
+    return 0 if not layers else sum(layer.get("size", 0) for layer in layers)
+
+
 CONTAINER_POST_STEPS = r"""
 RUN fc-cache -f
 
