@@ -53,6 +53,7 @@ image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 create_delta = cast(Callable[[str, str, str, bool], None], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
 hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:ignore [reportUnknownMemberType]
+pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 REGISTRY = cast(str, _os.REGISTRY)
 
@@ -146,10 +147,6 @@ def push(target: str):
         podman("untag", *tags)
 
 
-def pull(target: str):
-    podman("pull", f"{REGISTRY}/{IMAGE}:{target}")
-
-
 def base62_to_hex(base62_str: str) -> str:
     assert base62_str, "Invalid base62 string"
     alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -199,15 +196,15 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
                     yield a, b
 
 
-def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
+def delta(a: str, b: str, allow_pull: bool, push: bool, clean: bool):
     imageA = f"{REGISTRY}/{IMAGE}:{a}"
     imageB = f"{REGISTRY}/{IMAGE}:{b}"
-    if pull:
+    if allow_pull:
         ci_log(f"::group::pull {imageA}")
-        podman("pull", imageA)
+        pull(imageA)
         ci_log("::endgroup::")
         ci_log(f"::group::pull {imageB}")
-        podman("pull", imageB)
+        pull(imageB)
         ci_log("::endgroup::")
 
     digestA = hex_to_base62(image_digest(imageA, False))
@@ -215,7 +212,7 @@ def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
     assert digestA != digestB, "There is nothing to diff"
     imageD = f"{REGISTRY}/{IMAGE}:_diff-{digestA}-{digestB}"
     ci_log(f"::group::delta {a} and {b}")
-    create_delta(imageA, imageB, imageD, pull)
+    create_delta(imageA, imageB, imageD, allow_pull)
     ci_log("::endgroup::")
     if push:
         ci_log("::group::push")
@@ -343,7 +340,7 @@ def do_pull(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        pull(target)
+        pull(f"{REGISTRY}/{IMAGE}:{target}")
 
 
 def do_os(args: argparse.Namespace):

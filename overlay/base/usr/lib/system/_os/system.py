@@ -157,8 +157,6 @@ def checkupdates(image: str | None = None) -> list[str]:
     from .podman import system_hash
     from .podman import context_hash
     from .podman import image_labels
-    from .podman import image_info
-    from .podman import image_exists
 
     if image is None:
         image = baseImage()
@@ -170,39 +168,36 @@ def checkupdates(image: str | None = None) -> list[str]:
         updates.append(f"Systemfile {current_hash[:9]} -> {new_hash[:9]}")
 
     mirrorlist: list[str] | None = None
-    if image_exists(image, remote=False) and image_info(image, remote=False).get(
-        "Digest", []
-    ):
-        with open("/usr/lib/os-release", "r") as f:
-            local_info = {
-                x[0]: x[1]
-                for x in [
-                    x.strip().split("=", 1)
-                    for x in f.readlines()
-                    if x.startswith("VERSION_ID=") or x.startswith("VERSION=")
-                ]
-            }
+    remote_labels = image_labels(image, remote=True)
+    with open("/usr/lib/os-release", "r") as f:
+        local_info = {
+            x[0]: x[1]
+            for x in [
+                x.strip().split("=", 1)
+                for x in f.readlines()
+                if x.startswith("VERSION_ID=") or x.startswith("VERSION=")
+            ]
+        }
 
-        local_id = local_info.get("VERSION_ID", "0")
-        remote_labels = image_labels(image, remote=True)
-        remote_id = remote_labels.get("os-release.VERSION_ID", "0")
-        if local_id != remote_id:
-            remote_version = remote_labels.get("os-release.VERSION", "0")
-            local_version = local_info.get("VERSION", "0")
-            updates.append(
-                f"{image} {local_version}.{local_id} -> {remote_version}.{remote_id}"
-            )
+    local_id = local_info.get("VERSION_ID", "0")
+    remote_id = remote_labels.get("os-release.VERSION_ID", "0")
+    if local_id != remote_id:
+        remote_version = remote_labels.get("os-release.VERSION", "0")
+        local_version = local_info.get("VERSION", "0")
+        updates.append(
+            f"{image} {local_version}.{local_id} -> {remote_version}.{remote_id}"
+        )
 
-        try:
-            data = json.loads(remote_labels.get("mirrorlist", "[]"))  # pyright: ignore[reportAny]
-            assert isinstance(data, list)
-            for x in data:  # pyright: ignore[reportUnknownVariableType]
-                assert isinstance(x, str)
+    try:
+        data = json.loads(remote_labels.get("mirrorlist", "[]"))  # pyright: ignore[reportAny]
+        assert isinstance(data, list)
+        for x in data:  # pyright: ignore[reportUnknownVariableType]
+            assert isinstance(x, str)
 
-            mirrorlist = cast(list[str], data)
+        mirrorlist = cast(list[str], data)
 
-        except json.JSONDecodeError:
-            pass
+    except json.JSONDecodeError:
+        pass
 
     if mirrorlist is None or not mirrorlist:
         with open("/etc/pacman.d/mirrorlist") as f:

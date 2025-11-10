@@ -24,7 +24,7 @@ from .system import execute
 from .system import _execute  # pyright:ignore [reportPrivateUsage]
 from .ostree import ostree
 
-from .console import bytes_to_stdout
+from .console import bytes_to_iec, bytes_to_stdout
 from .console import bytes_to_stderr
 
 
@@ -249,6 +249,7 @@ def image_size(image: str) -> int:
         )
     )
     layers = manifest.get("layers", [])
+    # TODO when multiarch images are added, update this to handle that
     return 0 if not layers else sum(layer.get("size", 0) for layer in layers)
 
 
@@ -308,6 +309,7 @@ def build(
         "--no-hostname",
         "--dns=none",
         "--tag=system:latest",
+        "--pull=never",
         *[f"--build-arg={x}" for x in _buildArgs],
         f"--volume={cache}:{cache}",
         f"--file={containerfile}",
@@ -518,9 +520,14 @@ LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k
         )
 
 
-def apply_delta(image: str, delta_image: str):
+def apply_delta(
+    image: str,
+    delta_image: str,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
+):
     if not image_exists(delta_image, False):
-        podman("pull", delta_image)
+        podman("pull", delta_image, onstdout=onstdout, onstderr=onstderr)
 
     labels = image_labels(delta_image, False)
     if labels.get("atomic.patch.format", "") != "xdelta3+zstd":
@@ -531,13 +538,13 @@ def apply_delta(image: str, delta_image: str):
         raise ValueError("Patch does not apply to this image")
 
     if not image_exists(image, False) or image_digest(image, False) != digest:
-        podman("pull", image)
+        podman("pull", image, onstdout=onstdout, onstderr=onstderr)
 
     with TemporaryDirectory() as tmpdir:
-        print("Saving old.oci")
+        onstderr(b"Saving old.oci\n")
         old_oci_path = os.path.join(tmpdir, "old.oci")
         _save_image_to_file(image, old_oci_path)
-        print("Patching old.oci")
+        onstderr(b"Patching old.oci\n")
         podman_run_proc = subprocess.Popen(
             podman_cmd(
                 "run",
@@ -568,9 +575,76 @@ def apply_delta(image: str, delta_image: str):
         _wait_for_processes(podman_load_proc, xdelta3_proc, podman_run_proc)
 
 
-def pull(image: str):  # pyright: ignore[reportUnusedParameter]
-    # TODO If we have a copy of the image locally,
-    # check to see if there is a _diff- tag that matches the digest for the
-    # Image to be pulled using image_digest, image_tags, and hex_to_base62
-    # If so, pull that instead, and then use apply_delta to apply it
-    pass
+def pull(
+    image: str,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
+):
+    remote_digest = image_digest(image, remote=True)
+    image_exists_locally = image_exists(image, remote=False)
+    candidates: list[tuple[str, str]] = []
+    if image_exists_locally:
+        local_digest = image_digest(image, remote=False)
+        if local_digest == remote_digest:
+            onstderr(f"Image {image} is already up to date\n".encode("utf-8"))
+            return
+
+        candidates.append((image, local_digest))
+
+    base_image, target_tag = image.rsplit(":", 1) if ":" in image else (image, "base")
+    tags = image_tags(base_image)
+    tags.sort()
+    tag_base = target_tag.split("_")[0] if "_" in target_tag else target_tag
+    version_tags = [
+        tag for tag in tags if tag.startswith(f"{tag_base}_") and "_" in tag
+    ]
+    for version_tag in version_tags:
+        local_image = f"{base_image}:{version_tag}"
+        if image_exists(local_image, remote=False):
+            local_digest = image_digest(local_image, remote=False)
+            candidates.append((local_image, local_digest))
+            onstderr(f"Found local version: {local_image}\n".encode("utf-8"))
+
+    for local_image, local_digest in candidates:
+        delta_tag = (
+            f"_diff-{hex_to_base62(local_digest)}-{hex_to_base62(remote_digest)}"
+        )
+        delta_image = f"{base_image}:{delta_tag}"
+        onstderr(f"Looking for potential delta {delta_tag}\n".encode("utf-8"))
+        if not image_exists(delta_image, remote=True):
+            onstderr(b"Not found\n")
+            continue
+
+        delta_labels = image_labels(delta_image, remote=True)
+        if delta_labels.get("atomic.patch.prev") != local_digest:
+            onstderr(b"Wrong digest\n")
+            continue
+
+        delta_size = image_size(delta_image)
+        target_size = image_size(image)
+        if delta_size >= target_size:
+            onstderr(b"Larger than full image\n")
+            continue
+
+        target_size_fmt = bytes_to_iec(target_size)
+        savings_pct = ((target_size - delta_size) / target_size) * 100
+        onstderr(
+            f"Saving {savings_pct:.1f} of {target_size_fmt} using delta optimization...\n".encode(
+                "utf-8"
+            )
+        )
+        try:
+            apply_delta(local_image, delta_image, onstdout=onstdout, onstderr=onstderr)
+            podman("tag", remote_digest, image, onstdout=onstdout, onstderr=onstderr)
+            return
+
+        except Exception as e:
+            onstderr(f"Delta optimization failed: {e}\n".encode("utf-8"))
+            continue
+
+        finally:
+            if image_exists(delta_image, remote=False):
+                podman("rmi", delta_image, onstdout=onstdout, onstderr=onstderr)
+
+    onstderr(b"Falling back to full pull...\n")
+    podman("pull", image, onstdout=onstdout, onstderr=onstderr)
