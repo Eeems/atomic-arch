@@ -162,7 +162,9 @@ def base62_to_hex(base62_str: str) -> str:
     return hex_str
 
 
-def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, str, str]]:
+def get_deltas(
+    target: str, missing_only: bool = False
+) -> Iterable[tuple[str, str, str]]:
     tags = image_tags(f"{REGISTRY}/{IMAGE}")
     target_tags = [
         x
@@ -175,11 +177,15 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
         tag: hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{tag}", True))
         for tag in target_tags
     }
-    diff_tags = [
-        x
-        for x in tags
-        if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
-    ] if missing_only else []
+    diff_tags = (
+        [
+            x
+            for x in tags
+            if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
+        ]
+        if missing_only
+        else []
+    )
     for i in range(len(target_tags)):
         for offset in range(1, 4):
             if i + offset < len(target_tags):
@@ -192,7 +198,9 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
                     yield a, b, t
 
 
-def delta(a: str, b: str, allow_pull: bool, push: bool, clean: bool, imageD:str|None=None):
+def delta(
+    a: str, b: str, allow_pull: bool, push: bool, clean: bool, imageD: str | None = None
+):
     imageA = f"{REGISTRY}/{IMAGE}:{a}"
     imageB = f"{REGISTRY}/{IMAGE}:{b}"
     if allow_pull:
@@ -217,13 +225,15 @@ def delta(a: str, b: str, allow_pull: bool, push: bool, clean: bool, imageD:str|
         podman("push", imageD)
         ci_log("::endgroup::")
 
-    if clean:
-        ci_log("::group::clean")
-        podman("rmi", imageA, imageB)
-        if push:
-            podman("rmi", imageD)
+    if not clean:
+        return
 
-        ci_log("::endgroup::")
+    ci_log("::group::clean")
+    podman("rmi", imageA, imageB)
+    if push:
+        podman("rmi", imageD)
+
+    ci_log("::endgroup::")
 
 
 def do_build(args: argparse.Namespace):
@@ -622,12 +632,13 @@ def do_delta(args: argparse.Namespace):
         for a, b, t in get_deltas(target, missing_only=missing_only):
             delta(a, b, pull, push, clean, imageD=t)
 
+
 def do_get_deltas(args: argparse.Namespace):
     missing_only = cast(bool, args.missing)
     output_json = cast(bool, args.json)
     targets = cast(list[str], args.target)
     tags = [
-        {'a': a, 'b': b, 'tag': tag}
+        {"a": a, "b": b, "tag": tag}
         for target in targets
         for a, b, tag in get_deltas(target, missing_only=missing_only)
     ]
@@ -636,7 +647,8 @@ def do_get_deltas(args: argparse.Namespace):
         return
 
     for item in tags:
-        print(item['tag'])
+        print(item["tag"])
+
 
 def do_test(_: argparse.Namespace):
     image_size = cast(Callable[[str], int], _os.podman.image_size)  # pyright: ignore[reportUnknownMemberType]
