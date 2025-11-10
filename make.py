@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import argparse
-from itertools import pairwise
 import sys
 import shlex
 import shutil
@@ -54,6 +53,7 @@ image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 create_delta = cast(Callable[[str, str, str, bool], None], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
 hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:ignore [reportUnknownMemberType]
+pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 REGISTRY = cast(str, _os.REGISTRY)
 
@@ -147,10 +147,6 @@ def push(target: str):
         podman("untag", *tags)
 
 
-def pull(target: str):
-    podman("pull", f"{REGISTRY}/{IMAGE}:{target}")
-
-
 def base62_to_hex(base62_str: str) -> str:
     assert base62_str, "Invalid base62 string"
     alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -176,8 +172,10 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
     ]
     target_tags.sort()
     if not missing_only:
-        for a, b in pairwise(target_tags):
-            yield a, b
+        for i in range(len(target_tags)):
+            for offset in range(1, 4):
+                if i + offset < len(target_tags):
+                    yield target_tags[i], target_tags[i + offset]
 
         return
 
@@ -186,22 +184,27 @@ def get_deltas(target: str, missing_only: bool = False) -> Iterable[tuple[str, s
         for x in tags
         if x.startswith("_diff-") and len(x) == (43 * 2) + 1 + 6 and x[49] == "-"
     ]
-    for a, b in pairwise(target_tags):
-        digestA = hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{a}", True))
-        digestB = hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{b}", True))
-        if f"_diff-{digestA}-{digestB}" not in diff_tags:
-            yield a, b
+    digest_cache = {
+        tag: hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{tag}", True))
+        for tag in target_tags
+    }
+    for i in range(len(target_tags)):
+        for offset in range(1, 4):
+            if i + offset < len(target_tags):
+                a, b = target_tags[i], target_tags[i + offset]
+                if f"_diff-{digest_cache[a]}-{digest_cache[b]}" not in diff_tags:
+                    yield a, b
 
 
-def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
+def delta(a: str, b: str, allow_pull: bool, push: bool, clean: bool):
     imageA = f"{REGISTRY}/{IMAGE}:{a}"
     imageB = f"{REGISTRY}/{IMAGE}:{b}"
-    if pull:
+    if allow_pull:
         ci_log(f"::group::pull {imageA}")
-        podman("pull", imageA)
+        pull(imageA)
         ci_log("::endgroup::")
         ci_log(f"::group::pull {imageB}")
-        podman("pull", imageB)
+        pull(imageB)
         ci_log("::endgroup::")
 
     digestA = hex_to_base62(image_digest(imageA, False))
@@ -209,7 +212,7 @@ def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
     assert digestA != digestB, "There is nothing to diff"
     imageD = f"{REGISTRY}/{IMAGE}:_diff-{digestA}-{digestB}"
     ci_log(f"::group::delta {a} and {b}")
-    create_delta(imageA, imageB, imageD, pull)
+    create_delta(imageA, imageB, imageD, allow_pull)
     ci_log("::endgroup::")
     if push:
         ci_log("::group::push")
@@ -223,7 +226,10 @@ def delta(a: str, b: str, pull: bool, push: bool, clean: bool):
 
     if clean:
         ci_log("::group::clean")
-        podman("rmi", imageA, imageB, imageD)
+        podman("rmi", imageA, imageB)
+        if push:
+            podman("rmi", imageD)
+
         ci_log("::endgroup::")
 
 
@@ -334,7 +340,7 @@ def do_pull(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        pull(target)
+        pull(f"{REGISTRY}/{IMAGE}:{target}")
 
 
 def do_os(args: argparse.Namespace):
@@ -491,8 +497,9 @@ def do_checkupdates(args: argparse.Namespace):
         sys.exit(2)
 
 
-def do_check(_: argparse.Namespace):
+def do_check(args: argparse.Namespace):
     failed = False
+    fix = cast(bool, args.fix)
     if shutil.which("niri") is not None:
         print("[check] Checking niri config", file=sys.stderr)
         cmd = shlex.join(
@@ -537,7 +544,7 @@ def do_check(_: argparse.Namespace):
             ";".join(
                 [
                     "source .venv/bin/activate",
-                    "ruff check .",
+                    f"ruff check {'--fix' if fix else ''} .",
                 ]
             ),
         ]
@@ -624,18 +631,10 @@ def do_delta(args: argparse.Namespace):
 
 
 def do_test(_: argparse.Namespace):
-    apply_delta = cast(Callable[[str, str], None], _os.podman.apply_delta)  # pyright: ignore[reportUnknownMemberType]
+    image_size = cast(Callable[[str], int], _os.podman.image_size)  # pyright: ignore[reportUnknownMemberType]
+    bytes_to_iec = cast(Callable[[int], str], _os.console.bytes_to_iec)  # pyright: ignore[reportUnknownMemberType]
 
-    # image = f"{REGISTRY}/{IMAGE}@sha256:636cb6ec620620a45712e070e77dfcc9dd534bddd5ba1c4a1f4a0d1c0ae144fa"
-    # patch = f"{REGISTRY}/{IMAGE}:_diff-nzKDYVsNUXQQzt5oMnO5MgBZWpd8ekfm86BqIdrEyQa-oFjTIVpTsCJqu5QqIoyLX2JsEezUvs85vI4uGYtAImO"
-    # apply_delta(image, patch)
-
-    imageA = f"{REGISTRY}/{IMAGE}:rootfs"
-    imageB = f"{REGISTRY}/{IMAGE}:base"
-    imageD = "test-patch"
-    create_delta(imageA, imageB, imageD, False)
-    # podman("rmi", imageB)
-    apply_delta(imageA, imageD)
+    print(bytes_to_iec(image_size(f"{REGISTRY}/{IMAGE}:base")))
 
 
 if __name__ == "__main__":
@@ -688,6 +687,7 @@ if __name__ == "__main__":
     subparser.set_defaults(func=do_checkupdates)
 
     subparser = subparsers.add_parser("check")
+    _ = subparser.add_argument("--fix", action="store_true")
     subparser.set_defaults(func=do_check)
 
     subparser = subparsers.add_parser("inspect")

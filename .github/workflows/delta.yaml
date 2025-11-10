@@ -79,4 +79,4 @@ jobs:
           rm -rf .tmp/*
         env:
           updates: ${{ inputs.updates }}
-          TMPDIR: ${{ runner.workspace }}/.tmp
+          TMPDIR: ${{ github.workspace }}/.tmp

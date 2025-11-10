@@ -7,7 +7,7 @@ import threading
 from typing import Callable
 from typing import cast
 
-from ..podman import podman
+from ..podman import pull
 from ..system import baseImage
 from ..system import checkupdates
 from ..system import upgrade
@@ -259,8 +259,7 @@ class Object(dbus.service.Object):
         self.notify_all("Pulling base image", "pull")
         try:
             image = baseImage()
-            podman(
-                "pull",
+            pull(
                 image,
                 onstdout=self.pull_stdout,
                 onstderr=self.pull_stderr,

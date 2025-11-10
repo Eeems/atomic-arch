@@ -17,6 +17,10 @@ on:
         type: boolean
         required: false
         default: false
+      push:
+        type: boolean
+        required: false
+        default: false
     outputs:
       updates:
         value: ${{ jobs.run.outputs.updates }}
@@ -80,6 +84,12 @@ jobs:
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
           echo "::group::checkupdates"
+          push=false
+          args=""
+          if [[ "${{ inputs.push }}" == "true" ]];then
+            push=true
+            args="--push"
+          fi
           if [[ "$VARIANT" == "rootfs" ]];then
             set +e
             output=$(./make.py checkupdates)
@@ -90,9 +100,9 @@ jobs:
               echo "::endgroup::"
               echo "::group::build"
               if [[ "$output" == *"mirrorlist "* ]]; then
-                ./make.py rootfs --push
+                ./make.py rootfs $args
               else
-                ./make.py build --push rootfs
+                ./make.py build $args rootfs
               fi
               echo "updates=true" >> $GITHUB_OUTPUT
               echo "::endgroup::"
@@ -119,12 +129,12 @@ jobs:
             if [ $res -eq 2 ];then
               echo "::endgroup::"
               echo "::group::build"
-              ./make.py build --push ${{ inputs.variant }}
+              ./make.py build $args ${{ inputs.variant }}
               echo "updates=true" >> $GITHUB_OUTPUT
               echo "::endgroup::"
             elif [ $res -ne 0 ];then
               exit 1
-            else
+            elif $push;then
               echo "No Updates"
               echo "::endgroup::"
               echo "::group::push"
@@ -140,7 +150,7 @@ jobs:
           VARIANT: ${{ inputs.variant }}
 
       - name: Auto commit any updates
-        if: ${{ inputs.variant == 'rootfs' }}
+        if: inputs.push && inputs.variant == 'rootfs'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: |
@@ -148,7 +158,7 @@ jobs:
             skip-checks:true
 
       - name: Trigger ISO and delta builds
-        if: ${{ steps.build.outputs.updates }}
+        if: inputs.push && steps.build.outputs.updates
         run: |
           if [[ "$VARIANT" != "rootfs" ]];then
             gh workflow run iso.yaml \
@@ -181,6 +191,7 @@ jobs:
           kill $(jobs -p) || true
 
       - name: Upload Scan results to GitHub Security tab
+        if: inputs.push
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "report.sarif"
