@@ -85,8 +85,10 @@ jobs:
           podman system service --time 0 unix:///run/podman/podman.sock &
           echo "::group::checkupdates"
           push=false
+          args=""
           if [[ "${{ inputs.push }}" == "true" ]];then
             push=true
+            args="--push"
           fi
           if [[ "$VARIANT" == "rootfs" ]];then
             set +e
@@ -97,10 +99,6 @@ jobs:
             if [ $res -eq 2 ];then
               echo "::endgroup::"
               echo "::group::build"
-              args=""
-              if $push; then
-                args="--push"
-              fi
               if [[ "$output" == *"mirrorlist "* ]]; then
                 ./make.py rootfs $args
               else
@@ -131,7 +129,7 @@ jobs:
             if [ $res -eq 2 ];then
               echo "::endgroup::"
               echo "::group::build"
-              ./make.py build --push ${{ inputs.variant }}
+              ./make.py build $args ${{ inputs.variant }}
               echo "updates=true" >> $GITHUB_OUTPUT
               echo "::endgroup::"
             elif [ $res -ne 0 ];then

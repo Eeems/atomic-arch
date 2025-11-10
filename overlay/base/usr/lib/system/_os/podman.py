@@ -476,16 +476,19 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
             "version",
             "revision",
         ]:
-            label = f"org.opencontainers.image.{label}"
-            if label in src_labels:
-                labels[label] = src_labels[label]
+            full_label = f"org.opencontainers.image.{label}"
+            if full_label in src_labels:
+                labels[label] = src_labels[full_label]
+
+        def escape_label(value: str) -> str:
+            return value.replace("\\", "\\\\").replace('"', '\\"')
 
         containerfile = os.path.join(tmpdir, "Containerfile")
         with open(containerfile, "w") as f:
             _ = f.write(f"""\
 FROM scratch
 COPY diff.xd3.zstd /diff.xd3.zstd
-LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{v}" \\' for k, v in labels.items()])}
+LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k, v in labels.items()])}
   atomic.patch.prev="{digestA}" \\
   atomic.patch.ref="{digestB}" \\
   atomic.patch.format="xdelta3+zstd" \\
