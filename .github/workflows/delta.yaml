@@ -133,9 +133,7 @@ jobs:
 
       - uses: ./.github/actions/manifest-cache-update
 
-      - name: Trigger manifest rebuild
-        run: |
-          gh workflow run manifest.yaml \
-            --ref ${{ github.ref }}
-        env:
-          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+      - uses: ./.github/actions/run-workflow
+        with:
+          workflow: manifest.yaml
+          token: ${{ secrets.DISPATCH_PAT }}

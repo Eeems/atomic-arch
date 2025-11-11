@@ -1,0 +1,24 @@
+name: Run a workflow
+description: Run a workflow
+inputs:
+  workflow:
+    description: Workflow to trigger
+    required: true
+  token:
+    description: Github token to use to trigger the workflow
+    required: true
+  arguments:
+    description: Extra argument to pass to gh
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Trigger ${{ inputs.workflow }}
+      shell: bash
+      run: |
+        git config --global --add safe.directory "$(realpath .)"
+        gh workflow run ${{ inputs.workflow }} \
+          --ref ${{ github.ref }} \
+          ${{ inputs.arguments }}
+      env:
+        GH_TOKEN: ${{ inputs.token }}

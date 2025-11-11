@@ -154,22 +154,18 @@ jobs:
             Automated rootfs update
             skip-checks:true
 
-      - name: Trigger ISO and delta builds
-        if: inputs.push && steps.build.outputs.updates
-        run: |
-          git config --global --add safe.directory "$(realpath .)"
-          if [[ "$VARIANT" != "rootfs" ]];then
-            gh workflow run iso.yaml \
-              --ref ${{ github.ref }} \
-              -f variant=${{ inputs.variant }}
-          fi
+      - uses: ./.github/actions/run-workflow
+        if: inputs.variant != 'rootfs'
+        with:
+          workflow: iso.yaml
+          token: ${{ secrets.DISPATCH_PAT }}
+          arguments: -f variant=${{ inputs.variant }}
 
-          gh workflow run delta.yaml \
-            --ref ${{ github.ref }} \
-            -f variant=${{ inputs.variant }}
-        env:
-          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
-          VARIANT: ${{ inputs.variant }}
+      - uses: ./.github/actions/run-workflow
+        with:
+          workflow: delta.yaml
+          token: ${{ secrets.DISPATCH_PAT }}
+          arguments: -f variant=${{ inputs.variant }}
 
       - name: Trivy cache
         uses: actions/cache@v4
