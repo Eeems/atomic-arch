@@ -19,20 +19,14 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.pat }}
       run: |
-        # Ensure jq and xargs are available
         command -v jq >/dev/null 2>&1 || { echo "jq is required but not installed"; exit 1; }
         command -v xargs >/dev/null 2>&1 || { echo "xargs is required but not installed"; exit 1; }
 
-        # Get workflow ID of the current workflow
         WORKFLOW_ID=$(gh api "repos/${{ github.repository }}/actions/workflows" --jq '.workflows[] | select(.name == "${{ github.workflow }}") | .id')
-
-        # Check for recently cancelled runs of this workflow on the same branch
         CANCELLED_RUNS=$(gh api "repos/${{ github.repository }}/actions/runs?status=cancelled&workflow_id=$WORKFLOW_ID&per_page=5" --jq '.workflow_runs[] | select(.created_at | fromdateiso8601 > (now - 300))')
 
         if [ -n "$CANCELLED_RUNS" ]; then
           echo "Found recently cancelled runs for workflow ${{ github.workflow }} on branch ${{ github.ref_name }}. Polling for notifications..."
-
-          # Poll for notifications
           TIMEOUT=${{ inputs.timeout }}
           INTERVAL=${{ inputs.interval }}
           ELAPSED=0

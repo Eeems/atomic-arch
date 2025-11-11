@@ -28,7 +28,7 @@ runs:
         else
           SHA=$(git rev-parse HEAD)
           DEFAULT=$(gh api -q '.default_branch' repos/${{ github.repository }})
-          if git merge-base -a "$SHA" "origin/$DEFAULT" >/dev/null 2>&1; then
+          if git merge-base --is-ancestor "$SHA" "origin/$DEFAULT"; then
             REF="$SHA"
           else
             echo "No valid ref found!"
