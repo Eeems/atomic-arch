@@ -13,13 +13,39 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Trigger ${{ inputs.workflow }}
+    - name: Get valid ref
       shell: bash
+      id: get_ref
       run: |
         set -euo pipefail
         git config --global --add safe.directory "$(realpath .)"
+        REF=""
+
+        if [[ -n "${GITHUB_HEAD_REF:-}" ]]; then
+          REF="$GITHUB_HEAD_REF"
+        elif BRANCH=$(git symbolic-ref -q --short HEAD); then
+          REF="$BRANCH"
+        else
+          SHA=$(git rev-parse HEAD)
+          DEFAULT=$(gh api -q '.default_branch' repos/${{ github.repository }})
+          if git merge-base -a "$SHA" "origin/$DEFAULT" >/dev/null 2>&1; then
+            REF="$SHA"
+          else
+            echo "No valid ref found!"
+            exit 1
+          fi
+        fi
+
+        echo "Using ref: $REF"
+        echo "ref=$REF" >> "$GITHUB_OUTPUT"
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+
+    - name: Trigger ${{ inputs.workflow }}
+      shell: bash
+      run: |
         gh workflow run ${{ inputs.workflow }} \
-          --ref "$(git rev-parse HEAD)" \
+          --ref "${{ steps.get_ref.outputs.ref }}" \
           ${{ inputs.arguments }}
       env:
         GH_TOKEN: ${{ inputs.token }}
