@@ -19,6 +19,7 @@ from contextlib import contextmanager
 
 from . import SYSTEM_PATH
 from . import REGISTRY
+from . import REPO
 
 from .system import execute
 from .system import _execute  # pyright:ignore [reportPrivateUsage]
@@ -192,20 +193,26 @@ def image_exists(image: str, remote: bool = True) -> bool:
     if image_exists or not remote:
         return image_exists
 
-    image, tag = image.rsplit(":", 1)
-    return tag in image_tags(image)
+    registry, image, tag, ref = image_name_parts(image)
+    if ref is not None:
+        raise NotImplementedError()
+
+    tags = image_tags(f"{registry}/{image}")
+    if not tag:
+        return bool(tags)
+
+    return tag in tags
 
 
 def image_tags(image: str) -> list[str]:
-    if ":" in image:
-        image, _ = image.rsplit(":", 1)
-
+    registry, image, _, _ = image_name_parts(image)
+    registry = registry or REGISTRY
     data: dict[str, str | list[str]] = json.loads(  # pyright:ignore [reportAny]
         subprocess.check_output(
             [
                 "skopeo",
                 "list-tags",
-                f"docker://{REGISTRY}/{image}",
+                f"docker://{registry}/{image}",
             ]
         )
     )
@@ -215,25 +222,69 @@ def image_tags(image: str) -> list[str]:
     return tags
 
 
+def image_name_parts(name: str) -> tuple[str | None, str, str | None, str | None]:
+    registry = None
+    tag = None
+    ref = None
+    if "/" in name:
+        registry, name = name.split("/", 1)
+
+    if "@" in name:
+        name, ref = name.split("@", 1)
+        assert ref.startswith("sha256:")
+
+    elif ":" in name:
+        name, tag = name.split(":", 1)
+
+    return registry, name, tag, ref
+
+
+def _image_digest_remote(image: str) -> str:
+    return (
+        subprocess.check_output(
+            [
+                "skopeo",
+                "inspect",
+                f"docker://{image}",
+                "--format={{.Digest}}",
+            ]
+        )
+        .strip()
+        .decode("utf-8")
+    )
+
+
+def _latest_manifest() -> bool:
+    return (
+        subprocess.run(
+            podman_cmd("pull", f"{REPO}:_manifest"),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+
 def image_digest(image: str, remote: bool = True) -> str:
-    if remote:
+    if not remote:
         return (
             subprocess.check_output(
-                [
-                    "skopeo",
-                    "inspect",
-                    f"docker://{image}",
-                    "--format={{.Digest}}",
-                ]
+                ["podman", "inspect", image, "--format={{.Digest}}"]
             )
             .strip()
             .decode("utf-8")
         )
 
-    return (
-        subprocess.check_output(["podman", "inspect", image, "--format={{.Digest}}"])
-        .strip()
-        .decode("utf-8")
+    registry, _, tag, _ = image_name_parts(image)
+    if not registry or not tag or registry != REGISTRY:
+        return _image_digest_remote(image)
+
+    if _latest_manifest():
+        return _image_digest_remote(image)
+
+    return image_labels(f"{REPO}:_manifest", False).get(
+        f"atomic.manifest.tag.{tag}",
+        _image_digest_remote(image),
     )
 
 
@@ -447,6 +498,10 @@ def _save_image_to_file(image: str, path: str):
     _wait_for_processes(tar_proc, cleanup=tmpdir.cleanup)
 
 
+def escape_label(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\\n")
+
+
 def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
     digestA = image_digest(imageA)
     digestB = image_digest(imageB)
@@ -497,9 +552,6 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
             if full_label in src_labels:
                 labels[label] = src_labels[full_label]
 
-        def escape_label(value: str) -> str:
-            return value.replace("\\", "\\\\").replace('"', '\\"')
-
         containerfile = os.path.join(tmpdir, "Containerfile")
         with open(containerfile, "w") as f:
             _ = f.write(f"""\
@@ -508,7 +560,7 @@ COPY diff.xd3.zstd /diff.xd3.zstd
 LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k, v in labels.items()])}
   atomic.patch.prev="{digestA}" \\
   atomic.patch.ref="{digestB}" \\
-  atomic.patch.format="xdelta3+zstd" \\
+  atomic.patch.format="xdelta3+zstd"
 """)
         podman(
             "build",
@@ -591,7 +643,13 @@ def pull(
 
         candidates.append((image, local_digest))
 
-    base_image, target_tag = image.rsplit(":", 1) if ":" in image else (image, "base")
+    registry, image, target_tag, ref = image_name_parts(image)
+    if ref is not None:
+        onstderr(b"Unable to handle digest images...\n")
+        podman("pull", image, onstdout=onstdout, onstderr=onstderr)
+
+    target_tag = target_tag or "latest"
+    base_image = f"{registry or REGISTRY}/{image}"
     tags = image_tags(base_image)
     tags.sort()
     tag_base = target_tag.split("_")[0] if "_" in target_tag else target_tag

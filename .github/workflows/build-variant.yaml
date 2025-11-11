@@ -62,7 +62,7 @@ jobs:
             echo '{"auths":{}}' > /github/home/.docker/config.json
           fi
 
-      - name: Login to dockerhub
+      - name: Login to ghcr
         uses: redhat-actions/podman-login@v1
         with:
           username: ${{github.actor}}
@@ -75,6 +75,12 @@ jobs:
         uses: ./.github/actions/cleanup
         with:
           root: /run/host
+
+      - uses: actions/cache/restore@v4
+        id: manifest-cache
+        with:
+          path: ${{ runner.temp }}/manifest_cache
+          key: manifest-cache
 
       - name: Build
         id: build
@@ -148,6 +154,11 @@ jobs:
           updates: ${{ inputs.updates }}
           TMPDIR: ${{ runner.temp }}
           VARIANT: ${{ inputs.variant }}
+
+      - uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/manifest_cache
+          key: manifest-cache
 
       - name: Auto commit any updates
         if: inputs.push && inputs.variant == 'rootfs'

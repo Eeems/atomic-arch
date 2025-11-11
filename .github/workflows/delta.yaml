@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: write
 
 concurrency:
   group: delta-${{ inputs.variant }}-${{ inputs.recreate }}
@@ -51,7 +52,7 @@ jobs:
             echo '{"auths":{}}' > /github/home/.docker/config.json
           fi
 
-      - name: Login to dockerhub
+      - name: Login to ghcr
         uses: redhat-actions/podman-login@v1
         with:
           username: ${{github.actor}}
@@ -108,6 +109,12 @@ jobs:
         with:
           root: /run/host
 
+      - uses: actions/cache/restore@v4
+        id: manifest-cache
+        with:
+          path: ${{ runner.temp }}/manifest_cache
+          key: manifest-cache
+
       - name: Build
         id: build
         shell: bash
@@ -124,3 +131,15 @@ jobs:
           rm -rf .tmp/*
         env:
           TMPDIR: ${{ github.workspace }}/.tmp
+
+      - uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/manifest_cache
+          key: manifest-cache
+
+      - name: Trigger manifest rebuild
+        run: |
+          gh workflow run manifest.yaml \
+            --ref ${{ github.ref }}
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}

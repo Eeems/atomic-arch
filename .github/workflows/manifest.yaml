@@ -1,24 +1,24 @@
-name: Build an iso
+name: Build manifest
 
 on:
+  pull_request: &on-filter
+    branches:
+      - master
+    paths:
+      - .github/workflows/manifest.yaml
   workflow_dispatch:
-    inputs:
-      variant:
-        description: Which variant to generate an ISO for
-        type: string
-        required: true
-
 permissions:
   contents: read
-  packages: read
+  packages: write
+  actions: read
 
 concurrency:
-  group: delta-${{ inputs.variant }}
+  group: manifest
   cancel-in-progress: true
 
 jobs:
   run:
-    name: atomic-arch:${{ inputs.variant }} iso
+    name: Build manifest
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/eeems/atomic-arch-builder:latest
@@ -53,10 +53,17 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
-      - name: Free up space
-        uses: ./.github/actions/cleanup
+      - name: Wait for all deltas to finish generating
+        uses: NathanFirmo/wait-for-other-action@v1.0.4
         with:
-          root: /run/host
+          token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: "delta.yaml"
+
+      - uses: actions/cache/restore@v4
+        id: manifest-cache
+        with:
+          path: ${{ runner.temp }}/manifest_cache
+          key: manifest-cache
 
       - name: Build
         shell: bash
@@ -66,13 +73,17 @@ jobs:
           if [ ! -f /etc/containers/seccomp.json ];then
             cp seccomp.json /etc/containers/seccomp.json
           fi
-          ./make.py iso ${{ inputs.variant }}
+          args=""
+          if [[ "$push" == "true" ]];then
+            args="--push"
+          fi
+          ./make.py manifest $args
           kill $(jobs -p) || true
         env:
           TMPDIR: ${{ runner.temp }}
+          push: ${{ github.event_name != 'pull_request' }}
 
-      - name: Upload iso
-        uses: actions/upload-artifact@v4
+      - uses: actions/cache/save@v4
         with:
-          name: atomic-arch-${{ inputs.variant }}.iso
-          path: /var/lib/system/atomic-arch-${{ inputs.variant }}-*.iso
+          path: ${{ runner.temp }}/manifest_cache
+          key: manifest-cache

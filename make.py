@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 import argparse
+from collections import defaultdict, deque
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+import itertools
+import signal
 import sys
 import shlex
 import shutil
@@ -11,7 +15,9 @@ import json
 
 from glob import iglob
 from hashlib import sha256
-from typing import cast
+import threading
+from time import sleep, time
+from typing import TextIO, cast
 from datetime import datetime
 from datetime import UTC
 from collections.abc import Callable, Iterable
@@ -50,12 +56,14 @@ image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_inf
 image_labels = cast(Callable[[str, bool], dict[str, str]], _os.podman.image_labels)  # pyright:ignore [reportUnknownMemberType]
 image_exists = cast(Callable[[str, bool], bool], _os.podman.image_exists)  # pyright:ignore [reportUnknownMemberType]
 image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:ignore [reportUnknownMemberType]
-image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 create_delta = cast(Callable[[str, str, str, bool], None], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
 hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:ignore [reportUnknownMemberType]
 pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
+escape_label = cast(Callable[[str], str], _os.podman.escape_label)  # pyright: ignore[reportUnknownMemberType]
+image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 IMAGE = cast(str, _os.IMAGE)
 REGISTRY = cast(str, _os.REGISTRY)
+REPO = cast(str, _os.REPO)
 
 
 def ci_log(*args: str):
@@ -71,7 +79,7 @@ def hash(target: str) -> str:
     if "-" in target and not os.path.exists(containerfile):
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
-        image = f"{REGISTRY}/{IMAGE}:{base_variant}"
+        image = f"{REPO}:{base_variant}"
         labels = image_labels(image, not image_exists(image, False))
         m.update(labels["hash"].encode("utf-8"))
 
@@ -97,7 +105,7 @@ def build(target: str):
     if "-" in target and not os.path.exists(containerfile):
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
-        image = f"{REGISTRY}/{IMAGE}:{base_variant}"
+        image = f"{REPO}:{base_variant}"
         labels = image_labels(image, not image_exists(image, False))
         build_args["BASE_VARIANT_ID"] = f"{base_variant}"
         build_args["VARIANT"] = f"{labels['os-release.VARIANT']} ({template})"
@@ -113,7 +121,7 @@ def build(target: str):
 
     podman(
         "build",
-        f"--tag={REGISTRY}/{IMAGE}:{target}",
+        f"--tag={REPO}:{target}",
         *[f"--build-arg={k}={v}" for k, v in build_args.items()],
         "--force-rm",
         "--volume=/var/cache/pacman:/var/cache/pacman",
@@ -124,7 +132,7 @@ def build(target: str):
 
 
 def push(target: str):
-    image = f"{REGISTRY}/{IMAGE}:{target}"
+    image = f"{REPO}:{target}"
     labels = image_labels(image, False)
     tags: list[str] = []
     if labels.get("os-release.VERSION", None):
@@ -142,6 +150,7 @@ def push(target: str):
     for tag in tags + [image]:
         podman("push", tag)
         print(f"Pushed {tag}")
+        _image_digests_write_cache(tag, image_digest(tag, False))
 
     if tags:
         podman("untag", *tags)
@@ -165,7 +174,7 @@ def base62_to_hex(base62_str: str) -> str:
 def get_deltas(
     target: str, missing_only: bool = False
 ) -> Iterable[tuple[str, str, str]]:
-    tags = image_tags(f"{REGISTRY}/{IMAGE}")
+    tags = image_tags(REPO)
     target_tags = [
         x
         for x in tags
@@ -174,8 +183,7 @@ def get_deltas(
     ]
     target_tags.sort()
     digest_cache = {
-        tag: hex_to_base62(image_digest(f"{REGISTRY}/{IMAGE}:{tag}", True))
-        for tag in target_tags
+        tag: hex_to_base62(image_digest_cached(f"{REPO}:{tag}")) for tag in target_tags
     }
     diff_tags = (
         [
@@ -201,8 +209,8 @@ def get_deltas(
 def delta(
     a: str, b: str, allow_pull: bool, push: bool, clean: bool, imageD: str | None = None
 ):
-    imageA = f"{REGISTRY}/{IMAGE}:{a}"
-    imageB = f"{REGISTRY}/{IMAGE}:{b}"
+    imageA = f"{REPO}:{a}"
+    imageB = f"{REPO}:{b}"
     if allow_pull:
         ci_log(f"::group::pull {imageA}")
         pull(imageA)
@@ -215,7 +223,7 @@ def delta(
         digestA = hex_to_base62(image_digest(imageA, False))
         digestB = hex_to_base62(image_digest(imageB, False))
         assert digestA != digestB, "There is nothing to diff"
-        imageD = f"{REGISTRY}/{IMAGE}:_diff-{digestA}-{digestB}"
+        imageD = f"{REPO}:_diff-{digestA}-{digestB}"
 
     ci_log(f"::group::delta {a} and {b}")
     create_delta(imageA, imageB, imageD, allow_pull)
@@ -224,6 +232,7 @@ def delta(
         ci_log("::group::push")
         podman("push", imageD)
         ci_log("::endgroup::")
+        _image_digests_write_cache(imageD, image_digest(imageD, False))
 
     if not clean:
         return
@@ -253,7 +262,7 @@ def do_iso(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        _ = in_system("build", target=f"{REGISTRY}/{IMAGE}:{target}", check=True)
+        _ = in_system("build", target=f"{REPO}:{target}", check=True)
         _ = in_system("iso", check=True)
 
 
@@ -330,7 +339,7 @@ def do_run(args: argparse.Namespace):
     ret = in_system(
         "-c",
         shlex.join(cast(list[str], args.arg)),
-        target=f"{REGISTRY}/{IMAGE}:{cast(str, args.target)}",
+        target=f"{REPO}:{cast(str, args.target)}",
         entrypoint="/bin/bash",
     )
     if ret:
@@ -343,7 +352,7 @@ def do_pull(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        pull(f"{REGISTRY}/{IMAGE}:{target}")
+        pull(f"{REPO}:{target}")
 
 
 def do_os(args: argparse.Namespace):
@@ -413,7 +422,7 @@ def do_scan(args: argparse.Namespace):
                 /trivy/report.json
         fi
         """,
-        target=f"{REGISTRY}/{IMAGE}:{cast(str, args.target)}",
+        target=f"{REPO}:{cast(str, args.target)}",
         entrypoint="/bin/bash",
         volumes=volumes,
     )
@@ -429,7 +438,7 @@ def do_checkupdates(args: argparse.Namespace):
         sys.exit(1)
 
     target = cast(str, args.target)
-    image = f"{REGISTRY}/{IMAGE}:{target}"
+    image = f"{REPO}:{target}"
     exists = image_exists(image, True)
     if exists:
         mirror = [
@@ -600,10 +609,7 @@ def do_inspect(args: argparse.Namespace):
     remote = cast(bool, args.remote)
     print(
         json.dumps(
-            {
-                x: image_info(f"{REGISTRY}/{IMAGE}:{x}", remote)
-                for x in cast(list[str], args.target)
-            }
+            {x: image_info(f"{REPO}:{x}", remote) for x in cast(list[str], args.target)}
         )
     )
 
@@ -650,11 +656,393 @@ def do_get_deltas(args: argparse.Namespace):
         print(item["tag"])
 
 
-def do_test(_: argparse.Namespace):
-    image_size = cast(Callable[[str], int], _os.podman.image_size)  # pyright: ignore[reportUnknownMemberType]
-    bytes_to_iec = cast(Callable[[int], str], _os.console.bytes_to_iec)  # pyright: ignore[reportUnknownMemberType]
+def progress_bar[T](
+    iterable: list[T] | Iterable[T],
+    count: int | None = None,
+    prefix: str = "Progress: ",
+    out: TextIO = sys.stdout,
+    interval: int = 1,
+):
+    if count is None:
+        count = len(iterable)  # pyright: ignore[reportArgumentType]
 
-    print(bytes_to_iec(image_size(f"{REGISTRY}/{IMAGE}:base")))
+    if not count:
+        return
+
+    no_progress = "CI" in os.environ or not out.isatty()
+    current = 0
+
+    def show():
+        nonlocal current
+        if current > count:
+            current = count
+
+        if no_progress:
+            print(f"{prefix} {current}/{count}")
+            return
+
+        size = os.get_terminal_size().columns
+        count_size = len(str(count))
+        size -= len(prefix) + 4 + (count_size * 2) + 1
+        if size < 2:
+            print(f"{current}/{count}")
+            return
+
+        x = int(size * current / count)
+        current_size = len(str(current))
+        print(
+            f"{prefix}[{'█' * x}{'.' * (size - x)}] {' ' * (count_size - current_size)}{current}/{count}",
+            end="\r",
+            file=out,
+            flush=True,
+        )
+
+    _ = signal.signal(signal.SIGWINCH, lambda _, _b: show())
+    show()
+    last_update = 0.0
+    for i, item in enumerate(iterable):
+        yield item
+        now = time()
+        if now - last_update < interval and i < count - 1:
+            continue
+
+        last_update = now
+        current = i + 1
+        show()
+
+    print(end="\n", file=out, flush=True)
+
+
+def _classify_tag(tag: str) -> tuple[str, str | None, str | None]:
+    if tag == "_manifest":
+        return "other", None, None
+
+    if tag.startswith("_diff-"):
+        if len(tag) == 49 or tag[48] != "-":
+            return "other", None, None
+
+        src_b62 = tag[6:49]
+        dst_b62 = tag[49:]
+        if len(src_b62) != 43 or len(dst_b62) != 43:
+            return "other", None, None
+
+        return "diff", src_b62, dst_b62
+
+    if "_" not in tag:
+        if all(c.isalnum() or c == "-" for c in tag):
+            return "variant", tag, None
+
+        return "other", None, None
+
+    sep_idx = tag.rfind("_")
+    if sep_idx <= 0:
+        return "other", None, None
+
+    variant = tag[:sep_idx]
+    rest = tag[sep_idx + 1 :]
+    if not (variant and all(c.isalnum() or c == "-" for c in variant)):
+        return "other", None, None
+
+    if "." in rest:
+        last_dot = rest.rfind(".")
+        if last_dot > 0:
+            build_num = rest[last_dot + 1 :]
+            if build_num.isdigit():
+                version_part = rest[:last_dot]
+                full_version = f"{version_part}.{build_num}"
+                return "build", variant, full_version
+
+    if rest and all(c.isalnum() or c in ".-" for c in rest):
+        return "versioned", variant, rest
+
+    return "other", None, None
+
+
+_executor = ThreadPoolExecutor(max_workers=5)
+_image_sizes: dict[str, Future[int]] = {}
+_image_sizes_lock = threading.Lock()
+
+
+def _image_size_cached(image: str) -> Future[int] | int:
+    future = _image_sizes.get(image)
+    if future is None:
+        with _image_sizes_lock:
+            # In case it was added after we locked
+            future = _image_sizes.get(image)
+            if future is None:
+                future = _executor.submit(
+                    cast(
+                        Callable[[str], int],
+                        _os.podman.image_size,  # pyright: ignore[reportUnknownMemberType]
+                    ),
+                    image,
+                )
+                _image_sizes[image] = future
+
+    return future
+
+
+def image_size_cached(image: str) -> int:
+    future = _image_size_cached(image)
+    if isinstance(future, Future):
+        return future.result()
+
+    return future
+
+
+DIGEST_CACHE_PATH = os.path.join(os.environ.get("TMPDIR", "/tmp"), "manifest_cache")
+_image_digests: dict[str, Future[str] | str] = {}
+_image_digests_lock = threading.Lock()
+_image_digests_write_lock = threading.Lock()
+if os.path.exists(DIGEST_CACHE_PATH):
+    with open(DIGEST_CACHE_PATH, "r") as f:
+        try:
+            data = json.load(f)  # pyright: ignore[reportAny]
+            assert isinstance(data, dict)
+            for image, digest in cast(dict[str, str], data).items():
+                _image_digests[image] = digest
+
+        except Exception:
+            os.unlink(DIGEST_CACHE_PATH)
+
+
+def _remote_image_digest(image: str) -> str:
+    e: Exception | None = None
+    for attempt in range(10):
+        try:
+            digest = image_digest(image, True)
+            return digest
+
+        except Exception as ex:
+            e = ex
+            sleep(1.0 * (2**attempt))  # pyright: ignore[reportAny]
+
+    assert e is not None
+    raise e
+
+
+def _image_digest_cached(image: str) -> Future[str] | str:
+    global _image_digests
+    future = _image_digests.get(image, None)
+    if future is None:
+        with _image_digests_lock:
+            # In case it was added after we locked
+            future = _image_digests.get(image, None)
+            if future is None:
+                future = _executor.submit(_remote_image_digest, image)
+                _image_digests[image] = future
+
+    return future
+
+
+def _image_digests_write_cache(image: str, digest: str):
+    global _image_digests
+    with _image_digests_write_lock:
+        if isinstance(_image_digests[image], str):
+            return
+
+        _image_digests[image] = digest
+        with open(DIGEST_CACHE_PATH, "w+") as f:
+            _ = f.seek(0)
+            json.dump(
+                {k: v for k, v in _image_digests.items() if isinstance(v, str)},
+                f,
+            )
+            _ = f.truncate()
+            _ = f.flush()
+
+
+def image_digest_cached(image: str) -> str:
+    global _image_digests
+    future = _image_digest_cached(image)
+    if not isinstance(future, Future):
+        return future
+
+    digest = future.result()
+    _image_digests_write_cache(image, digest)
+    return digest
+
+
+def shortest_path(
+    a: str, b: str, graph: dict[str, dict[str, tuple[str, int]]]
+) -> tuple[int | None, list[str] | None]:
+    if a == b:
+        return 0, []
+
+    queue = deque([(a, 0, cast(list[str], []))])
+    visited: dict[str, tuple[int, list[str]]] = {a: (0, [])}
+    while queue:
+        node, cost, path = queue.popleft()
+        for neigh, (tag, sz) in graph.get(node, {}).items():
+            if sz == -1:
+                continue
+
+            new_cost = cost + sz
+            if neigh not in visited or new_cost < visited[neigh][0]:
+                visited[neigh] = (new_cost, path + [tag])
+                queue.append((neigh, new_cost, path + [tag]))
+
+    return visited.get(b, (None, None))
+
+
+def do_manifest(args: argparse.Namespace):
+    print("Getting all tags...")
+    all_tags = image_tags(REPO)
+    assert all_tags, "No tags found"
+    digest_info: dict[str, tuple[list[str], str]] = {}
+    graph: defaultdict[str, dict[str, tuple[str, int]]] = defaultdict(dict)
+    to_classify: list[tuple[str, str]] = []
+    for tag in progress_bar(
+        all_tags,
+        prefix="Classifying tags:" + " " * 9,
+    ):
+        kind, a, b = _classify_tag(tag)
+        if kind == "other":
+            continue
+
+        if kind != "diff":
+            to_classify.append((kind, tag))
+            continue
+
+        if a and b:
+            graph[a][b] = (tag, -1)
+
+    assert to_classify, "No tags found"
+
+    def _digest_worker(data: tuple[str, str]) -> tuple[str, str, Future[str] | str]:
+        image = f"{REPO}:{data[1]}"
+        future = _image_digest_cached(image)
+        if isinstance(future, Future):
+            future.add_done_callback(
+                lambda x: _image_digests_write_cache(image, x.result())
+            )
+
+        return *data, future
+
+    with ThreadPoolExecutor(max_workers=50) as exc:
+        for future in progress_bar(
+            as_completed([exc.submit(_digest_worker, x) for x in to_classify]),
+            count=len(to_classify),
+            prefix="Processing tags:" + " " * 10,
+        ):
+            kind, tag, digest = future.result()
+            if isinstance(digest, Future):
+                digest = digest.result()
+
+            b62 = hex_to_base62(digest)
+            if b62 not in digest_info:
+                digest_info[b62] = ([], digest)
+
+            digest_info[b62] = (digest_info[b62][0] + [tag], digest)
+
+    def flatten(
+        d: dict[str, dict[str, tuple[str, int]]],
+    ) -> Iterable[tuple[dict[str, tuple[str, int]], str, tuple[str, int]]]:
+        for _, inner_dict in d.items():
+            for key, value in inner_dict.items():
+                yield inner_dict, key, value
+
+    for d, key, (tag, _size) in progress_bar(
+        flatten(graph),
+        count=len(list(flatten(graph))),
+        prefix="Calculating sizes:" + " " * 8,
+    ):
+        d[key] = (tag, image_size_cached(f"{REPO}:{tag}"))
+
+    labels: dict[str, str] = {}
+    for b62, (tags, digest) in progress_bar(
+        digest_info.items(), prefix="Generating digest tags:" + " " * 2
+    ):
+        for tag in tags:
+            labels[f"{tag}.digest.sha256"] = digest
+            labels[f"{tag}.digest.base62"] = b62
+
+    b62_list = list(digest_info.keys())
+    delta_map: defaultdict[str, dict[str, list[str]]] = defaultdict(dict)
+
+    def _delta_worker(data: tuple[str, str]) -> tuple[str, str, int, list[str]] | None:
+        a_b62, b_b62 = data
+        cost, path = shortest_path(a_b62, b_b62, graph)
+        if cost is None or not path:
+            return None
+
+        return b_b62, a_b62, cost, path
+
+    with ThreadPoolExecutor(max_workers=50) as exc:
+        combinations = list(itertools.combinations(b62_list, 2))
+        for future in progress_bar(
+            as_completed([exc.submit(_delta_worker, x) for x in combinations]),
+            count=len(combinations),
+            prefix="Calculating deltas:" + " " * 7,
+        ):
+            item = future.result()
+            if item is None:
+                continue
+
+            b_b62, a_b62, cost, path = item
+            sizes = [
+                x
+                for t in digest_info[b_b62][0]
+                for x in [_image_size_cached(f"{REPO}:{t}")]
+            ]
+            b_direct: int = min(
+                [x for x in sizes if not isinstance(x, Future)]
+                + cast(
+                    list[int],
+                    list(as_completed([x for x in sizes if isinstance(x, Future)])),
+                ),
+            )
+            if cost < b_direct * 0.9:
+                continue
+
+            delta_map[b_b62][a_b62] = path
+
+    for b_b62, item in progress_bar(
+        delta_map.items(),
+        prefix="Generating labels:" + " " * 8,
+    ):
+        labels[f"map.{b_b62}"] = json.dumps(item, separators=(",", ":"), indent=2)
+
+    for b62, (tags, digest) in digest_info.items():
+        for tag in tags:
+            labels[f"tag.{tag}"] = json.dumps(
+                {"digest": digest, "base62": b62},
+                separators=(",", ":"),
+                indent=2,
+            )
+
+    labels["timestamp"] = datetime.now(tz=UTC).replace(microsecond=0).isoformat() + "Z"
+    with tempfile.TemporaryDirectory() as tmpdir:
+        containerfile = os.path.join(tmpdir, "Containerfile")
+        with open(containerfile, "w") as f:
+            _ = f.write("FROM scratch\nLABEL \\")
+            for k, v in progress_bar(
+                labels.items(), prefix="Generating Containerfile: "
+            ):
+                _ = f.write(f'\n  atomic.manifest.{k}="{escape_label(v)}" \\')
+
+            _ = f.write('\n  atomic.manifest.version="1"\n')
+
+        image = f"{REPO}:_manifest"
+        print(f"Building {image}...")
+        try:
+            podman("build", f"--tag={image}", f"--file={containerfile}", tmpdir)
+
+        except:
+            with (
+                open(containerfile, "r") as f,
+                open("/tmp/manifest.Containerfile", "w") as out,
+            ):
+                _ = out.write(f.read())
+
+            raise
+        if cast(bool, args.push):
+            podman("push", image)
+
+
+def do_test(_: argparse.Namespace):
+    for _x in progress_bar(range(1000)):
+        sleep(0.5)
 
 
 if __name__ == "__main__":
@@ -733,6 +1121,10 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--explicit", action="store_true")
     _ = subparser.add_argument("--force", action="store_true")
     subparser.set_defaults(func=do_delta)
+
+    subparser = subparsers.add_parser("manifest")
+    _ = subparser.add_argument("--push", action="store_true")
+    subparser.set_defaults(func=do_manifest)
 
     subparser = subparsers.add_parser("test")
     subparser.set_defaults(func=do_test)

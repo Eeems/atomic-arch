@@ -12,6 +12,7 @@ from typing import cast
 OS_NAME = "atomic-arch"
 REGISTRY = "ghcr.io"
 IMAGE = f"eeems/{OS_NAME}"
+REPO = f"{REGISTRY}/{IMAGE}"
 SYSTEM_PATH = "/var/lib/system"
 
 
