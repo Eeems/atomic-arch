@@ -4,13 +4,19 @@ inputs:
   run:
     description: Script to run
     required: true
+outputs:
+  updates:
+    description: If an update happened
+    value: ${{ steps.run.outputs.updates }}
 runs:
   using: composite
   steps:
     - name: Setup container
+      id: run
       shell: bash
       run: |
-        mkdir -p /run/podman
+        set -e
+        mkdir -p /run/podman $TMPDIR
         podman system service --time 0 unix:///run/podman/podman.sock &
         ${{ inputs.run }}
         kill $(jobs -p) || true

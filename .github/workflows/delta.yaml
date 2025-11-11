@@ -123,15 +123,13 @@ jobs:
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |
-            mkdir -p $TMPDIR
             args=""
             if [[ "${{ inputs.recreate }}" == "true" ]];then
               args="--force"
             fi
             ./make.py delta $args --push --explicit ${{ matrix.a }} ${{ matrix.b }}
-            rm -rf .tmp/*
         env:
-          TMPDIR: ${{ runner.temp }}
+          TMPDIR: ${{ github.workspae }}/.tmp
 
       - uses: ./.github/actions/manifest-cache-update
 

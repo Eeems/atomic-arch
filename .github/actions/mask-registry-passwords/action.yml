@@ -17,10 +17,10 @@ runs:
           fi
           CONFIG="$path"
           echo "Masking auths in $CONFIG"
-          jq -r '.auths | to_entries[] | .value.auth' "$CONFIG" \
+          jq -r '.auths | to_entries[] | .value.auth' "$CONFIG" 2>/dev/null \
           | while IFS= read -r auth; do
             [[ "$auth" == "null" ]] && continue
-            token=$(echo "$auth" | base64 -d | cut -d: -f2)
+            token=$(echo "$auth" | base64 -d 2>/dev/null | cut -d: -f2-)
             [[ -n "$token" ]] && echo "::add-mask::$token"
           done
         done
