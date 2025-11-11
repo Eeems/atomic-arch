@@ -643,13 +643,13 @@ def pull(
 
         candidates.append((image, local_digest))
 
-    registry, image, target_tag, ref = image_name_parts(image)
+    registry, name, target_tag, ref = image_name_parts(image)
     if ref is not None:
         onstderr(b"Unable to handle digest images...\n")
         podman("pull", image, onstdout=onstdout, onstderr=onstderr)
 
     target_tag = target_tag or "latest"
-    base_image = f"{registry or REGISTRY}/{image}"
+    base_image = f"{registry or REGISTRY}/{name}"
     tags = image_tags(base_image)
     tags.sort()
     tag_base = target_tag.split("_")[0] if "_" in target_tag else target_tag
