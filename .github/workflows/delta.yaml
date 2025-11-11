@@ -129,7 +129,7 @@ jobs:
             fi
             ./make.py delta $args --push --explicit ${{ matrix.a }} ${{ matrix.b }}
         env:
-          TMPDIR: ${{ github.workspae }}/.tmp
+          TMPDIR: ${{ github.workspace }}/.tmp
 
       - uses: ./.github/actions/manifest-cache-update
 
