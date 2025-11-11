@@ -705,4 +705,4 @@ def pull(
                 podman("rmi", delta_image, onstdout=onstdout, onstderr=onstderr)
 
     onstderr(b"Falling back to full pull...\n")
-    podman("pull", image, onstdout=onstdout, onstderr=onstderr)
+    podman("pull", f"{base_image}:{target_tag}", onstdout=onstdout, onstderr=onstderr)
