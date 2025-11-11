@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import argparse
-from collections import defaultdict, deque
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 import itertools
 import signal
 import sys
@@ -12,15 +10,21 @@ import atexit
 import re
 import tempfile
 import json
+import threading
 
+from collections import defaultdict
+from collections import deque
+from concurrent.futures import as_completed
+from concurrent.futures import Future
+from concurrent.futures import ThreadPoolExecutor
 from glob import iglob
 from hashlib import sha256
-import threading
 from time import sleep, time
 from typing import TextIO, cast
 from datetime import datetime
 from datetime import UTC
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
+from collections.abc import Callable
 
 _osDir = tempfile.mkdtemp()
 os.makedirs(os.path.join(_osDir, "lib/system"))
@@ -951,11 +955,10 @@ def do_manifest(args: argparse.Namespace):
 
     labels: dict[str, str] = {}
     for b62, (tags, digest) in progress_bar(
-        digest_info.items(), prefix="Generating digest tags:" + " " * 2
+        digest_info.items(), prefix="Generating tag labels:" + " " * 4
     ):
         for tag in tags:
-            labels[f"{tag}.digest.sha256"] = digest
-            labels[f"{tag}.digest.base62"] = b62
+            labels[f"tag.{tag}"] = digest
 
     b62_list = list(digest_info.keys())
     delta_map: defaultdict[str, dict[str, list[str]]] = defaultdict(dict)
@@ -999,17 +1002,9 @@ def do_manifest(args: argparse.Namespace):
 
     for b_b62, item in progress_bar(
         delta_map.items(),
-        prefix="Generating labels:" + " " * 8,
+        prefix="Generating map labels:" + " " * 4,
     ):
         labels[f"map.{b_b62}"] = json.dumps(item, separators=(",", ":"), indent=2)
-
-    for b62, (tags, digest) in digest_info.items():
-        for tag in tags:
-            labels[f"tag.{tag}"] = json.dumps(
-                {"digest": digest, "base62": b62},
-                separators=(",", ":"),
-                indent=2,
-            )
 
     labels["timestamp"] = datetime.now(tz=UTC).replace(microsecond=0).isoformat() + "Z"
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -1026,7 +1021,14 @@ def do_manifest(args: argparse.Namespace):
         image = f"{REPO}:_manifest"
         print(f"Building {image}...")
         try:
-            podman("build", f"--tag={image}", f"--file={containerfile}", tmpdir)
+            chronic(
+                podman_cmd(
+                    "build",
+                    f"--tag={image}",
+                    f"--file={containerfile}",
+                    tmpdir,
+                )
+            )
 
         except:
             with (

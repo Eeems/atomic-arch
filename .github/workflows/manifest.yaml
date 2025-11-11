@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - .github/workflows/manifest.yaml
+      - make.py
   workflow_dispatch:
 permissions:
   contents: read
