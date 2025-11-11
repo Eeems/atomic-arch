@@ -76,6 +76,7 @@ jobs:
       - uses: ./.github/actions/manifest-cache-restore
 
       - name: Build
+        id: build
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |
