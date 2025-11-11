@@ -83,7 +83,7 @@ jobs:
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
           data="$(./make.py get-deltas --json $args ${{ inputs.variant }})"
-          items="$(echo "$data" | jq -c '[] | length')"
+          items="$(echo "$data" | jq -c 'length')"
           echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
           if [[ $items -gt 0 ]];then
             echo "$data" | jq -c '{"include": .}' >> $GITHUB_OUTPUT
