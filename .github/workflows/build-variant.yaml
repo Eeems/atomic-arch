@@ -159,7 +159,7 @@ jobs:
         shell: bash
         run: |
           gh cache delete \
-            -k "${{ steps.manifest-cache.outputs.cache-primary-key }}" \
+            "${{ steps.manifest-cache.outputs.cache-primary-key }}" \
             --repo "${{ github.repository }}"
 
       - uses: actions/cache/save@v4
