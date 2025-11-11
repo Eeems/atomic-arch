@@ -842,7 +842,7 @@ def _image_digest_cached(image: str) -> Future[str] | str:
 def _image_digests_write_cache(image: str, digest: str):
     global _image_digests
     with _image_digests_write_lock:
-        if isinstance(_image_digests[image], str):
+        if isinstance(_image_digests.get(image), str):
             return
 
         _image_digests[image] = digest
