@@ -86,7 +86,6 @@ jobs:
         id: build
         shell: bash
         run: |
-          git config --global --add safe.directory "$(realpath .)"
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
           echo "::group::checkupdates"
@@ -180,6 +179,7 @@ jobs:
       - name: Trigger ISO and delta builds
         if: inputs.push && steps.build.outputs.updates
         run: |
+          git config --global --add safe.directory "$(realpath .)"
           if [[ "$VARIANT" != "rootfs" ]];then
             gh workflow run iso.yaml \
               --ref ${{ github.ref }} \

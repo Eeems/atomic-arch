@@ -135,6 +135,7 @@ jobs:
       - name: Remove old cache
         shell: bash
         run: |
+          git config --global --add safe.directory "$(realpath .)"
           gh cache delete \
             "${{ steps.manifest-cache.outputs.cache-primary-key }}" \
             --repo "${{ github.repository }}"
