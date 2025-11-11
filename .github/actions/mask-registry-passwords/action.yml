@@ -1,0 +1,29 @@
+name: Mask docker/podman passwords/tokens
+description: Mask docker/podman passwords/tokens
+runs:
+  using: composite
+  steps:
+    - name: Mask the passwords
+      shell: bash
+      run: |
+        CONFIG=""
+        for path in \
+          "${DOCKER_CONFIG:-}/config.json" \
+          "${RUNNER_TEMP:-}/_temp/.docker/config.json" \
+          "${HOME}/.docker/config.json"
+        do
+          if [[ ! -f "$path" ]]; then
+            continue
+          fi
+          CONFIG="$path"
+          echo "Masking auths in $CONFIG"
+          jq -r '.auths | to_entries[] | .value.auth' "$CONFIG" \
+          | while IFS= read -r auth; do
+            [[ "$auth" == "null" ]] && continue
+            token=$(echo "$auth" | base64 -d | cut -d: -f2)
+            [[ -n "$token" ]] && echo "::add-mask::$token"
+          done
+        done
+        if [[ -z "$CONFIG" ]]; then
+          echo "No Docker config.json found – nothing to mask"
+        fi

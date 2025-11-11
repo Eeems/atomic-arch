@@ -1,0 +1,16 @@
+name: Run script with the podman service running
+description: Run script with the podman service running
+inputs:
+  run:
+    description: Script to run
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Setup container
+      shell: bash
+      run: |
+        mkdir -p /run/podman
+        podman system service --time 0 unix:///run/podman/podman.sock &
+        ${{ inputs.run }}
+        kill $(jobs -p) || true

@@ -1,0 +1,16 @@
+name: Restore the manifest cache
+description: Restore the manifest cache
+inputs:
+  path:
+    description: Path to cache
+    default: ${{ runner.temp }}/manifest_cache
+  key:
+    description: Cache key
+    default: manifest-cache
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache/restore@v4
+      with:
+        path: ${{ inputs.path }}
+        key: ${{ inputs.key }}

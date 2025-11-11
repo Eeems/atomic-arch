@@ -55,12 +55,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4
 
-      - name: Ensure .docker exists
-        run: |
-          mkdir -p /github/home/.docker
-          if ! [ -f /github/home/.docker/config.json ];then
-            echo '{"auths":{}}' > /github/home/.docker/config.json
-          fi
+      - uses: ./.github/actions/setup-container
 
       - name: Login to ghcr
         uses: redhat-actions/podman-login@v1
@@ -70,103 +65,86 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
+      - uses: ./.github/actions/mask-registry-passwords
+
       - name: Free up space
         if: ${{ inputs.cleanup }}
         uses: ./.github/actions/cleanup
         with:
           root: /run/host
 
-      - uses: actions/cache/restore@v4
-        id: manifest-cache
-        with:
-          path: ${{ runner.temp }}/manifest_cache
-          key: manifest-cache
+      - uses: ./.github/actions/manifest-cache-restore
 
       - name: Build
-        id: build
-        shell: bash
-        run: |
-          mkdir -p /run/podman
-          podman system service --time 0 unix:///run/podman/podman.sock &
-          echo "::group::checkupdates"
-          push=false
-          args=""
-          if [[ "${{ inputs.push }}" == "true" ]];then
-            push=true
-            args="--push"
-          fi
-          if [[ "$VARIANT" == "rootfs" ]];then
-            set +e
-            output=$(./make.py checkupdates)
-            res=$?
-            echo $output
-            set -e
-            if [ $res -eq 2 ];then
-              echo "::endgroup::"
-              echo "::group::build"
-              if [[ "$output" == *"mirrorlist "* ]]; then
-                ./make.py rootfs $args
-              else
-                ./make.py build $args rootfs
-              fi
-              echo "updates=true" >> $GITHUB_OUTPUT
-              echo "::endgroup::"
-            elif [ $res -ne 0 ];then
-              exit 1
-            else
-              echo "No Updates"
-              echo "::endgroup::"
-              echo "::group::push"
-              ./make.py push ${{ inputs.variant }}
-              echo "updates=false" >> $GITHUB_OUTPUT
-              echo "::endgroup::"
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            echo "::group::checkupdates"
+            push=false
+            args=""
+            if [[ "${{ inputs.push }}" == "true" ]];then
+              push=true
+              args="--push"
             fi
-          else
-            if [[ "$updates" == "true" ]]; then
-              echo "Previous image updated"
-              res=2
-            else
+            if [[ "$VARIANT" == "rootfs" ]];then
               set +e
-              ./make.py checkupdates --target=${{ inputs.variant }}
+              output=$(./make.py checkupdates)
               res=$?
+              echo $output
               set -e
+              if [ $res -eq 2 ];then
+                echo "::endgroup::"
+                echo "::group::build"
+                if [[ "$output" == *"mirrorlist "* ]]; then
+                  ./make.py rootfs $args
+                else
+                  ./make.py build $args rootfs
+                fi
+                echo "updates=true" >> $GITHUB_OUTPUT
+                echo "::endgroup::"
+              elif [ $res -ne 0 ];then
+                exit 1
+              else
+                echo "No Updates"
+                echo "::endgroup::"
+                echo "::group::push"
+                ./make.py push ${{ inputs.variant }}
+                echo "updates=false" >> $GITHUB_OUTPUT
+                echo "::endgroup::"
+              fi
+            else
+              if [[ "$updates" == "true" ]]; then
+                echo "Previous image updated"
+                res=2
+              else
+                set +e
+                ./make.py checkupdates --target=${{ inputs.variant }}
+                res=$?
+                set -e
+              fi
+              if [ $res -eq 2 ];then
+                echo "::endgroup::"
+                echo "::group::build"
+                ./make.py build $args ${{ inputs.variant }}
+                echo "updates=true" >> $GITHUB_OUTPUT
+                echo "::endgroup::"
+              elif [ $res -ne 0 ];then
+                exit 1
+              elif $push;then
+                echo "No Updates"
+                echo "::endgroup::"
+                echo "::group::push"
+                ./make.py push ${{ inputs.variant }}
+                echo "updates=false" >> $GITHUB_OUTPUT
+                echo "::endgroup::"
+              fi
             fi
-            if [ $res -eq 2 ];then
-              echo "::endgroup::"
-              echo "::group::build"
-              ./make.py build $args ${{ inputs.variant }}
-              echo "updates=true" >> $GITHUB_OUTPUT
-              echo "::endgroup::"
-            elif [ $res -ne 0 ];then
-              exit 1
-            elif $push;then
-              echo "No Updates"
-              echo "::endgroup::"
-              echo "::group::push"
-              ./make.py push ${{ inputs.variant }}
-              echo "updates=false" >> $GITHUB_OUTPUT
-              echo "::endgroup::"
-            fi
-          fi
-          kill $(jobs -p) || true
         env:
-          updates: ${{ inputs.updates }}
           TMPDIR: ${{ runner.temp }}
+          updates: ${{ inputs.updates }}
           VARIANT: ${{ inputs.variant }}
 
-      - name: Remove old cache
-        shell: bash
-        run: |
-          gh cache delete \
-            "${{ steps.manifest-cache.outputs.cache-primary-key }}" \
-            --repo "${{ github.repository }}"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - uses: actions/cache/save@v4
-        with:
-          path: ${{ runner.temp }}/manifest_cache
-          key: manifest-cache
+      - uses: ./.github/actions/manifest-cache-update
 
       - name: Auto commit any updates
         if: inputs.push && inputs.variant == 'rootfs'

@@ -50,12 +50,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4
 
-      - name: Ensure .docker exists
-        run: |
-          mkdir -p /github/home/.docker
-          if ! [ -f /github/home/.docker/config.json ];then
-            echo '{"auths":{}}' > /github/home/.docker/config.json
-          fi
+      - uses: ./.github/actions/setup-container
 
       - name: Login to ghcr
         uses: redhat-actions/podman-login@v1
@@ -65,46 +60,27 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
+      - uses: ./.github/actions/mask-registry-passwords
+
       - name: Wait for all deltas to finish generating
         uses: NathanFirmo/wait-for-other-action@v1.0.4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           workflow: "delta.yaml"
 
-      - uses: actions/cache/restore@v4
-        id: manifest-cache
-        with:
-          path: ${{ runner.temp }}/manifest_cache
-          key: manifest-cache
+      - uses: ./.github/actions/manifest-cache-restore
 
       - name: Build
-        shell: bash
-        run: |
-          mkdir -p /run/podman
-          podman system service --time 0 unix:///run/podman/podman.sock &
-          if [ ! -f /etc/containers/seccomp.json ];then
-            cp seccomp.json /etc/containers/seccomp.json
-          fi
-          args=""
-          if [[ "$push" == "true" ]];then
-            args="--push"
-          fi
-          ./make.py manifest $args
-          kill $(jobs -p) || true
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            args=""
+            if [[ "$push" == "true" ]];then
+              args="--push"
+            fi
+            ./make.py manifest $args
         env:
           TMPDIR: ${{ runner.temp }}
           push: ${{ github.event_name != 'pull_request' }}
 
-      - name: Remove old cache
-        shell: bash
-        run: |
-          gh cache delete \
-            "${{ steps.manifest-cache.outputs.cache-primary-key }}" \
-            --repo "${{ github.repository }}"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - uses: actions/cache/save@v4
-        with:
-          path: ${{ runner.temp }}/manifest_cache
-          key: manifest-cache
+      - uses: ./.github/actions/manifest-cache-update

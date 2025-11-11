@@ -1,0 +1,29 @@
+name: Update the manifest cache
+description: Update the manifest cache
+inputs:
+  path:
+    description: Path to cache
+    default: ${{ runner.temp }}/manifest_cache
+  key:
+    description: Cache key
+    default: manifest-cache
+  token:
+    description: Github token to use to delete the cache
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - name: Remove old cache
+      shell: bash
+      run: |
+        git config --global --add safe.directory "$(realpath .)"
+        gh cache delete \
+          "${{ inputs.key }}" \
+          --repo "${{ github.repository }}"
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+
+    - uses: actions/cache/save@v4
+      with:
+        path: ${{ inputs.path }}
+        key: ${{ inputs.key }}

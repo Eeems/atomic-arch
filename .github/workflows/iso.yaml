@@ -38,12 +38,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4
 
-      - name: Ensure .docker exists
-        run: |
-          mkdir -p /github/home/.docker
-          if ! [ -f /github/home/.docker/config.json ];then
-            echo '{"auths":{}}' > /github/home/.docker/config.json
-          fi
+      - uses: ./.github/actions/setup-container
 
       - name: Login to ghcr
         uses: redhat-actions/podman-login@v1
@@ -53,21 +48,17 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
+      - uses: ./.github/actions/mask-registry-passwords
+
       - name: Free up space
         uses: ./.github/actions/cleanup
         with:
           root: /run/host
 
       - name: Build
-        shell: bash
-        run: |
-          mkdir -p /run/podman
-          podman system service --time 0 unix:///run/podman/podman.sock &
-          if [ ! -f /etc/containers/seccomp.json ];then
-            cp seccomp.json /etc/containers/seccomp.json
-          fi
-          ./make.py iso ${{ inputs.variant }}
-          kill $(jobs -p) || true
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: ./make.py iso ${{ inputs.variant }}
         env:
           TMPDIR: ${{ runner.temp }}
 
