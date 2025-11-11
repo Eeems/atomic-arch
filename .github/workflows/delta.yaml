@@ -52,6 +52,7 @@ jobs:
         -v /:/run/host
     outputs:
       variant-matrix: ${{ steps.matrix.outputs.JSON_CONTENT }}
+      has-items: ${{ steps.matrix.outputs.has-items }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -81,15 +82,17 @@ jobs:
           fi
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
+          data="$(./make.py get-deltas --json $args ${{ inputs.variant }})"
           echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
-          ./make.py get-deltas --json $args ${{ inputs.variant }} \
-          | jq -c '{"include": .}' >> $GITHUB_OUTPUT
+          echo "$data" | jq -c '{"include": .}' >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
+          echo "has-items=$(echo "$data" | jq -c '[] | length > 0')" >> $GITHUB_OUTPUT
           kill $(jobs -p)
         env:
           TMPDIR: ${{ runner.temp }}
   run:
     name: ${{ matrix.a }} to ${{matrix.b}}
+    if: ${{ needs.matrix.outputs.has-items }}
     runs-on: ubuntu-latest
     container: *container
     needs: matrix
