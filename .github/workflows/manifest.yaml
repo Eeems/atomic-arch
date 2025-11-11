@@ -18,6 +18,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  notifications:
+    name: Clear notifications
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      - name: Clean cancellation notifications
+        uses: ./.github/actions/clean-cancelled-notifications
+        with:
+          pat: ${{ secrets.NOTIFICATION_PAT }}
+
   run:
     name: Build manifest
     runs-on: ubuntu-latest

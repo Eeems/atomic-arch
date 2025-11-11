@@ -1,0 +1,55 @@
+name: Clean Cancelled Workflow Notifications
+description: Checks for recently cancelled workflow runs and deletes related notifications
+inputs:
+  pat:
+    description: Personal Access Token with notifications scope
+    required: true
+  timeout:
+    description: Maximum time (seconds) to poll for notifications
+    default: "30"
+  interval:
+    description: Polling interval (seconds) between notification checks
+    default: "3"
+
+runs:
+  using: composite
+  steps:
+    - name: Check for cancelled runs and clean notifications
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.pat }}
+      run: |
+        # Ensure jq and xargs are available
+        command -v jq >/dev/null 2>&1 || { echo "jq is required but not installed"; exit 1; }
+        command -v xargs >/dev/null 2>&1 || { echo "xargs is required but not installed"; exit 1; }
+
+        # Get workflow ID of the current workflow
+        WORKFLOW_ID=$(gh api "repos/${{ github.repository }}/actions/workflows" --jq '.workflows[] | select(.name == "${{ github.workflow }}") | .id')
+
+        # Check for recently cancelled runs of this workflow on the same branch
+        CANCELLED_RUNS=$(gh api "repos/${{ github.repository }}/actions/runs?status=cancelled&workflow_id=$WORKFLOW_ID&branch=${{ github.ref_name }}&per_page=5" --jq '.workflow_runs[] | select(.created_at | fromdateiso8601 > (now - 300))')
+
+        if [ -n "$CANCELLED_RUNS" ]; then
+          echo "Found recently cancelled runs for workflow ${{ github.workflow }} on branch ${{ github.ref_name }}. Polling for notifications..."
+
+          # Poll for notifications
+          TIMEOUT=${{ inputs.timeout }}
+          INTERVAL=${{ inputs.interval }}
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            NOTIFICATION_IDS=$(gh api notifications | jq -r '.[] | select(.reason == "ci_activity" and (.subject.title | test("run cancelled")) and .repository.full_name == "${{ github.repository }}") | .id')
+            if [ -n "$NOTIFICATION_IDS" ]; then
+              echo "Found cancellation notifications after $ELAPSED seconds. Deleting..."
+              echo "$NOTIFICATION_IDS" | xargs -I {} gh api -X DELETE notifications/threads/{}
+              echo "Notifications deleted."
+              exit 0
+            else
+              echo "No cancellation notifications found yet ($ELAPSED/$TIMEOUT seconds). Retrying..."
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            fi
+          done
+          echo "No cancellation notifications found after $TIMEOUT seconds. Skipping deletion."
+        else
+          echo "No recently cancelled runs found for workflow ${{ github.workflow }} on branch ${{ github.ref_name }}. Skipping notification check."
+        fi
