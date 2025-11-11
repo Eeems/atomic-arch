@@ -16,9 +16,10 @@ runs:
     - name: Trigger ${{ inputs.workflow }}
       shell: bash
       run: |
+        set -euo pipefail
         git config --global --add safe.directory "$(realpath .)"
         gh workflow run ${{ inputs.workflow }} \
-          --ref ${{ github.ref }} \
+          --ref "$(git rev-parse HEAD)" \
           ${{ inputs.arguments }}
       env:
         GH_TOKEN: ${{ inputs.token }}

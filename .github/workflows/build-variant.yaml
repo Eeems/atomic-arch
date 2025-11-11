@@ -159,14 +159,14 @@ jobs:
         if: inputs.variant != 'rootfs'
         with:
           workflow: iso.yaml
-          token: ${{ secrets.DISPATCH_PAT }}
           arguments: -f variant=${{ inputs.variant }}
+          token: ${{ secrets.DISPATCH_PAT }}
 
       - uses: ./.github/actions/run-workflow
         with:
           workflow: delta.yaml
-          token: ${{ secrets.DISPATCH_PAT }}
           arguments: -f variant=${{ inputs.variant }}
+          token: ${{ secrets.DISPATCH_PAT }}
 
       - name: Trivy cache
         uses: actions/cache@v4
