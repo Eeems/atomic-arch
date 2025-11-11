@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
   packages: write
-  actions: read
+  actions: write
 
 concurrency:
   group: manifest
@@ -83,6 +83,13 @@ jobs:
         env:
           TMPDIR: ${{ runner.temp }}
           push: ${{ github.event_name != 'pull_request' }}
+
+      - name: Remove old cache
+        shell: bash
+        run: |
+          gh cache delete \
+            -k "${{ steps.manifest-cache.outputs.cache-primary-key }}" \
+            --repo "${{ github.repository }}"
 
       - uses: actions/cache/save@v4
         with:

@@ -155,6 +155,13 @@ jobs:
           TMPDIR: ${{ runner.temp }}
           VARIANT: ${{ inputs.variant }}
 
+      - name: Remove old cache
+        shell: bash
+        run: |
+          gh cache delete \
+            -k "${{ steps.manifest-cache.outputs.cache-primary-key }}" \
+            --repo "${{ github.repository }}"
+
       - uses: actions/cache/save@v4
         with:
           path: ${{ runner.temp }}/manifest_cache
