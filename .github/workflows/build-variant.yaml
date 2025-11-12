@@ -108,17 +108,14 @@ jobs:
                   ./make.py build $args rootfs
                 fi
                 echo "updates=true" >> $GITHUB_OUTPUT
-                echo "::endgroup::"
+                updates="true"
               elif [ $res -ne 0 ];then
                 exit 1
               else
                 echo "No Updates"
-                echo "::endgroup::"
-                echo "::group::push"
-                ./make.py push ${{ inputs.variant }}
                 echo "updates=false" >> $GITHUB_OUTPUT
-                echo "::endgroup::"
               fi
+              echo "::endgroup::"
             else
               if [[ "$updates" == "true" ]]; then
                 echo "Previous image updated"
@@ -134,17 +131,20 @@ jobs:
                 echo "::group::build"
                 ./make.py build $args ${{ inputs.variant }}
                 echo "updates=true" >> $GITHUB_OUTPUT
+                updates="true"
                 echo "::endgroup::"
               elif [ $res -ne 0 ];then
                 exit 1
-              elif $push;then
+              else
                 echo "No Updates"
-                echo "::endgroup::"
-                echo "::group::push"
-                ./make.py push ${{ inputs.variant }}
                 echo "updates=false" >> $GITHUB_OUTPUT
                 echo "::endgroup::"
               fi
+            fi
+            if $push && [[ "$updates" != "true" ]];then
+              echo "::group::push"
+              ./make.py push ${{ inputs.variant }}
+              echo "::endgroup::"
             fi
         env:
           TMPDIR: ${{ runner.temp }}
@@ -152,6 +152,25 @@ jobs:
           VARIANT: ${{ inputs.variant }}
 
       - uses: ./.github/actions/manifest-cache-update
+        if: ${{ inputs.push }}
+
+      - name: Export image
+        id: export
+        if: steps.build.outputs.updates == 'true' && !inputs.push
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            podman save ${{ inputs.variant }} | zstd -o ${{ inputs.variant }}.tar.zstd
+            echo "name=${{ inputs.variant }}" >> $GITHUB_OUTPUT
+            echo "path=${{ inputs.variant }}.tar.zstd" >> $GITHUB_OUTPUT
+
+      - name: Upload image artifact
+        if: steps.build.outputs.updates == 'true' && !inputs.push
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.export.outputs.name }}
+          path: ${{ steps.export.outputs.path }}
+          if-no-files-found: ignore
 
       - name: Auto commit any updates
         if: inputs.push && inputs.variant == 'rootfs'
@@ -168,18 +187,18 @@ jobs:
           key: trivy-${{ hashFiles('make.py') }}
 
       - name: Scan container
-        shell: bash
-        run: |
-          podman system service --time 0 unix:///run/podman/podman.sock &
-          ./make.py scan ${{ inputs.variant }}
-          cat .trivy/report.md >> $GITHUB_STEP_SUMMARY
-          rm .trivy/report.json
-          rm .trivy/report.md
-          mv .trivy/report.sarif .
-          kill $(jobs -p) || true
+        if: steps.build.outputs.updates == 'true' && !inputs.push
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            ./make.py scan ${{ inputs.variant }}
+            cat .trivy/report.md >> $GITHUB_STEP_SUMMARY
+            rm .trivy/report.json
+            rm .trivy/report.md
+            mv .trivy/report.sarif .
 
       - name: Upload Scan results to GitHub Security tab
-        if: inputs.push
+        if: steps.build.outputs.updates == 'true' && !inputs.push
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "report.sarif"

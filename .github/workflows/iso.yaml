@@ -7,6 +7,11 @@ on:
         description: Which variant to generate an ISO for
         type: string
         required: true
+      pull:
+        description: Pull the latest image, or use the workflow artifact
+        type: boolean
+        default: false
+        required: false
   workflow_dispatch:
     inputs: *inputs
 
@@ -56,6 +61,22 @@ jobs:
         uses: ./.github/actions/cleanup
         with:
           root: /run/host
+
+      - name: Download image artifact
+        id: download
+        if: inputs.pull
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.variant }}
+
+      - name: Load image artifact
+        if: inputs.pull
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            cd "${{ steps.download.outputs.download-path }}"
+            zstdcat "${{ inputs.variant }}.tar.zstd" | podman load
+            rm "${{ inputs.variant }}.tar.zstd"
 
       - name: Build
         uses: ./.github/actions/run-with-podman-service

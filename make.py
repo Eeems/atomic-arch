@@ -1081,6 +1081,9 @@ def do_workflow(_: argparse.Namespace):
         for variant, data in cast(
             dict[str, dict[str, str | None | list[str]]], config["variants"]
         ).items():
+            if variant in ("check", "rootfs"):
+                raise ValueError(f"Invalid use of protected variant name: {variant}")
+
             graph[variant] = {
                 "depends": data.get("depends", None) or "rootfs",
                 "cleanup": False,
@@ -1088,19 +1091,24 @@ def do_workflow(_: argparse.Namespace):
             indegree[variant] = 0
             for template in cast(list[str], data["templates"]):
                 full_id = f"{variant}-{template}"
-
                 graph[full_id] = {
-                    "depends": f"{variant}-{template.rsplit('-', 1)[0]}"
-                    if "-" in template
-                    else variant,
+                    "depends": (
+                        f"{variant}-{template.rsplit('-', 1)[0]}"
+                        if "-" in template
+                        else variant
+                    ),
                     "cleanup": template in config["clean"],
                 }
                 indegree[full_id] = 0
 
         for job_id, data in graph.items():
-            dep = data["depends"]
-            if dep != "check":
-                indegree[job_id] += 1
+            depends = data["depends"]
+            if job_id == "rootfs":
+                continue
+
+            indegree[job_id] += 1
+            if depends not in graph:
+                raise RuntimeError(f"{job_id} cannot find dependency {depends}")
 
         return graph, indegree
 
@@ -1194,7 +1202,6 @@ def do_workflow(_: argparse.Namespace):
         )
 
     build_order = topological_sort(graph, indegree)
-    build_order.sort()
     delta_jobs = [f"delta_{j}" for j in build_order]
 
     sections = [
@@ -1272,7 +1279,7 @@ def do_workflow(_: argparse.Namespace):
                 "  name: Generate manifest",
                 "  needs:",
             ]
-            + [f"    - {j}" for j in delta_jobs]
+            + [f"    - {j}" for j in sorted(delta_jobs)]
             + [
                 "  uses: ./.github/workflows/manifest.yaml",
                 "  secrets: inherit",

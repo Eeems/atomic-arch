@@ -126,10 +126,40 @@ jobs:
           run: |
             args=""
             if [[ "${{ inputs.recreate }}" == "true" ]];then
-              args="--force"
+              args="$args --force"
             fi
-            ./make.py delta $args --push --explicit ${{ matrix.a }} ${{ matrix.b }}
+            if [[ "${{ inputs.push }}" == "true" ]];then
+              args="$args --push"
+            fi
+            ./make.py delta $args --explicit ${{ matrix.a }} ${{ matrix.b }}
         env:
           TMPDIR: ${{ github.workspace }}/.tmp
 
       - uses: ./.github/actions/manifest-cache-update
+        if: inputs.push
+
+      - name: Export image
+        id: export
+        if: ${{ ! inputs.push }}
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            name=$(python <<EOF
+            import make
+            from _os.podman import hex_to_base62
+            a = hex_to_base62("${{ matrix.a }}")
+            b = hex_to_base62("${{ matrix.b }}")
+            print(f"_diff-{a}-{b}")
+            EOF
+            )
+            echo "name=$name" >> $GITHUB_OUTPUT
+            echo "path=$name.tar.zstd" >> $GITHUB_OUTPUT
+            podman save $name | zstd -o $name.tar.zstd
+
+      - name: Upload image artifact
+        if: ${{ !inputs.push }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.export.outputs.name }}
+          path: ${{ steps.export.outputs.path }}
+          if-no-files-found: ignore
