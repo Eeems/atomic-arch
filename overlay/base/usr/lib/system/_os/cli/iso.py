@@ -54,6 +54,7 @@ def iso():
         f"--build-arg=UUID={uuid}",
         f"--build-arg=BASE_IMAGE={buildImage}",
         "--force-rm",
+        "--pull=never",
         f"--tag=system:iso-{uuid}",
         "--file=/etc/system/Isofile",
     )

@@ -128,6 +128,7 @@ def build(target: str):
         f"--tag={REPO}:{target}",
         *[f"--build-arg={k}={v}" for k, v in build_args.items()],
         "--force-rm",
+        "--pull=missing",
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file={containerfile}",
         "--format=docker",
@@ -266,7 +267,8 @@ def do_iso(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        _ = in_system("build", target=f"{REPO}:{target}", check=True)
+        image = f"{REPO}:{target}"
+        _ = in_system("build", target=image, check=True)
         _ = in_system("iso", check=True)
 
 
