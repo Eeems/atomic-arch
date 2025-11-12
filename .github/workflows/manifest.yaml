@@ -1,13 +1,8 @@
 name: Build manifest
 
 on:
-  pull_request: &on-filter
-    branches:
-      - master
-    paths:
-      - .github/workflows/manifest.yaml
-      - make.py
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
   packages: write

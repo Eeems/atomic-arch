@@ -5,25 +5,31 @@ on:
     secrets:
       DISPATCH_PAT:
         required: true
-    inputs:
+    inputs: &inputs
       variant:
+        description: Variant to build
         type: string
         required: true
       updates:
+        description: If an image this depends on updated
         type: boolean
         required: false
         default: false
       cleanup:
+        description: If cleanup should be peformed before building
         type: boolean
         required: false
         default: false
       push:
+        description: If the resulting image should be pushed
         type: boolean
         required: false
         default: false
     outputs:
       updates:
         value: ${{ jobs.run.outputs.updates }}
+  workflow_dispatch:
+    inputs: *inputs
 
 permissions:
   contents: write
@@ -154,19 +160,6 @@ jobs:
           commit_message: |
             Automated rootfs update
             skip-checks:true
-
-      - uses: ./.github/actions/run-workflow
-        if: inputs.variant != 'rootfs'
-        with:
-          workflow: iso.yaml
-          arguments: -f variant=${{ inputs.variant }}
-          token: ${{ secrets.DISPATCH_PAT }}
-
-      - uses: ./.github/actions/run-workflow
-        with:
-          workflow: delta.yaml
-          arguments: -f variant=${{ inputs.variant }}
-          token: ${{ secrets.DISPATCH_PAT }}
 
       - name: Trivy cache
         uses: actions/cache@v4

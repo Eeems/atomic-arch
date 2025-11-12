@@ -1,8 +1,8 @@
 name: Generate deltas
 
 on:
-  workflow_dispatch:
-    inputs:
+  workflow_call:
+    inputs: &inputs
       variant:
         description: Which variant to generate deltas for
         type: string
@@ -11,28 +11,21 @@ on:
         description: Recreate all deltas at the latest format
         type: boolean
         required: false
+        default: false
+      push:
+        description: Push the delta
+        type: boolean
+        required: false
+        default: false
+  workflow_dispatch:
+    inputs: *inputs
 
 permissions:
   contents: read
   packages: write
   actions: write
 
-concurrency:
-  group: delta-${{ inputs.variant }}-${{ inputs.recreate }}
-  cancel-in-progress: true
-
 jobs:
-  notifications:
-    name: Clear notifications
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-      - name: Clean cancellation notifications
-        uses: ./.github/actions/clean-cancelled-notifications
-        with:
-          pat: ${{ secrets.NOTIFICATION_PAT }}
-
   matrix:
     name: atomic-arch:${{ inputs.variant }} deltas
     runs-on: ubuntu-latest
@@ -140,8 +133,3 @@ jobs:
           TMPDIR: ${{ github.workspace }}/.tmp
 
       - uses: ./.github/actions/manifest-cache-update
-
-      - uses: ./.github/actions/run-workflow
-        with:
-          workflow: manifest.yaml
-          token: ${{ secrets.DISPATCH_PAT }}

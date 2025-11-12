@@ -1,12 +1,14 @@
 name: Build an iso
 
 on:
-  workflow_dispatch:
-    inputs:
+  workflow_call:
+    inputs: &inputs
       variant:
         description: Which variant to generate an ISO for
         type: string
         required: true
+  workflow_dispatch:
+    inputs: *inputs
 
 permissions:
   contents: read
