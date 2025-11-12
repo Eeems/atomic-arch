@@ -209,14 +209,14 @@ jobs:
             skip-checks:true
 
       - name: Trivy cache
-        if: steps.build.outputs.updates == 'true' && !inputs.push
+        if: steps.build.outputs.updates == 'true' && inputs.push
         uses: actions/cache@v4
         with:
           path: ./.trivy
           key: trivy-${{ hashFiles('make.py') }}
 
       - name: Scan container
-        if: steps.build.outputs.updates == 'true' && !inputs.push
+        if: steps.build.outputs.updates == 'true' && inputs.push
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |
@@ -225,9 +225,10 @@ jobs:
             rm .trivy/report.json
             rm .trivy/report.md
             mv .trivy/report.sarif .
+            git config --global --add safe.directory "$(realpath .)"
 
       - name: Upload Scan results to GitHub Security tab
-        if: steps.build.outputs.updates == 'true' && !inputs.push
+        if: steps.build.outputs.updates == 'true' && inputs.push
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "report.sarif"
