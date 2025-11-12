@@ -1201,6 +1201,7 @@ def do_workflow(_: argparse.Namespace):
                 "  permissions: *permissions",
                 "  with:",
                 f"    variant: {orig}",
+                "    pull: ${{ github.ref_name == 'master' }}",
             ]
         )
 

@@ -583,6 +583,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_base-nvidia:
     name: Generate iso for base-nvidia
@@ -592,6 +593,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-nvidia
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_base-slim:
     name: Generate iso for base-slim
@@ -601,6 +603,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_atomic:
     name: Generate iso for atomic
@@ -610,6 +613,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_gnome:
     name: Generate iso for gnome
@@ -619,6 +623,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_atomic-nvidia:
     name: Generate iso for atomic-nvidia
@@ -628,6 +633,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_atomic-slim:
     name: Generate iso for atomic-slim
@@ -637,6 +643,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-slim
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_atomic-system76:
     name: Generate iso for atomic-system76
@@ -646,6 +653,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_eeems:
     name: Generate iso for eeems
@@ -655,6 +663,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_gnome-nvidia:
     name: Generate iso for gnome-nvidia
@@ -664,6 +673,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-nvidia
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_gnome-slim:
     name: Generate iso for gnome-slim
@@ -673,6 +683,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-slim
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_gnome-system76:
     name: Generate iso for gnome-system76
@@ -682,6 +693,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_atomic-system76-nvidia:
     name: Generate iso for atomic-system76-nvidia
@@ -691,6 +703,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76-nvidia
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_eeems-nvidia:
     name: Generate iso for eeems-nvidia
@@ -700,6 +713,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_eeems-slim:
     name: Generate iso for eeems-slim
@@ -709,6 +723,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-slim
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_eeems-system76:
     name: Generate iso for eeems-system76
@@ -718,6 +733,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_gnome-system76-nvidia:
     name: Generate iso for gnome-system76-nvidia
@@ -727,6 +743,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76-nvidia
+      pull: ${{ github.ref_name == 'master' }}
 
   iso_eeems-system76-nvidia:
     name: Generate iso for eeems-system76-nvidia
@@ -736,3 +753,4 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76-nvidia
+      pull: ${{ github.ref_name == 'master' }}

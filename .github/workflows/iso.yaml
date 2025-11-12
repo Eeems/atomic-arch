@@ -64,13 +64,13 @@ jobs:
 
       - name: Download image artifact
         id: download
-        if: inputs.pull
+        if: ${{ !inputs.pull }}
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.variant }}
 
       - name: Load image artifact
-        if: inputs.pull
+        if: ${{ !inputs.pull }}
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |
