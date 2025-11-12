@@ -41,6 +41,7 @@ FROM scratch
 
 COPY --from=build / /
 
+
 ARG \
   VARIANT \
   VARIANT_ID \
@@ -70,3 +71,5 @@ LABEL \
   hash="${HASH}" \
   mirrorlist="${MIRRORLIST}"
 
+WORKDIR /
+ENTRYPOINT [ "/bin/bash" ]
