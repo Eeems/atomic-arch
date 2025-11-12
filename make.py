@@ -1158,7 +1158,7 @@ def do_workflow(_: argparse.Namespace):
         if d["cleanup"]:
             lines.append("    cleanup: true")
 
-        return indent(lines, level=1)
+        return indent(lines)
 
     def render_delta(djob: str) -> list[str]:
         orig = djob.replace("delta_", "")
@@ -1176,7 +1176,7 @@ def do_workflow(_: argparse.Namespace):
             lines.append("    push: ${{ github.ref_name == 'master' }}")
 
         lines.append("    recreate: false")
-        return indent(lines, level=1)
+        return indent(lines)
 
     def render_iso(ijob: str) -> list[str]:
         orig = ijob.replace("iso_", "")
@@ -1190,8 +1190,7 @@ def do_workflow(_: argparse.Namespace):
                 "  permissions: *permissions",
                 "  with:",
                 f"    variant: {orig}",
-            ],
-            level=1,
+            ]
         )
 
     build_order = topological_sort(graph, indegree)
@@ -1200,27 +1199,27 @@ def do_workflow(_: argparse.Namespace):
 
     sections = [
         [
-            """name: Build images
-on:
-  pull_request: &on-filter
-    branches:
-      - master
-    paths:
-      - .github/workflows/build.yaml
-      - .github/workflows/build-variant.yaml
-      - ".github/actions/cleanup/**"
-      - make.py
-      - seccomp.json
-      - .containerignore
-      - "overlay/**"
-      - "templates/**"
-      - "variants/**"
-  push: *on-filter
-  workflow_dispatch:
-  schedule:
-    - cron: "0 23 * * *"
-
-jobs:"""
+            "name: Build images",
+            "on:",
+            "  pull_request: &on-filter",
+            "    branches:",
+            "      - master",
+            "    paths:",
+            "      - .github/workflows/build.yaml",
+            "      - .github/workflows/build-variant.yaml",
+            '      - ".github/actions/cleanup/**"',
+            "      - make.py",
+            "      - seccomp.json",
+            "      - .containerignore",
+            '      - "overlay/**"',
+            '      - "templates/**"',
+            '      - "variants/**"',
+            "  push: *on-filter",
+            "  workflow_dispatch:",
+            "  schedule:",
+            '    - cron: "0 23 * * *"',
+            "",
+            "jobs:",
         ],
         comment("UNIQUE"),
         indent(
