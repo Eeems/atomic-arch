@@ -41,7 +41,6 @@ FROM scratch
 
 COPY --from=build / /
 
-
 ARG \
   VARIANT \
   VARIANT_ID \

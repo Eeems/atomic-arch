@@ -20,20 +20,25 @@ from ..podman import export
 kwds = {"help": "Build a bootable ISO image to install your system"}
 
 
-def register(_: ArgumentParser):
-    pass
+def register(parser: ArgumentParser):
+    _ = parser.add_argument(
+        "--no-local-image",
+        description="If the image should be copied to the iso container storage",
+        dest="localImage",
+        action="store_false",
+    )
 
 
-def command(_: Namespace):
+def command(args: Namespace):
     if not is_root():
         print("Must be run as root")
         sys.exit(1)
 
-    name = iso()
+    name = iso(cast(bool, args.localImage))
     print(f"ISO Created: {name}")
 
 
-def iso():
+def iso(local_image: bool):
     cwd = os.getcwd()
     os.chdir(SYSTEM_PATH)
     if os.path.exists("archiso"):
@@ -66,7 +71,7 @@ def iso():
 
     with export(
         f"iso-{uuid}",
-        f"podman --remote save {buildImage} | podman load",
+        f"podman --remote save {buildImage} | podman load" if local_image else "",
         workingDir=SYSTEM_PATH,
     ) as t:
         if not os.path.exists(rootfs):
