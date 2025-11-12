@@ -1042,9 +1042,264 @@ def do_manifest(args: argparse.Namespace):
             podman("push", image)
 
 
-def do_test(_: argparse.Namespace):
-    for _x in progress_bar(range(1000)):
-        sleep(0.5)
+type Graph = dict[str, dict[str, str | list[str] | None | bool]]
+type Indegree = dict[str, int]
+
+
+def do_workflow(_: argparse.Namespace):
+    from collections import deque
+
+    config: dict[str, list[str] | dict[str, dict[str, str | None | list[str]]]] = {
+        "variants": {
+            "base": {"templates": ["nvidia", "slim"]},
+            "atomic": {
+                "depends": "base",
+                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+            },
+            "gnome": {
+                "depends": "base",
+                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+            },
+            "eeems": {
+                "depends": "atomic",
+                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+            },
+        },
+        "clean": ["slim"],
+    }
+
+    def build_job_graph(
+        config: dict[str, list[str] | dict[str, dict[str, str | None | list[str]]]],
+    ) -> tuple[Graph, Indegree]:
+        graph: Graph = {
+            "rootfs": {
+                "depends": "check",
+                "cleanup": False,
+            }
+        }
+        indegree: Indegree = {"rootfs": 0}
+        for variant, data in cast(
+            dict[str, dict[str, str | None | list[str]]], config["variants"]
+        ).items():
+            graph[variant] = {
+                "depends": data.get("depends", None) or "rootfs",
+                "cleanup": False,
+            }
+            indegree[variant] = 0
+            for template in cast(list[str], data["templates"]):
+                full_id = f"{variant}-{template}"
+
+                graph[full_id] = {
+                    "depends": f"{variant}-{template.rsplit('-', 1)[0]}"
+                    if "-" in template
+                    else variant,
+                    "cleanup": template in config["clean"],
+                }
+                indegree[full_id] = 0
+
+        for job_id, data in graph.items():
+            dep = data["depends"]
+            if dep != "check":
+                indegree[job_id] += 1
+
+        return graph, indegree
+
+    def topological_sort(graph: Graph, indegree: Indegree) -> list[str]:
+        queue = deque([job for job, deg in indegree.items() if deg == 0])
+        order: list[str] = []
+        while queue:
+            job = queue.popleft()
+            order.append(job)
+            for dep_job, data in graph.items():
+                if data["depends"] != job:
+                    continue
+
+                indegree[dep_job] -= 1
+                if indegree[dep_job] == 0:
+                    queue.append(dep_job)
+
+        if len(order) != len(graph):
+            raise RuntimeError("Cycle detected in job dependencies")
+
+        return order
+
+    graph, indegree = build_job_graph(config)
+
+    def indent(lines: list[str], level: int = 1) -> list[str]:
+        return [
+            (("  " * level) + line).rstrip() if line.strip() else "" for line in lines
+        ]
+
+    def comment(title: str) -> list[str]:
+        return [
+            "  ######################################",
+            f"  #             {title:<19}#",
+            "  ######################################",
+        ]
+
+    def render_build(job_id: str) -> list[str]:
+        d = graph[job_id]
+        lines = [
+            f"{job_id}:",
+            f"  name: Build atomic-arch:{job_id} image",
+            f"  needs: {d['depends']}",
+            "  uses: ./.github/workflows/build-variant.yaml",
+            "  secrets: inherit",
+            "  permissions: *permissions",
+            "  with:",
+            f"    variant: {job_id}",
+        ]
+        if job_id != "rootfs":
+            lines.append(
+                f"    updates: ${{{{ fromJson(needs.{d['depends']}.outputs.updates) }}}}"
+            )
+            lines.append("    push: ${{ github.ref_name == 'master' }}")
+
+        if d["cleanup"]:
+            lines.append("    cleanup: true")
+
+        return indent(lines, level=1)
+
+    def render_delta(djob: str) -> list[str]:
+        orig = djob.replace("delta_", "")
+        lines = [
+            f"{djob}:",
+            f"  name: Generate deltas for {orig}",
+            f"  needs: {orig}",
+            "  uses: ./.github/workflows/delta.yaml",
+            "  secrets: inherit",
+            "  permissions: *permissions",
+            "  with:",
+            f"    variant: {orig}",
+        ]
+        if orig != "rootfs":
+            lines.append("    push: ${{ github.ref_name == 'master' }}")
+
+        lines.append("    recreate: false")
+        return indent(lines, level=1)
+
+    def render_iso(ijob: str) -> list[str]:
+        orig = ijob.replace("iso_", "")
+        return indent(
+            [
+                f"{ijob}:",
+                f"  name: Generate iso for {orig}",
+                f"  needs: {orig}",
+                "  uses: ./.github/workflows/iso.yaml",
+                "  secrets: inherit",
+                "  permissions: *permissions",
+                "  with:",
+                f"    variant: {orig}",
+            ],
+            level=1,
+        )
+
+    build_order = topological_sort(graph, indegree)
+    build_order.sort()
+    delta_jobs = [f"delta_{j}" for j in build_order]
+
+    sections = [
+        [
+            """name: Build images
+on:
+  pull_request: &on-filter
+    branches:
+      - master
+    paths:
+      - .github/workflows/build.yaml
+      - .github/workflows/build-variant.yaml
+      - ".github/actions/cleanup/**"
+      - make.py
+      - seccomp.json
+      - .containerignore
+      - "overlay/**"
+      - "templates/**"
+      - "variants/**"
+  push: *on-filter
+  workflow_dispatch:
+  schedule:
+    - cron: "0 23 * * *"
+
+jobs:"""
+        ],
+        comment("UNIQUE"),
+        indent(
+            [
+                "notifications:",
+                "  name: Clear notifications",
+                "  runs-on: ubuntu-latest",
+                "  steps:",
+                "    - name: Checkout the repository",
+                "      uses: actions/checkout@v4",
+                "    - name: Clean cancellation notifications",
+                "      uses: ./.github/actions/clean-cancelled-notifications",
+                "      with:",
+                "        pat: ${{ secrets.NOTIFICATION_PAT }}",
+                "",
+                "check:",
+                "  name: Ensure config is valid",
+                "  runs-on: ubuntu-latest",
+                "  permissions:",
+                "    contents: read",
+                "    packages: read",
+                "  container:",
+                "    image: ghcr.io/eeems/atomic-arch-builder:latest",
+                "    options: >-",
+                "      --privileged",
+                "      --security-opt seccomp=unconfined",
+                "      --security-opt apparmor=unconfined",
+                "      --cap-add=SYS_ADMIN",
+                "      --cap-add=NET_ADMIN",
+                "      --device /dev/fuse",
+                "      --tmpfs /tmp",
+                "      --tmpfs /run",
+                "      --userns=host",
+                "      -v /var/lib/containers:/var/lib/containers",
+                "      -v /:/run/host",
+                "  steps:",
+                "    - name: Checkout the repository",
+                "      uses: actions/checkout@v4",
+                "    - name: Cache venv",
+                "      uses: actions/cache@v4",
+                "      with:",
+                "        path: .venv",
+                "        key: venv-${{ hashFiles('.github/workflows/Dockerfile.builder') }}-${{ hashFiles('make.py') }}",
+                "    - name: Ensure config is valid",
+                "      run: ./make.py check",
+                "      env:",
+                "        TMPDIR: ${{ runner.temp }}",
+                "",
+                "manifest:",
+                "  name: Generate manifest",
+                "  needs:",
+            ]
+            + [f"    - {j}" for j in delta_jobs]
+            + [
+                "  uses: ./.github/workflows/manifest.yaml",
+                "  secrets: inherit",
+                "  permissions: &permissions",
+                "    contents: write",
+                "    actions: write",
+                "    packages: write",
+                "    security-events: write",
+            ]
+        ),
+        comment("BUILD"),
+        *[render_build(j) for j in build_order],
+        comment("DELTA"),
+        *[render_delta(j) for j in delta_jobs],
+        comment("ISO"),
+        *[render_iso(x) for j in build_order if j != "rootfs" for x in [f"iso_{j}"]],
+    ]
+
+    output: list[str] = []
+    for i, sec in enumerate(sections):
+        output.extend(sec)
+        if i < len(sections) - 1:
+            output.append("")
+
+    with open(".github/workflows/build.yaml", "w") as f:
+        _r = f.write("\n".join(output).rstrip() + "\n")
 
 
 if __name__ == "__main__":
@@ -1128,8 +1383,8 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--push", action="store_true")
     subparser.set_defaults(func=do_manifest)
 
-    subparser = subparsers.add_parser("test")
-    subparser.set_defaults(func=do_test)
+    subparser = subparsers.add_parser("workflow")
+    subparser.set_defaults(func=do_workflow)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

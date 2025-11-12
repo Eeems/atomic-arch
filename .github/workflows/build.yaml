@@ -9,7 +9,7 @@ on:
       - ".github/actions/cleanup/**"
       - make.py
       - seccomp.json
-      - .contianerignore
+      - .containerignore
       - "overlay/**"
       - "templates/**"
       - "variants/**"
@@ -70,25 +70,25 @@ jobs:
   manifest:
     name: Generate manifest
     needs:
-      - delta_rootfs
-      - delta_base
-      - delta_base-nvidia
-      - delta_base-slim
       - delta_atomic
       - delta_atomic-nvidia
       - delta_atomic-slim
       - delta_atomic-system76
       - delta_atomic-system76-nvidia
-      - delta_gnome
-      - delta_gnome-nvidia
-      - delta_gnome-slim
-      - delta_gnome-system76
-      - delta_gnome-system76-nvidia
+      - delta_base
+      - delta_base-nvidia
+      - delta_base-slim
       - delta_eeems
       - delta_eeems-nvidia
       - delta_eeems-slim
       - delta_eeems-system76
       - delta_eeems-system76-nvidia
+      - delta_gnome
+      - delta_gnome-nvidia
+      - delta_gnome-slim
+      - delta_gnome-system76
+      - delta_gnome-system76-nvidia
+      - delta_rootfs
     uses: ./.github/workflows/manifest.yaml
     secrets: inherit
     permissions: &permissions

@@ -2,4 +2,4 @@
 Description=Check for updates
 
 [Service]
-ExecStart=/usr/bin/os checkupdates --download
+ExecStart=/usr/bin/os checkupdates --download || true
