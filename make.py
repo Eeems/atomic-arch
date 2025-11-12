@@ -122,13 +122,15 @@ def build(target: str):
         build_args["ID"] = f"{labels['os-release.ID']}"
         build_args["HOME_URL"] = f"{labels['os-release.HOME_URL']}"
         build_args["BUG_REPORT_URL"] = f"{labels['os-release.BUG_REPORT_URL']}"
+        if not image_exists(f"{REPO}:{base_variant}", False):
+            pull(f"{REPO}:{base_variant}")
 
     podman(
         "build",
         f"--tag={REPO}:{target}",
         *[f"--build-arg={k}={v}" for k, v in build_args.items()],
         "--force-rm",
-        "--pull=missing",
+        "--pull=never",
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file={containerfile}",
         "--format=docker",
