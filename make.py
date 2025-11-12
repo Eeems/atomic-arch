@@ -1209,6 +1209,11 @@ def do_workflow(_: argparse.Namespace):
 
     sections = [
         [
+            "#########################################",
+            "# THIS FILE IS DYNAMICALLY GENERETED    #",
+            "# Run the following to update the file: #",
+            "#   $ ./make.py workflow                #",
+            "#########################################",
             "name: Build images",
             "on:",
             "  pull_request: &on-filter",
