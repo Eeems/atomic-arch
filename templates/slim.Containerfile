@@ -56,11 +56,11 @@ ARG \
   BUG_REPORT_URL
 
 LABEL \
-  os-release.NAME="Atomic Arch" \
-  os-release.PRETTY_NAME="Atomic Arch Linux" \
-  os-release.ID="atomic-arch" \
-  os-release.HOME_URL="https://github.com/Eeems/atomic-arch" \
-  os-release.BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues" \
+  os-release.NAME="${NAME}" \
+  os-release.PRETTY_NAME="${PRETTY_NAME}" \
+  os-release.ID="${ID}" \
+  os-release.HOME_URL="${HOME_URL}" \
+  os-release.BUG_REPORT_URL="${BUG_REPORT_URL}" \
   os-release.VERSION="${VERSION}" \
   os-release.VERSION_ID="${VERSION_ID}" \
   os-release.VARIANT="${VARIANT}" \
