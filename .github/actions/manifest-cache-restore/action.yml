@@ -6,7 +6,7 @@ inputs:
     default: ${{ runner.temp }}/manifest_cache
   key:
     description: Cache key
-    default: manifest-cache
+    default: manifest-cache-${{ github.ref_name }}
 runs:
   using: composite
   steps:

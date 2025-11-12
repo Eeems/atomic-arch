@@ -1147,10 +1147,11 @@ def do_workflow(_: argparse.Namespace):
 
     def render_build(job_id: str) -> list[str]:
         d = graph[job_id]
+        depends = d["depends"]
         lines = [
             f"{job_id}:",
             f"  name: Build atomic-arch:{job_id} image",
-            f"  needs: {d['depends']}",
+            f"  needs: {depends}",
             "  uses: ./.github/workflows/build-variant.yaml",
             "  secrets: inherit",
             "  permissions: *permissions",
@@ -1158,10 +1159,11 @@ def do_workflow(_: argparse.Namespace):
             f"    variant: {job_id}",
         ]
         if job_id != "rootfs":
-            lines.append(
-                f"    updates: ${{{{ fromJson(needs.{d['depends']}.outputs.updates) }}}}"
-            )
-            lines.append("    push: ${{ github.ref_name == 'master' }}")
+            lines += [
+                f"    updates: ${{{{ fromJson(needs.{depends}.outputs.updates) }}}}",
+                "    push: ${{ github.ref_name == 'master' }}",
+                f"    artifact: {depends}",
+            ]
 
         if d["cleanup"]:
             lines.append("    cleanup: true")

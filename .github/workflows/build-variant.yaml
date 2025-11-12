@@ -25,6 +25,11 @@ on:
         type: boolean
         required: false
         default: false
+      artifact:
+        description: Artifact to load base image from
+        type: string
+        required: false
+        default: ""
     outputs:
       updates:
         value: ${{ jobs.run.outputs.updates }}
@@ -78,6 +83,22 @@ jobs:
         uses: ./.github/actions/cleanup
         with:
           root: /run/host
+
+      - name: Download ${{ inputs.artifact }} image
+        id: download
+        if: inputs.artifact != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+
+      - name: Load ${{ inputs.artifact }} image
+        if: inputs.artifact != ''
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            cd "${{ steps.download.outputs.download-path }}"
+            zstdcat "${{ inputs.artifact }}.tar.zstd" | podman load
+            rm "${{ inputs.artifact }}.tar.zstd"
 
       - uses: ./.github/actions/manifest-cache-restore
 
