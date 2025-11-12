@@ -15,7 +15,7 @@ permissions:
   packages: read
 
 concurrency:
-  group: delta-${{ inputs.variant }}
+  group: iso-${{ inputs.variant }}
   cancel-in-progress: true
 
 jobs:
