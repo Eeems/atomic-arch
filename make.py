@@ -125,6 +125,34 @@ def build(target: str):
         if not image_exists(f"{REPO}:{base_variant}", False):
             pull(f"{REPO}:{base_variant}")
 
+    with open(containerfile, "r") as f:
+        pattern = re.compile(r"\$\{([^}:]+)(?::-(.+?))?\}")
+        # TODO handle line continuations
+        lines = [
+            x
+            for x in f.read().splitlines()
+            if x.startswith("FROM ") or x.startswith("ARG ")
+        ]
+        for base_image in [x[5:].strip() for x in lines if x.startswith("FROM ")]:
+            if " AS " in base_image.upper():
+                base_image = re.split(" AS ", base_image, 1, flags=re.IGNORECASE)[0]
+
+            # TODO handle multiple args in a single ARG statement
+            args = {
+                k: v
+                for x in lines
+                for y in [x[4:].strip()]
+                for k, v in [y.split("=", 1) if "=" in y else (y, None)]
+                if x.startswith("ARG ")
+            }
+            args.update(build_args)
+            base_image = pattern.sub(
+                lambda m: cast(str, args.get(m.group(1), m.group(2) or "")),
+                base_image,
+            )
+            if base_image != "scratch" and not image_exists(base_image, False):
+                pull(base_image)
+
     podman(
         "build",
         f"--tag={REPO}:{target}",

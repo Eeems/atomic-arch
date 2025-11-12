@@ -23,7 +23,7 @@ kwds = {"help": "Build a bootable ISO image to install your system"}
 def register(parser: ArgumentParser):
     _ = parser.add_argument(
         "--no-local-image",
-        description="If the image should be copied to the iso container storage",
+        help="If the image should be copied to the iso container storage",
         dest="localImage",
         action="store_false",
     )
