@@ -160,16 +160,23 @@ jobs:
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |
-            podman save ${{ inputs.variant }} | zstd -o ${{ inputs.variant }}.tar.zstd
-            echo "name=${{ inputs.variant }}" >> $GITHUB_OUTPUT
-            echo "path=${{ inputs.variant }}.tar.zstd" >> $GITHUB_OUTPUT
+            image=$(python <<EOF
+            import make
+            from _os import REPO
+            print(REPO)
+            EOF
+            )
+            podman save "$image:${{ inputs.variant }}" | zstd -o ${{ inputs.variant }}.tar.zstd
+            echo \
+              "outputs={\"name\":\"${{ inputs.variant }}\",\"path\":\"${{ inputs.variant }}.tar.zstd\"}" \
+            >> $GITHUB_OUTPUT
 
-      - name: Upload image artifact
+      - name: Upload ${{ fromJson(steps.export.outputs.outputs).name }} image
         if: steps.build.outputs.updates == 'true' && !inputs.push
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.export.outputs.name }}
-          path: ${{ steps.export.outputs.path }}
+          name: ${{ fromJson(steps.export.outputs.outputs).name }}
+          path: ${{ fromJson(steps.export.outputs.outputs).path }}
           if-no-files-found: ignore
 
       - name: Auto commit any updates

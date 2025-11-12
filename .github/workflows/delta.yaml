@@ -152,14 +152,21 @@ jobs:
             print(f"_diff-{a}-{b}")
             EOF
             )
-            echo "name=$name" >> $GITHUB_OUTPUT
-            echo "path=$name.tar.zstd" >> $GITHUB_OUTPUT
-            podman save $name | zstd -o $name.tar.zstd
+            image=$(python <<EOF
+            import make
+            from _os import REPO
+            print(REPO)
+            EOF
+            )
+            podman save "$image:$name" | zstd -o $name.tar.zstd
+            echo \
+              "outputs={\"name\":\"$name\",\"path\":\"$name.tar.zstd\"}" \
+            >> $GITHUB_OUTPUT
 
-      - name: Upload image artifact
+      - name: Upload ${{ fromJson(steps.export.outputs.outputs).name }} image
         if: ${{ !inputs.push }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.export.outputs.name }}
-          path: ${{ steps.export.outputs.path }}
+          name: ${{ fromJson(steps.export.outputs.outputs).name }}
+          path: ${{ fromJson(steps.export.outputs.outputs).path }}
           if-no-files-found: ignore
