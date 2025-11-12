@@ -1211,7 +1211,7 @@ def do_workflow(_: argparse.Namespace):
     sections = [
         [
             "#########################################",
-            "# THIS FILE IS DYNAMICALLY GENERETED    #",
+            "# THIS FILE IS DYNAMICALLY GENERATED    #",
             "# Run the following to update the file: #",
             "#   $ ./make.py workflow                #",
             "#########################################",
