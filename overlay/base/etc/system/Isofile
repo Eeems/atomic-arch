@@ -10,7 +10,7 @@ RUN rm /home \
   && mkdir -p /etc/mkinitcpio{,.conf}.d \
   && cp -lf /etc/system/mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf \
   && cp -lf /etc/system/linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset \
-  && cp -lf /etc/system/pacman-initialize.service /etc/system.d/system/pacman-initialize.service
+  && cp -lf /etc/system/pacman-initialize.service /etc/systemd/system/pacman-initialize.service
 
 RUN /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_packages \
