@@ -52,6 +52,7 @@ jobs:
         -v /:/run/host
     outputs:
       variant-matrix: ${{ steps.matrix.outputs.JSON_CONTENT }}
+      items: ${{ steps.matrix.outputs.items }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -81,15 +82,22 @@ jobs:
           fi
           mkdir -p /run/podman
           podman system service --time 0 unix:///run/podman/podman.sock &
+          data="$(./make.py get-deltas --json $args ${{ inputs.variant }})"
+          items="$(echo "$data" | jq -c 'length')"
           echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
-          ./make.py get-deltas --json $args ${{ inputs.variant }} \
-          | jq -c '{"include": .}' >> $GITHUB_OUTPUT
+          if [[ $items -gt 0 ]];then
+            echo "$data" | jq -c '{"include": .}' >> $GITHUB_OUTPUT
+          else
+            echo '{"include":[{"a":"","b":"","tag":""}]}' >> $GITHUB_OUTPUT
+          fi
           echo 'EOF' >> $GITHUB_OUTPUT
+          echo "items=$items" >> $GITHUB_OUTPUT
           kill $(jobs -p)
         env:
           TMPDIR: ${{ runner.temp }}
   run:
     name: ${{ matrix.a }} to ${{matrix.b}}
+    if: ${{ needs.matrix.outputs.items > 0 }}
     runs-on: ubuntu-latest
     container: *container
     needs: matrix
@@ -100,12 +108,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4
 
-      - name: Ensure .docker exists
-        run: |
-          mkdir -p /github/home/.docker
-          if ! [ -f /github/home/.docker/config.json ];then
-            echo '{"auths":{}}' > /github/home/.docker/config.json
-          fi
+      - uses: ./.github/actions/setup-container
 
       - name: Login to dockerhub
         uses: redhat-actions/podman-login@v1
@@ -115,52 +118,30 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
+      - uses: ./.github/actions/mask-registry-passwords
+
       - name: Free up space
         uses: ./.github/actions/cleanup
         with:
           root: /run/host
 
-      - uses: actions/cache/restore@v4
-        id: manifest-cache
-        with:
-          path: ${{ runner.temp }}/manifest_cache
-          key: manifest-cache
+      - uses: ./.github/actions/manifest-cache-restore
 
       - name: Build
-        id: build
-        shell: bash
-        run: |
-          mkdir -p $TMPDIR
-          args=""
-          if [[ "${{ inputs.recreate }}" == "true" ]];then
-            args="--force"
-          fi
-          mkdir -p /run/podman
-          podman system service --time 0 unix:///run/podman/podman.sock &
-          ./make.py delta $args --push --explicit ${{ matrix.a }} ${{ matrix.b }}
-          kill $(jobs -p)
-          rm -rf .tmp/*
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            args=""
+            if [[ "${{ inputs.recreate }}" == "true" ]];then
+              args="--force"
+            fi
+            ./make.py delta $args --push --explicit ${{ matrix.a }} ${{ matrix.b }}
         env:
           TMPDIR: ${{ github.workspace }}/.tmp
 
-      - name: Remove old cache
-        shell: bash
-        run: |
-          git config --global --add safe.directory "$(realpath .)"
-          gh cache delete \
-            "${{ steps.manifest-cache.outputs.cache-primary-key }}" \
-            --repo "${{ github.repository }}"
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: ./.github/actions/manifest-cache-update
 
-      - uses: actions/cache/save@v4
+      - uses: ./.github/actions/run-workflow
         with:
-          path: ${{ runner.temp }}/manifest_cache
-          key: manifest-cache
-
-      - name: Trigger manifest rebuild
-        run: |
-          gh workflow run manifest.yaml \
-            --ref ${{ github.ref }}
-        env:
-          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+          workflow: manifest.yaml
+          token: ${{ secrets.DISPATCH_PAT }}
