@@ -1175,6 +1175,7 @@ def do_workflow(_: argparse.Namespace):
         lines = [
             f"{djob}:",
             f"  name: Generate deltas for {orig}",
+            "  if: github.ref_name == 'master'",
             f"  needs: {orig}",
             "  uses: ./.github/workflows/delta.yaml",
             "  secrets: inherit",

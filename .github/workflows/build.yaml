@@ -337,6 +337,7 @@ jobs:
 
   delta_rootfs:
     name: Generate deltas for rootfs
+    if: github.ref_name == 'master'
     needs: rootfs
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -347,6 +348,7 @@ jobs:
 
   delta_base:
     name: Generate deltas for base
+    if: github.ref_name == 'master'
     needs: base
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -358,6 +360,7 @@ jobs:
 
   delta_base-nvidia:
     name: Generate deltas for base-nvidia
+    if: github.ref_name == 'master'
     needs: base-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -369,6 +372,7 @@ jobs:
 
   delta_base-slim:
     name: Generate deltas for base-slim
+    if: github.ref_name == 'master'
     needs: base-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -380,6 +384,7 @@ jobs:
 
   delta_atomic:
     name: Generate deltas for atomic
+    if: github.ref_name == 'master'
     needs: atomic
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -391,6 +396,7 @@ jobs:
 
   delta_gnome:
     name: Generate deltas for gnome
+    if: github.ref_name == 'master'
     needs: gnome
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -402,6 +408,7 @@ jobs:
 
   delta_atomic-nvidia:
     name: Generate deltas for atomic-nvidia
+    if: github.ref_name == 'master'
     needs: atomic-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -413,6 +420,7 @@ jobs:
 
   delta_atomic-slim:
     name: Generate deltas for atomic-slim
+    if: github.ref_name == 'master'
     needs: atomic-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -424,6 +432,7 @@ jobs:
 
   delta_atomic-system76:
     name: Generate deltas for atomic-system76
+    if: github.ref_name == 'master'
     needs: atomic-system76
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -435,6 +444,7 @@ jobs:
 
   delta_eeems:
     name: Generate deltas for eeems
+    if: github.ref_name == 'master'
     needs: eeems
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -446,6 +456,7 @@ jobs:
 
   delta_gnome-nvidia:
     name: Generate deltas for gnome-nvidia
+    if: github.ref_name == 'master'
     needs: gnome-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -457,6 +468,7 @@ jobs:
 
   delta_gnome-slim:
     name: Generate deltas for gnome-slim
+    if: github.ref_name == 'master'
     needs: gnome-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -468,6 +480,7 @@ jobs:
 
   delta_gnome-system76:
     name: Generate deltas for gnome-system76
+    if: github.ref_name == 'master'
     needs: gnome-system76
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -479,6 +492,7 @@ jobs:
 
   delta_atomic-system76-nvidia:
     name: Generate deltas for atomic-system76-nvidia
+    if: github.ref_name == 'master'
     needs: atomic-system76-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -490,6 +504,7 @@ jobs:
 
   delta_eeems-nvidia:
     name: Generate deltas for eeems-nvidia
+    if: github.ref_name == 'master'
     needs: eeems-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -501,6 +516,7 @@ jobs:
 
   delta_eeems-slim:
     name: Generate deltas for eeems-slim
+    if: github.ref_name == 'master'
     needs: eeems-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -512,6 +528,7 @@ jobs:
 
   delta_eeems-system76:
     name: Generate deltas for eeems-system76
+    if: github.ref_name == 'master'
     needs: eeems-system76
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -523,6 +540,7 @@ jobs:
 
   delta_gnome-system76-nvidia:
     name: Generate deltas for gnome-system76-nvidia
+    if: github.ref_name == 'master'
     needs: gnome-system76-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -534,6 +552,7 @@ jobs:
 
   delta_eeems-system76-nvidia:
     name: Generate deltas for eeems-system76-nvidia
+    if: github.ref_name == 'master'
     needs: eeems-system76-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
