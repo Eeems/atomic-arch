@@ -96,8 +96,6 @@ jobs:
       actions: write
       packages: write
       security-events: write
-    with:
-      variant: base
 
   ######################################
   #              BUILD                 #
@@ -326,7 +324,7 @@ jobs:
     permissions: *permissions
     with:
       variant: rootfs
-  recreate: false
+      recreate: false
   delta_base:
     name: Generate deltas for base
     needs: base

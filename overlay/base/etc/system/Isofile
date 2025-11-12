@@ -30,5 +30,6 @@ RUN /usr/lib/system/initialize_pacman \
   nvidia-container-toolkit \
   nvidia-utils
 
+RUN sed -i '/11-dm-initramfs.rules/d' /usr/lib/initcpio/install/archiso
 RUN /usr/lib/system/build_kernel
 RUN /usr/lib/system/create_live_bootloader
