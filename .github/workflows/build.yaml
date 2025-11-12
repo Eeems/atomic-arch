@@ -19,8 +19,9 @@ on:
     - cron: "0 23 * * *"
 
 jobs:
+
   ######################################
-  #             UNIQUE                 #
+  #             UNIQUE             #
   ######################################
 
   notifications:
@@ -98,51 +99,8 @@ jobs:
       security-events: write
 
   ######################################
-  #              BUILD                 #
+  #             BUILD              #
   ######################################
-
-  rootfs:
-    name: Build atomic-arch:rootfs image
-    needs: check
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: rootfs
-
-  base:
-    name: Build atomic-arch:base image
-    needs: rootfs
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base
-      updates: ${{ fromJson(needs.rootfs.outputs.updates) }}
-      push: ${{ github.ref_name == 'master' }}
-
-  base-nvidia:
-    name: Build atomic-arch:base-nvidia image
-    needs: base
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base-nvidia
-      updates: ${{ fromJson(needs.base.outputs.updates) }}
-      push: ${{ github.ref_name == 'master' }}
-
-  base-slim:
-    name: Build atomic-arch:base-slim image
-    needs: base
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base-slim
-      updates: ${{ fromJson(needs.base.outputs.updates) }}
-      push: ${{ github.ref_name == 'master' }}
-      cleanup: true
 
   atomic:
     name: Build atomic-arch:atomic image
@@ -198,6 +156,96 @@ jobs:
     with:
       variant: atomic-system76-nvidia
       updates: ${{ fromJson(needs.atomic-system76.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
+
+  base:
+    name: Build atomic-arch:base image
+    needs: rootfs
+    uses: ./.github/workflows/build-variant.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base
+      updates: ${{ fromJson(needs.rootfs.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
+
+  base-nvidia:
+    name: Build atomic-arch:base-nvidia image
+    needs: base
+    uses: ./.github/workflows/build-variant.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base-nvidia
+      updates: ${{ fromJson(needs.base.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
+
+  base-slim:
+    name: Build atomic-arch:base-slim image
+    needs: base
+    uses: ./.github/workflows/build-variant.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base-slim
+      updates: ${{ fromJson(needs.base.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
+      cleanup: true
+
+  eeems:
+    name: Build atomic-arch:eeems image
+    needs: atomic
+    uses: ./.github/workflows/build-variant.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems
+      updates: ${{ fromJson(needs.atomic.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
+
+  eeems-nvidia:
+    name: Build atomic-arch:eeems-nvidia image
+    needs: eeems
+    uses: ./.github/workflows/build-variant.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-nvidia
+      updates: ${{ fromJson(needs.eeems.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
+
+  eeems-slim:
+    name: Build atomic-arch:eeems-slim image
+    needs: eeems
+    uses: ./.github/workflows/build-variant.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-slim
+      updates: ${{ fromJson(needs.eeems.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
+      cleanup: true
+
+  eeems-system76:
+    name: Build atomic-arch:eeems-system76 image
+    needs: eeems
+    uses: ./.github/workflows/build-variant.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-system76
+      updates: ${{ fromJson(needs.eeems.outputs.updates) }}
+      push: ${{ github.ref_name == 'master' }}
+
+  eeems-system76-nvidia:
+    name: Build atomic-arch:eeems-system76-nvidia image
+    needs: eeems-system76
+    uses: ./.github/workflows/build-variant.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-system76-nvidia
+      updates: ${{ fromJson(needs.eeems-system76.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
 
   gnome:
@@ -256,107 +304,18 @@ jobs:
       updates: ${{ fromJson(needs.gnome-system76.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
 
-  eeems:
-    name: Build atomic-arch:eeems image
-    needs: atomic
+  rootfs:
+    name: Build atomic-arch:rootfs image
+    needs: check
     uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: eeems
-      updates: ${{ fromJson(needs.atomic.outputs.updates) }}
-      push: ${{ github.ref_name == 'master' }}
-
-  eeems-nvidia:
-    name: Build atomic-arch:eeems-nvidia image
-    needs: eeems
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: eeems-nvidia
-      updates: ${{ fromJson(needs.eeems.outputs.updates) }}
-      push: ${{ github.ref_name == 'master' }}
-
-  eeems-slim:
-    name: Build atomic-arch:eeems-slim image
-    needs: eeems
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: eeems-slim
-      updates: ${{ fromJson(needs.eeems.outputs.updates) }}
-      push: ${{ github.ref_name == 'master' }}
-      cleanup: true
-
-  eeems-system76:
-    name: Build atomic-arch:eeems-system76 image
-    needs: eeems
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: eeems-system76
-      updates: ${{ fromJson(needs.eeems.outputs.updates) }}
-      push: ${{ github.ref_name == 'master' }}
-
-  eeems-system76-nvidia:
-    name: Build atomic-arch:eeems-system76-nvidia image
-    needs: eeems-system76
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: eeems-system76-nvidia
-      updates: ${{ fromJson(needs.eeems-system76.outputs.updates) }}
-      push: ${{ github.ref_name == 'master' }}
-
-  ######################################
-  #              DELTA                 #
-  ######################################
-
-  delta_rootfs:
-    name: Generate deltas for rootfs
-    needs: rootfs
-    uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: rootfs
-      recreate: false
-  delta_base:
-    name: Generate deltas for base
-    needs: base
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base
-      push: ${{ github.ref_name == 'master' }}
-      recreate: false
 
-  delta_base-nvidia:
-    name: Generate deltas for base-nvidia
-    needs: base-nvidia
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base-nvidia
-      push: ${{ github.ref_name == 'master' }}
-      recreate: false
-
-  delta_base-slim:
-    name: Generate deltas for base-slim
-    needs: base-slim
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base-slim
-      push: ${{ github.ref_name == 'master' }}
-      recreate: false
+  ######################################
+  #             DELTA              #
+  ######################################
 
   delta_atomic:
     name: Generate deltas for atomic
@@ -413,58 +372,36 @@ jobs:
       push: ${{ github.ref_name == 'master' }}
       recreate: false
 
-  delta_gnome:
-    name: Generate deltas for gnome
-    needs: gnome
+  delta_base:
+    name: Generate deltas for base
+    needs: base
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
-      variant: gnome
+      variant: base
       push: ${{ github.ref_name == 'master' }}
       recreate: false
 
-  delta_gnome-nvidia:
-    name: Generate deltas for gnome-nvidia
-    needs: gnome-nvidia
+  delta_base-nvidia:
+    name: Generate deltas for base-nvidia
+    needs: base-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
-      variant: gnome-nvidia
+      variant: base-nvidia
       push: ${{ github.ref_name == 'master' }}
       recreate: false
 
-  delta_gnome-slim:
-    name: Generate deltas for gnome-slim
-    needs: gnome-slim
+  delta_base-slim:
+    name: Generate deltas for base-slim
+    needs: base-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
-      variant: gnome-slim
-      push: ${{ github.ref_name == 'master' }}
-      recreate: false
-
-  delta_gnome-system76:
-    name: Generate deltas for gnome-system76
-    needs: gnome-system76
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76
-      push: ${{ github.ref_name == 'master' }}
-      recreate: false
-
-  delta_gnome-system76-nvidia:
-    name: Generate deltas for gnome-system76-nvidia
-    needs: gnome-system76-nvidia
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76-nvidia
+      variant: base-slim
       push: ${{ github.ref_name == 'master' }}
       recreate: false
 
@@ -523,36 +460,74 @@ jobs:
       push: ${{ github.ref_name == 'master' }}
       recreate: false
 
+  delta_gnome:
+    name: Generate deltas for gnome
+    needs: gnome
+    uses: ./.github/workflows/delta.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome
+      push: ${{ github.ref_name == 'master' }}
+      recreate: false
+
+  delta_gnome-nvidia:
+    name: Generate deltas for gnome-nvidia
+    needs: gnome-nvidia
+    uses: ./.github/workflows/delta.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-nvidia
+      push: ${{ github.ref_name == 'master' }}
+      recreate: false
+
+  delta_gnome-slim:
+    name: Generate deltas for gnome-slim
+    needs: gnome-slim
+    uses: ./.github/workflows/delta.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-slim
+      push: ${{ github.ref_name == 'master' }}
+      recreate: false
+
+  delta_gnome-system76:
+    name: Generate deltas for gnome-system76
+    needs: gnome-system76
+    uses: ./.github/workflows/delta.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-system76
+      push: ${{ github.ref_name == 'master' }}
+      recreate: false
+
+  delta_gnome-system76-nvidia:
+    name: Generate deltas for gnome-system76-nvidia
+    needs: gnome-system76-nvidia
+    uses: ./.github/workflows/delta.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-system76-nvidia
+      push: ${{ github.ref_name == 'master' }}
+      recreate: false
+
+  delta_rootfs:
+    name: Generate deltas for rootfs
+    needs: rootfs
+    uses: ./.github/workflows/delta.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: rootfs
+      recreate: false
+
   ######################################
-  #               ISO                  #
+  #             ISO                #
   ######################################
-
-  iso_base:
-    name: Generate iso for base
-    needs: base
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base
-
-  iso_base-nvidia:
-    name: Generate iso for base-nvidia
-    needs: base-nvidia
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base-nvidia
-
-  iso_base-slim:
-    name: Generate iso for base-slim
-    needs: base-slim
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base-slim
 
   iso_atomic:
     name: Generate iso for atomic
@@ -599,50 +574,32 @@ jobs:
     with:
       variant: atomic-system76-nvidia
 
-  iso_gnome:
-    name: Generate iso for gnome
-    needs: gnome
+  iso_base:
+    name: Generate iso for base
+    needs: base
     uses: ./.github/workflows/iso.yaml
     secrets: inherit
     permissions: *permissions
     with:
-      variant: gnome
+      variant: base
 
-  iso_gnome-nvidia:
-    name: Generate iso for gnome-nvidia
-    needs: gnome-nvidia
+  iso_base-nvidia:
+    name: Generate iso for base-nvidia
+    needs: base-nvidia
     uses: ./.github/workflows/iso.yaml
     secrets: inherit
     permissions: *permissions
     with:
-      variant: gnome-nvidia
+      variant: base-nvidia
 
-  iso_gnome-slim:
-    name: Generate iso for gnome-slim
-    needs: gnome-slim
+  iso_base-slim:
+    name: Generate iso for base-slim
+    needs: base-slim
     uses: ./.github/workflows/iso.yaml
     secrets: inherit
     permissions: *permissions
     with:
-      variant: gnome-slim
-
-  iso_gnome-system76:
-    name: Generate iso for gnome-system76
-    needs: gnome-system76
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76
-
-  iso_gnome-system76-nvidia:
-    name: Generate iso for gnome-system76-nvidia
-    needs: gnome-system76-nvidia
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76-nvidia
+      variant: base-slim
 
   iso_eeems:
     name: Generate iso for eeems
@@ -688,3 +645,48 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76-nvidia
+
+  iso_gnome:
+    name: Generate iso for gnome
+    needs: gnome
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome
+
+  iso_gnome-nvidia:
+    name: Generate iso for gnome-nvidia
+    needs: gnome-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-nvidia
+
+  iso_gnome-slim:
+    name: Generate iso for gnome-slim
+    needs: gnome-slim
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-slim
+
+  iso_gnome-system76:
+    name: Generate iso for gnome-system76
+    needs: gnome-system76
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-system76
+
+  iso_gnome-system76-nvidia:
+    name: Generate iso for gnome-system76-nvidia
+    needs: gnome-system76-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-system76-nvidia
