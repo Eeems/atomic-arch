@@ -191,7 +191,7 @@ def push(target: str):
         _image_digests_write_cache(tag, image_digest(tag, False))
 
     if tags:
-        podman("untag", *tags)
+        podman("rmi", *tags)
 
 
 def base62_to_hex(base62_str: str) -> str:
