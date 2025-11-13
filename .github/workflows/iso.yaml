@@ -63,21 +63,17 @@ jobs:
         with:
           root: /run/host
 
-      - name: Download image artifact
-        id: download
+      - name: Import ${{ inputs.variant }} image
         if: ${{ !inputs.pull }}
-        uses: actions/download-artifact@v4
+        uses: ./.github/actions/import-container
         with:
-          name: ${{ inputs.variant }}
+          artifact: ${{ inputs.variant }}
 
-      - name: Load image artifact
+      - uses: ./.github/actions/manifest-cache-restore
         if: ${{ !inputs.pull }}
-        uses: ./.github/actions/run-with-podman-service
         with:
-          run: |
-            cd "${{ steps.download.outputs.download-path }}"
-            zstdcat "${{ inputs.variant }}.tar.zstd" | podman load
-            rm "${{ inputs.variant }}.tar.zstd"
+          key: ${{ inputs.variant }}
+          artifact: true
 
       - name: Build
         uses: ./.github/actions/run-with-podman-service

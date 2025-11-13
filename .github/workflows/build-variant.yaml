@@ -84,21 +84,11 @@ jobs:
         with:
           root: /run/host
 
-      - name: Download ${{ inputs.artifact }} image
-        id: download
+      - name: Import ${{ inputs.artifact != '' && inputs.artifact || '' }} image
         if: inputs.artifact != ''
-        uses: actions/download-artifact@v4
+        uses: ./.github/actions/import-container
         with:
-          name: ${{ inputs.artifact }}
-
-      - name: Load ${{ inputs.artifact }} image
-        if: inputs.artifact != ''
-        uses: ./.github/actions/run-with-podman-service
-        with:
-          run: |
-            cd "${{ steps.download.outputs.download-path }}"
-            zstdcat "${{ inputs.artifact }}.tar.zstd" | podman load
-            rm "${{ inputs.artifact }}.tar.zstd"
+          artifact: ${{ inputs.artifact }}
 
       - uses: ./.github/actions/manifest-cache-restore
         if: inputs.artifact != ''
@@ -132,13 +122,11 @@ jobs:
                 else
                   ./make.py build $args rootfs
                 fi
-                echo "updates=true" >> $GITHUB_OUTPUT
                 updates="true"
               elif [ $res -ne 0 ];then
                 exit 1
               else
                 echo "No Updates"
-                echo "updates=false" >> $GITHUB_OUTPUT
               fi
               echo "::endgroup::"
             else
@@ -155,14 +143,12 @@ jobs:
                 echo "::endgroup::"
                 echo "::group::build"
                 ./make.py build $args ${{ inputs.variant }}
-                echo "updates=true" >> $GITHUB_OUTPUT
                 updates="true"
                 echo "::endgroup::"
               elif [ $res -ne 0 ];then
                 exit 1
               else
                 echo "No Updates"
-                echo "updates=false" >> $GITHUB_OUTPUT
                 echo "::endgroup::"
               fi
             fi
@@ -171,6 +157,7 @@ jobs:
               ./make.py push ${{ inputs.variant }}
               echo "::endgroup::"
             fi
+            echo "updates=$updates" >> $GITHUB_OUTPUT
         env:
           TMPDIR: ${{ runner.temp }}
           updates: ${{ inputs.updates }}

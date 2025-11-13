@@ -44,8 +44,8 @@ jobs:
         -v /var/lib/containers:/var/lib/containers
         -v /:/run/host
     outputs:
-      variant-matrix: ${{ steps.matrix.outputs.JSON_CONTENT }}
-      items: ${{ steps.matrix.outputs.items }}
+      variant-matrix: ${{ fromJson(steps.matrix.outputs.outputs).matrix }}
+      items: ${{ fromJson(steps.matrix.outputs.outputs).items }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -65,27 +65,31 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
+      - uses: ./.github/actions/manifest-cache-restore
+        with:
+          key: ${{ inputs.variant }}
+          artifact: true
+
       - name: Get matrix
         id: matrix
-        shell: bash
-        run: |
-          args=""
-          if [[ "${{ inputs.recreate }}" != "true" ]];then
-            args="$args --missing"
-          fi
-          mkdir -p /run/podman
-          podman system service --time 0 unix:///run/podman/podman.sock &
-          data="$(./make.py get-deltas --json $args ${{ inputs.variant }})"
-          items="$(echo "$data" | jq -c 'length')"
-          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
-          if [[ $items -gt 0 ]];then
-            echo "$data" | jq -c '{"include": .}' >> $GITHUB_OUTPUT
-          else
-            echo '{"include":[{"a":"","b":"","tag":""}]}' >> $GITHUB_OUTPUT
-          fi
-          echo 'EOF' >> $GITHUB_OUTPUT
-          echo "items=$items" >> $GITHUB_OUTPUT
-          kill $(jobs -p)
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            args=""
+            if [[ "${{ inputs.recreate }}" != "true" ]];then
+              args="$args --missing"
+            fi
+            data="$(./make.py get-deltas --json $args ${{ inputs.variant }})"
+            items="$(echo "$data" | jq -c 'length')"
+            echo 'outputs<<EOF' >> $GITHUB_OUTPUT
+            echo '{"matrix":' >> $GITHUB_OUTPUT
+            if [[ $items -gt 0 ]];then
+              echo "$data" | jq -c '{"include": .}' >> $GITHUB_OUTPUT
+            else
+              echo '{"include":[{"a":"","b":"","tag":""}]}' >> $GITHUB_OUTPUT
+            fi
+            echo ",\"items\":$items}" >> $GITHUB_OUTPUT
+            echo 'EOF' >> $GITHUB_OUTPUT
         env:
           TMPDIR: ${{ runner.temp }}
   run:

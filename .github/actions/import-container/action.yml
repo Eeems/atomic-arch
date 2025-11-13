@@ -1,0 +1,22 @@
+name: Import container
+description: Import a container from a build artifact
+inputs:
+  artifact:
+    description: Artifact to import
+runs:
+  using: "composite"
+  steps:
+    - name: Download image
+      id: download
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact }}
+
+    - name: Load image
+      uses: ./.github/actions/run-with-podman-service
+      with:
+        run: |
+          set -e
+          cd "${{ steps.download.outputs.download-path }}"
+          zstdcat "${{ inputs.artifact }}.tar.zstd" | podman load
+          rm "${{ inputs.artifact }}.tar.zstd"
