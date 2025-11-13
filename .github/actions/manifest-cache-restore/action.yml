@@ -32,5 +32,7 @@ runs:
       if: inputs.artifact == 'true'
       shell: bash
       run: |
+        set -e
+        ls -l ${{ steps.download.outputs.download-path }}
         mv ${{ steps.download.outputs.download-path }}/manifest_cache ${{ inputs.path }}
         rmdir ${{ runner.temp }}/_manifest
