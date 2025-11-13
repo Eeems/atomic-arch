@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   run:
-    name: atomic-arch:${{ inputs.variant }} iso
+    name: atomic-arch:${{ inputs.variant }} iso${{ inputs.offline && ' (offline)' || ''}}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/eeems/atomic-arch-builder:latest

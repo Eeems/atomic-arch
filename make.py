@@ -1337,6 +1337,13 @@ def do_workflow(_: argparse.Namespace):
                 "    actions: write",
                 "    packages: write",
                 "    security-events: write",
+                "",
+                "sync:",
+                "  name: Sync repositories",
+                "  needs: manifest",
+                "  uses: ./github/workflows/sync.yaml",
+                "  secrets: inherit",
+                "  permissions: *permissions",
             ]
         ),
         comment("BUILD"),
