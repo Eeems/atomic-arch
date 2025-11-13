@@ -84,7 +84,7 @@ jobs:
         with:
           run: |
             args=""
-            if [[ "${{ inputs.offline }}" == "true" ]];then
+            if [[ "${{ inputs.offline }}" != "true" ]];then
               args="$args --no-local-image"
             fi
             ./make.py iso $args ${{ inputs.variant }}

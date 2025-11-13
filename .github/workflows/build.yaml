@@ -73,7 +73,14 @@ jobs:
           path: .venv
           key: venv-${{ hashFiles('.github/workflows/Dockerfile.builder') }}-${{ hashFiles('make.py') }}
       - name: Ensure config is valid
-        run: ./make.py check
+        run: |
+          set -e
+          ./make.py check
+          ./make.py workflow
+          if [[ -n "$(git status -s)" ]]; then
+            echo "Please run ./make.py workflow, commit the changes, and try again.
+            exit 1
+          fi
         env:
           TMPDIR: ${{ runner.temp }}
 
