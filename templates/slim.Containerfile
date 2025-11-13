@@ -31,7 +31,8 @@ RUN /usr/lib/system/initialize_pacman \
 
 ARG \
   VARIANT \
-  VARIANT_ID
+  VARIANT_ID \
+  VERSION_ID
 
 RUN VARIANT="${VARIANT}" \
   VARIANT_ID="${VARIANT_ID}" \
