@@ -94,5 +94,5 @@ jobs:
       - name: Upload iso
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.offline && 'offline_' || 'online_' }}_atomic-arch-${{ inputs.variant }}.iso
+          name: ${{ inputs.offline && 'offline' || 'online' }}_atomic-arch-${{ inputs.variant }}.iso
           path: /var/lib/system/atomic-arch-${{ inputs.variant }}-*.iso
