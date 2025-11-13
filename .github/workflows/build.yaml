@@ -143,7 +143,7 @@ jobs:
     with:
       variant: base
       updates: ${{ fromJson(needs['rootfs'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['rootfs'].outputs.updates) && 'rootfs' || '' }}
 
   base-nvidia:
@@ -155,7 +155,7 @@ jobs:
     with:
       variant: base-nvidia
       updates: ${{ fromJson(needs['base'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
 
   base-slim:
@@ -167,7 +167,7 @@ jobs:
     with:
       variant: base-slim
       updates: ${{ fromJson(needs['base'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
       cleanup: true
 
@@ -180,7 +180,7 @@ jobs:
     with:
       variant: atomic
       updates: ${{ fromJson(needs['base'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
 
   gnome:
@@ -192,7 +192,7 @@ jobs:
     with:
       variant: gnome
       updates: ${{ fromJson(needs['base'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
 
   atomic-nvidia:
@@ -204,7 +204,7 @@ jobs:
     with:
       variant: atomic-nvidia
       updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
 
   atomic-slim:
@@ -216,7 +216,7 @@ jobs:
     with:
       variant: atomic-slim
       updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
       cleanup: true
 
@@ -229,7 +229,7 @@ jobs:
     with:
       variant: atomic-system76
       updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
 
   eeems:
@@ -241,7 +241,7 @@ jobs:
     with:
       variant: eeems
       updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
 
   gnome-nvidia:
@@ -253,7 +253,7 @@ jobs:
     with:
       variant: gnome-nvidia
       updates: ${{ fromJson(needs['gnome'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
 
   gnome-slim:
@@ -265,7 +265,7 @@ jobs:
     with:
       variant: gnome-slim
       updates: ${{ fromJson(needs['gnome'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
       cleanup: true
 
@@ -278,7 +278,7 @@ jobs:
     with:
       variant: gnome-system76
       updates: ${{ fromJson(needs['gnome'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
 
   atomic-system76-nvidia:
@@ -290,7 +290,7 @@ jobs:
     with:
       variant: atomic-system76-nvidia
       updates: ${{ fromJson(needs['atomic-system76'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['atomic-system76'].outputs.updates) && 'atomic-system76' || '' }}
 
   eeems-nvidia:
@@ -302,7 +302,7 @@ jobs:
     with:
       variant: eeems-nvidia
       updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
 
   eeems-slim:
@@ -314,7 +314,7 @@ jobs:
     with:
       variant: eeems-slim
       updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
       cleanup: true
 
@@ -327,7 +327,7 @@ jobs:
     with:
       variant: eeems-system76
       updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
 
   gnome-system76-nvidia:
@@ -339,7 +339,7 @@ jobs:
     with:
       variant: gnome-system76-nvidia
       updates: ${{ fromJson(needs['gnome-system76'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['gnome-system76'].outputs.updates) && 'gnome-system76' || '' }}
 
   eeems-system76-nvidia:
@@ -351,7 +351,7 @@ jobs:
     with:
       variant: eeems-system76-nvidia
       updates: ${{ fromJson(needs['eeems-system76'].outputs.updates) }}
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['eeems-system76'].outputs.updates) && 'eeems-system76' || '' }}
 
   ######################################
@@ -360,7 +360,7 @@ jobs:
 
   delta_rootfs:
     name: Generate deltas for rootfs
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: rootfs
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
@@ -371,218 +371,218 @@ jobs:
 
   delta_base:
     name: Generate deltas for base
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: base
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: base
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_base-nvidia:
     name: Generate deltas for base-nvidia
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: base-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: base-nvidia
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_base-slim:
     name: Generate deltas for base-slim
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: base-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: base-slim
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_atomic:
     name: Generate deltas for atomic
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: atomic
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: atomic
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_gnome:
     name: Generate deltas for gnome
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: gnome
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: gnome
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_atomic-nvidia:
     name: Generate deltas for atomic-nvidia
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: atomic-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: atomic-nvidia
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_atomic-slim:
     name: Generate deltas for atomic-slim
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: atomic-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: atomic-slim
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_atomic-system76:
     name: Generate deltas for atomic-system76
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: atomic-system76
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: atomic-system76
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_eeems:
     name: Generate deltas for eeems
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: eeems
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: eeems
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_gnome-nvidia:
     name: Generate deltas for gnome-nvidia
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: gnome-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: gnome-nvidia
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_gnome-slim:
     name: Generate deltas for gnome-slim
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: gnome-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: gnome-slim
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_gnome-system76:
     name: Generate deltas for gnome-system76
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: gnome-system76
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: gnome-system76
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_atomic-system76-nvidia:
     name: Generate deltas for atomic-system76-nvidia
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: atomic-system76-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: atomic-system76-nvidia
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_eeems-nvidia:
     name: Generate deltas for eeems-nvidia
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: eeems-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: eeems-nvidia
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_eeems-slim:
     name: Generate deltas for eeems-slim
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: eeems-slim
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: eeems-slim
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_eeems-system76:
     name: Generate deltas for eeems-system76
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: eeems-system76
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: eeems-system76
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_gnome-system76-nvidia:
     name: Generate deltas for gnome-system76-nvidia
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: gnome-system76-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: gnome-system76-nvidia
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_eeems-system76-nvidia:
     name: Generate deltas for eeems-system76-nvidia
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name != 'pull_request'
     needs: eeems-system76-nvidia
     uses: ./.github/workflows/delta.yaml
     secrets: inherit
     permissions: *permissions
     with:
       variant: eeems-system76-nvidia
-      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   ######################################
@@ -597,7 +597,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['base'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base'].outputs.updates) }}
       offline: false
 
   offline_iso_base:
@@ -608,7 +608,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['base'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base'].outputs.updates) }}
       offline: true
 
   online_iso_base-nvidia:
@@ -619,7 +619,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['base-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base-nvidia'].outputs.updates) }}
       offline: false
 
   offline_iso_base-nvidia:
@@ -630,7 +630,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['base-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base-nvidia'].outputs.updates) }}
       offline: true
 
   online_iso_base-slim:
@@ -641,7 +641,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['base-slim'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base-slim'].outputs.updates) }}
       offline: false
 
   offline_iso_base-slim:
@@ -652,7 +652,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['base-slim'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base-slim'].outputs.updates) }}
       offline: true
 
   online_iso_atomic:
@@ -663,7 +663,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic'].outputs.updates) }}
       offline: false
 
   offline_iso_atomic:
@@ -674,7 +674,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic'].outputs.updates) }}
       offline: true
 
   online_iso_gnome:
@@ -685,7 +685,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome'].outputs.updates) }}
       offline: false
 
   offline_iso_gnome:
@@ -696,7 +696,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome'].outputs.updates) }}
       offline: true
 
   online_iso_atomic-nvidia:
@@ -707,7 +707,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-nvidia'].outputs.updates) }}
       offline: false
 
   offline_iso_atomic-nvidia:
@@ -718,7 +718,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-nvidia'].outputs.updates) }}
       offline: true
 
   online_iso_atomic-slim:
@@ -729,7 +729,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-slim
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic-slim'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-slim'].outputs.updates) }}
       offline: false
 
   offline_iso_atomic-slim:
@@ -740,7 +740,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-slim
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic-slim'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-slim'].outputs.updates) }}
       offline: true
 
   online_iso_atomic-system76:
@@ -751,7 +751,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic-system76'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-system76'].outputs.updates) }}
       offline: false
 
   offline_iso_atomic-system76:
@@ -762,7 +762,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic-system76'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-system76'].outputs.updates) }}
       offline: true
 
   online_iso_eeems:
@@ -773,7 +773,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems'].outputs.updates) }}
       offline: false
 
   offline_iso_eeems:
@@ -784,7 +784,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems'].outputs.updates) }}
       offline: true
 
   online_iso_gnome-nvidia:
@@ -795,7 +795,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-nvidia'].outputs.updates) }}
       offline: false
 
   offline_iso_gnome-nvidia:
@@ -806,7 +806,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-nvidia'].outputs.updates) }}
       offline: true
 
   online_iso_gnome-slim:
@@ -817,7 +817,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-slim
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome-slim'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-slim'].outputs.updates) }}
       offline: false
 
   offline_iso_gnome-slim:
@@ -828,7 +828,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-slim
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome-slim'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-slim'].outputs.updates) }}
       offline: true
 
   online_iso_gnome-system76:
@@ -839,7 +839,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome-system76'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-system76'].outputs.updates) }}
       offline: false
 
   offline_iso_gnome-system76:
@@ -850,7 +850,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome-system76'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-system76'].outputs.updates) }}
       offline: true
 
   online_iso_atomic-system76-nvidia:
@@ -861,7 +861,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic-system76-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-system76-nvidia'].outputs.updates) }}
       offline: false
 
   offline_iso_atomic-system76-nvidia:
@@ -872,7 +872,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['atomic-system76-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-system76-nvidia'].outputs.updates) }}
       offline: true
 
   online_iso_eeems-nvidia:
@@ -883,7 +883,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-nvidia'].outputs.updates) }}
       offline: false
 
   offline_iso_eeems-nvidia:
@@ -894,7 +894,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-nvidia'].outputs.updates) }}
       offline: true
 
   online_iso_eeems-slim:
@@ -905,7 +905,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-slim
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems-slim'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-slim'].outputs.updates) }}
       offline: false
 
   offline_iso_eeems-slim:
@@ -916,7 +916,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-slim
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems-slim'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-slim'].outputs.updates) }}
       offline: true
 
   online_iso_eeems-system76:
@@ -927,7 +927,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems-system76'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-system76'].outputs.updates) }}
       offline: false
 
   offline_iso_eeems-system76:
@@ -938,7 +938,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems-system76'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-system76'].outputs.updates) }}
       offline: true
 
   online_iso_gnome-system76-nvidia:
@@ -949,7 +949,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome-system76-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-system76-nvidia'].outputs.updates) }}
       offline: false
 
   offline_iso_gnome-system76-nvidia:
@@ -960,7 +960,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['gnome-system76-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-system76-nvidia'].outputs.updates) }}
       offline: true
 
   online_iso_eeems-system76-nvidia:
@@ -971,7 +971,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems-system76-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-system76-nvidia'].outputs.updates) }}
       offline: false
 
   offline_iso_eeems-system76-nvidia:
@@ -982,5 +982,5 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76-nvidia
-      pull: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['eeems-system76-nvidia'].outputs.updates) }}
+      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-system76-nvidia'].outputs.updates) }}
       offline: true
