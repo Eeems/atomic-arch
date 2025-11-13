@@ -575,7 +575,7 @@ jobs:
   #             ISO                #
   ######################################
 
-  iso_base:
+  online_iso_base:
     name: Generate iso for base
     needs: base
     uses: ./.github/workflows/iso.yaml
@@ -583,9 +583,21 @@ jobs:
     permissions: *permissions
     with:
       variant: base
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_base-nvidia:
+  offline_iso_base:
+    name: Generate iso for base
+    needs: base
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_base-nvidia:
     name: Generate iso for base-nvidia
     needs: base-nvidia
     uses: ./.github/workflows/iso.yaml
@@ -593,9 +605,21 @@ jobs:
     permissions: *permissions
     with:
       variant: base-nvidia
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_base-slim:
+  offline_iso_base-nvidia:
+    name: Generate iso for base-nvidia
+    needs: base-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base-nvidia
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_base-slim:
     name: Generate iso for base-slim
     needs: base-slim
     uses: ./.github/workflows/iso.yaml
@@ -603,9 +627,21 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_atomic:
+  offline_iso_base-slim:
+    name: Generate iso for base-slim
+    needs: base-slim
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base-slim
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_atomic:
     name: Generate iso for atomic
     needs: atomic
     uses: ./.github/workflows/iso.yaml
@@ -613,9 +649,21 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_gnome:
+  offline_iso_atomic:
+    name: Generate iso for atomic
+    needs: atomic
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_gnome:
     name: Generate iso for gnome
     needs: gnome
     uses: ./.github/workflows/iso.yaml
@@ -623,9 +671,21 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_atomic-nvidia:
+  offline_iso_gnome:
+    name: Generate iso for gnome
+    needs: gnome
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_atomic-nvidia:
     name: Generate iso for atomic-nvidia
     needs: atomic-nvidia
     uses: ./.github/workflows/iso.yaml
@@ -633,9 +693,21 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_atomic-slim:
+  offline_iso_atomic-nvidia:
+    name: Generate iso for atomic-nvidia
+    needs: atomic-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic-nvidia
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_atomic-slim:
     name: Generate iso for atomic-slim
     needs: atomic-slim
     uses: ./.github/workflows/iso.yaml
@@ -643,9 +715,21 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-slim
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_atomic-system76:
+  offline_iso_atomic-slim:
+    name: Generate iso for atomic-slim
+    needs: atomic-slim
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic-slim
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_atomic-system76:
     name: Generate iso for atomic-system76
     needs: atomic-system76
     uses: ./.github/workflows/iso.yaml
@@ -653,9 +737,21 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_eeems:
+  offline_iso_atomic-system76:
+    name: Generate iso for atomic-system76
+    needs: atomic-system76
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic-system76
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_eeems:
     name: Generate iso for eeems
     needs: eeems
     uses: ./.github/workflows/iso.yaml
@@ -663,9 +759,21 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_gnome-nvidia:
+  offline_iso_eeems:
+    name: Generate iso for eeems
+    needs: eeems
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_gnome-nvidia:
     name: Generate iso for gnome-nvidia
     needs: gnome-nvidia
     uses: ./.github/workflows/iso.yaml
@@ -673,9 +781,21 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-nvidia
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_gnome-slim:
+  offline_iso_gnome-nvidia:
+    name: Generate iso for gnome-nvidia
+    needs: gnome-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-nvidia
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_gnome-slim:
     name: Generate iso for gnome-slim
     needs: gnome-slim
     uses: ./.github/workflows/iso.yaml
@@ -683,9 +803,21 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-slim
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_gnome-system76:
+  offline_iso_gnome-slim:
+    name: Generate iso for gnome-slim
+    needs: gnome-slim
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-slim
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_gnome-system76:
     name: Generate iso for gnome-system76
     needs: gnome-system76
     uses: ./.github/workflows/iso.yaml
@@ -693,9 +825,21 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_atomic-system76-nvidia:
+  offline_iso_gnome-system76:
+    name: Generate iso for gnome-system76
+    needs: gnome-system76
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-system76
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_atomic-system76-nvidia:
     name: Generate iso for atomic-system76-nvidia
     needs: atomic-system76-nvidia
     uses: ./.github/workflows/iso.yaml
@@ -703,9 +847,21 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76-nvidia
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_eeems-nvidia:
+  offline_iso_atomic-system76-nvidia:
+    name: Generate iso for atomic-system76-nvidia
+    needs: atomic-system76-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic-system76-nvidia
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_eeems-nvidia:
     name: Generate iso for eeems-nvidia
     needs: eeems-nvidia
     uses: ./.github/workflows/iso.yaml
@@ -713,9 +869,21 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_eeems-slim:
+  offline_iso_eeems-nvidia:
+    name: Generate iso for eeems-nvidia
+    needs: eeems-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-nvidia
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_eeems-slim:
     name: Generate iso for eeems-slim
     needs: eeems-slim
     uses: ./.github/workflows/iso.yaml
@@ -723,9 +891,21 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-slim
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_eeems-system76:
+  offline_iso_eeems-slim:
+    name: Generate iso for eeems-slim
+    needs: eeems-slim
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-slim
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_eeems-system76:
     name: Generate iso for eeems-system76
     needs: eeems-system76
     uses: ./.github/workflows/iso.yaml
@@ -733,9 +913,21 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_gnome-system76-nvidia:
+  offline_iso_eeems-system76:
+    name: Generate iso for eeems-system76
+    needs: eeems-system76
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-system76
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_gnome-system76-nvidia:
     name: Generate iso for gnome-system76-nvidia
     needs: gnome-system76-nvidia
     uses: ./.github/workflows/iso.yaml
@@ -743,9 +935,21 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76-nvidia
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
 
-  iso_eeems-system76-nvidia:
+  offline_iso_gnome-system76-nvidia:
+    name: Generate iso for gnome-system76-nvidia
+    needs: gnome-system76-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-system76-nvidia
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true
+
+  online_iso_eeems-system76-nvidia:
     name: Generate iso for eeems-system76-nvidia
     needs: eeems-system76-nvidia
     uses: ./.github/workflows/iso.yaml
@@ -753,4 +957,16 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76-nvidia
-      pull: ${{ github.ref_name == 'master' }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: false
+
+  offline_iso_eeems-system76-nvidia:
+    name: Generate iso for eeems-system76-nvidia
+    needs: eeems-system76-nvidia
+    uses: ./.github/workflows/iso.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-system76-nvidia
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      offline: true

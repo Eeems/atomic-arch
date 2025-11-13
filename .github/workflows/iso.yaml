@@ -12,6 +12,11 @@ on:
         type: boolean
         default: false
         required: false
+      offline:
+        description: Offline installable?
+        type: boolean
+        default: true
+        required: false
   workflow_dispatch:
     inputs: *inputs
 
@@ -81,12 +86,17 @@ jobs:
       - name: Build
         uses: ./.github/actions/run-with-podman-service
         with:
-          run: ./make.py iso ${{ inputs.variant }}
+          run: |
+            args=""
+            if [[ "${{ inputs.offline }}" == "true" ]];then
+              args="$args --no-local-image"
+            fi
+            ./make.py iso $args ${{ inputs.variant }}
         env:
           TMPDIR: ${{ runner.temp }}
 
       - name: Upload iso
         uses: actions/upload-artifact@v4
         with:
-          name: atomic-arch-${{ inputs.variant }}.iso
+          name: ${{ inputs.offline && 'offline_' || 'online_' }}_atomic-arch-${{ inputs.variant }}.iso
           path: /var/lib/system/atomic-arch-${{ inputs.variant }}-*.iso

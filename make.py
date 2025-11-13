@@ -1221,21 +1221,22 @@ def do_workflow(_: argparse.Namespace):
         lines.append("    recreate: false")
         return indent(lines)
 
-    def render_iso(ijob: str) -> list[str]:
-        orig = ijob.replace("iso_", "")
-        return indent(
-            [
-                f"{ijob}:",
-                f"  name: Generate iso for {orig}",
-                f"  needs: {orig}",
+    def render_iso(job_id: str) -> list[str]:
+        def __(offline: bool):
+            return [
+                f"{'offline' if offline else 'online'}_iso_{job_id}:",
+                f"  name: Generate iso for {job_id}",
+                f"  needs: {job_id}",
                 "  uses: ./.github/workflows/iso.yaml",
                 "  secrets: inherit",
                 "  permissions: *permissions",
                 "  with:",
-                f"    variant: {orig}",
-                "    pull: ${{ github.ref_name == 'master' }}",
+                f"    variant: {job_id}",
+                "    pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}",
+                f"    offline: {json.dumps(offline)}",
             ]
-        )
+
+        return indent(__(False) + [""] + __(True))
 
     build_order = topological_sort(graph, indegree)
     delta_jobs = [f"delta_{j}" for j in build_order]
@@ -1340,7 +1341,7 @@ def do_workflow(_: argparse.Namespace):
         comment("DELTA"),
         *[render_delta(j) for j in delta_jobs],
         comment("ISO"),
-        *[render_iso(x) for j in build_order if j != "rootfs" for x in [f"iso_{j}"]],
+        *[render_iso(j) for j in build_order if j != "rootfs"],
     ]
 
     output: list[str] = []
