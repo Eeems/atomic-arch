@@ -1325,7 +1325,7 @@ def do_workflow(_: argparse.Namespace):
                 "        ./make.py check",
                 "        ./make.py workflow",
                 '        if [[ -n "$(git status -s)" ]]; then',
-                '          echo "Please run ./make.py workflow, commit the changes, and try again.',
+                '          echo "Please run ./make.py workflow, commit the changes, and try again."',
                 "          exit 1",
                 "        fi",
                 "      env:",
