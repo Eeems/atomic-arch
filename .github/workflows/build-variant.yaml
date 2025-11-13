@@ -201,6 +201,9 @@ jobs:
           name: ${{ inputs.variant }}
           if-no-files-found: ignore
 
+      - name: Fix git permissions
+        run: git config --global --add safe.directory "$(realpath .)"
+
       - name: Auto commit any updates
         if: inputs.push && inputs.variant == 'rootfs'
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -226,7 +229,6 @@ jobs:
             rm .trivy/report.json
             rm .trivy/report.md
             mv .trivy/report.sarif .
-            git config --global --add safe.directory "$(realpath .)"
 
       - name: Upload Scan results to GitHub Security tab
         if: steps.build.outputs.updates == 'true' && inputs.push
