@@ -1,12 +1,15 @@
 #!/bin/bash
 set -e
-echo "[system] Variant: $VARIANT"
-if [ -f /etc/system/Isofile ]; then
-  sed -Ei "/FROM (ghcr.io\/)?eeems\/atomic-arch:/ s|:.*|:$VARIANT_ID|" /etc/system/Isofile
-fi
-if [ -f /etc/system/Systemfile ]; then
-  sed -Ei "/FROM (ghcr.io\/)?eeems\/atomic-arch:/ s|:.*|:$VARIANT_ID|" /etc/system/Systemfile
-fi
-sed -i "/VARIANT=/ s|=.*|=$VARIANT|" /usr/lib/os-release
-sed -i "/VARIANT_ID=/ s|=.*|=$VARIANT_ID|" /usr/lib/os-release
-sed -i "/VERSION_ID=/ s|.*|VERSION_ID=$VERSION_ID|" /usr/lib/os-release
+update(){
+  if ! [ -f "$1" ]; then
+    return
+  fi
+  sed -Ei "/FROM (ghcr.io\/)?eeems\/atomic-arch:/ s|:.*|:${VARIANT_ID:?}|" "$1"
+  sed -Ei "/ARG BASE_IMAGE=(ghcr.io\/)?eeems\/atomic-arch:/ s|:.*|:${VARIANT_ID:?}|" $1
+}
+echo "[system] Variant: ${VARIANT:?}"
+update /etc/system/Isofile
+update /etc/system/Systemfile
+sed -i "/VARIANT=/ s|=.*|=${VARIANT:?}|" /usr/lib/os-release
+sed -i "/VARIANT_ID=/ s|=.*|=${VARIANT_ID:?}|" /usr/lib/os-release
+sed -i "/VERSION_ID=/ s|.*|VERSION_ID=${VERSION_ID:?}|" /usr/lib/os-release

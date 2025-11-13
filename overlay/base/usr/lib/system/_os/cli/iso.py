@@ -11,8 +11,9 @@ from typing import cast
 
 from .. import OS_NAME
 from .. import SYSTEM_PATH
-from ..system import is_root
 
+from ..system import is_root
+from ..system import baseImage
 from ..system import execute
 from ..podman import podman
 from ..podman import export
@@ -48,10 +49,7 @@ def iso(local_image: bool):
         shutil.rmtree("work")
 
     uuid = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-00")
-    with open("/etc/system/Systemfile", "r") as f:
-        buildImage = [
-            x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")
-        ][0]
+    buildImage = baseImage()
 
     os.chdir("/etc/system")
     podman(
