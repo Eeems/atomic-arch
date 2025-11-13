@@ -1234,7 +1234,7 @@ def do_workflow(_: argparse.Namespace):
             [
                 f"scan_{job_id}:",
                 f"  name: Scan image for {job_id}",
-                f"  if: github.event_name != 'pull_request' && fromJson(needs['{job_id}'].outputs.updates)",
+                f"  if: github.event_name != 'pull_request' || fromJson(needs['{job_id}'].outputs.updates)",
                 f"  needs: {job_id}",
                 "  uses: ./.github/workflows/scan.yaml",
                 "  secrets: inherit",
