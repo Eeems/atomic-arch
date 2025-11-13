@@ -33,7 +33,6 @@ runs:
       shell: bash
       run: |
         set -e
-        ls -la ${{ steps.download.outputs.download-path }}
         mkdir -p $(dirname ${{ inputs.path }})
         mv ${{ steps.download.outputs.download-path }}/manifest_cache ${{ inputs.path }}
         rmdir ${{ steps.download.outputs.download-path }}

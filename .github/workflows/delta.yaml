@@ -91,6 +91,7 @@ jobs:
             fi
             echo ",\"items\":$items}" >> $GITHUB_OUTPUT
             echo 'EOF' >> $GITHUB_OUTPUT
+            cat $GITHUB_OUTPUT
         env:
           TMPDIR: ${{ runner.temp }}
   run:
