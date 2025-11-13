@@ -2,9 +2,6 @@ name: Build an image
 
 on:
   workflow_call:
-    secrets:
-      DISPATCH_PAT:
-        required: true
     inputs: &inputs
       variant:
         description: Variant to build
@@ -47,7 +44,6 @@ permissions:
   contents: write
   actions: write
   packages: write
-  security-events: write
 
 jobs:
   run:
@@ -104,7 +100,7 @@ jobs:
         if: inputs.artifact != ''
         uses: ./.github/actions/manifest-cache-restore
         with:
-          key: manifest_${{ inputs.artifact != '' }}
+          key: manifest_${{ inputs.artifact }}
           artifact: true
 
       - name: Force digest
@@ -232,28 +228,3 @@ jobs:
             Automated rootfs update
             skip-checks:true
             file_pattern: 'variants/rootfs.Container'
-
-      - name: Trivy cache
-        if: steps.build.outputs.updates == 'true'
-        uses: actions/cache@v4
-        with:
-          path: ./.trivy
-          key: trivy-${{ hashFiles('make.py') }}
-
-      - name: Scan container
-        if: steps.build.outputs.updates == 'true'
-        uses: ./.github/actions/run-with-podman-service
-        with:
-          run: |
-            ./make.py scan ${{ inputs.variant }}
-            cat .trivy/report.md >> $GITHUB_STEP_SUMMARY
-            rm .trivy/report.json
-            rm .trivy/report.md
-            mv .trivy/report.sarif .
-
-      - name: Upload Scan results to GitHub Security tab
-        if: steps.build.outputs.updates == 'true' && inputs.push
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: "report.sarif"
-          category: ${{ inputs.variant }}

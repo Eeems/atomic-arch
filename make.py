@@ -1229,6 +1229,24 @@ def do_workflow(_: argparse.Namespace):
             ]
         )
 
+    def render_scan(job_id: str) -> list[str]:
+        return indent(
+            [
+                f"scan_{job_id}:",
+                f"  name: Scan image for {job_id}",
+                f"  if: github.event_name != 'pull_request' && fromJson(needs['{job_id}'].outputs.updates)",
+                f"  needs: {job_id}",
+                "  uses: ./.github/workflows/scan.yaml",
+                "  secrets: inherit",
+                "  permissions: *permissions",
+                "  with:",
+                f"    variant: {job_id}",
+                "    push: ${{ github.event_name != 'pull_request' }}",
+                f"    artifact: ${{{{ fromJson(needs['{job_id}'].outputs.updates) && '{job_id}' || '' }}}}",
+                f"    digest: ${{{{ needs['{job_id}'].outputs.digest }}}}",
+            ]
+        )
+
     def render_iso(job_id: str) -> list[str]:
         def __(offline: bool):
             return [
@@ -1363,6 +1381,8 @@ def do_workflow(_: argparse.Namespace):
         ),
         comment("BUILD"),
         *[render_build(j) for j in build_order],
+        comment("SCAN"),
+        *[render_scan(j) for j in build_order],
         comment("DELTA"),
         *[render_delta(j) for j in build_order],
         comment("ISO"),

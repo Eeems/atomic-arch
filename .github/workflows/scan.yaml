@@ -1,0 +1,130 @@
+name: Build an image
+
+on:
+  workflow_call:
+    inputs: &inputs
+      variant:
+        description: Variant to build
+        type: string
+        required: true
+      push:
+        description: If the resulting image should be pushed
+        type: boolean
+        required: false
+        default: false
+      artifact:
+        description: Artifact to load base image from
+        type: string
+        required: false
+        default: ""
+      digest:
+        description: Digest to expect base image to be
+        type: string
+        required: false
+        default: ""
+  workflow_dispatch:
+    inputs: *inputs
+
+permissions:
+  contents: read
+  packages: read
+  security-events: write
+
+jobs:
+  run:
+    name: atomic-arch:${{ inputs.variant }} image
+    runs-on: ubuntu-latest
+    outputs:
+      updates: ${{ steps.build.outputs.updates }}
+      digest: ${{ steps.image.outputs.digest }}
+    container:
+      image: ghcr.io/eeems/atomic-arch-builder:latest
+      options: >-
+        --privileged
+        --security-opt seccomp=unconfined
+        --security-opt apparmor=unconfined
+        --cap-add=SYS_ADMIN
+        --cap-add=NET_ADMIN
+        --device /dev/fuse
+        --tmpfs /tmp
+        --tmpfs /run
+        --userns=host
+        -v /var/lib/containers:/var/lib/containers
+        -v /:/run/host
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Setup container
+        uses: ./.github/actions/setup-container
+
+      - name: Login to ghcr
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          auth_file_path: /run/containers/0/auth.json
+
+      - name: Mask registry passwords
+        uses: ./.github/actions/mask-registry-passwords
+
+      - name: Import ${{ inputs.artifact != '' && inputs.artifact || '' }} image
+        if: inputs.artifact != ''
+        uses: ./.github/actions/import-container
+        with:
+          artifact: ${{ inputs.artifact }}
+
+      - name: Get manifest cache
+        if: inputs.artifact != ''
+        uses: ./.github/actions/manifest-cache-restore
+        with:
+          key: manifest_${{ inputs.artifact }}
+          artifact: true
+
+      - name: Force digest
+        if: inputs.digest != '' && inputs.artifact != ''
+        run: |
+          python <<'EOF'
+          import os, make
+          make._image_digests_write_cache(os.environ["image"], os.environ["digest"])
+          EOF
+        env:
+          image: ${{ inputs.artifact }}
+          digest: ${{ inputs.digest }}
+
+      - name: Build
+        id: build
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: ./make.py pull ${{ inputs.variant }}
+        env:
+          TMPDIR: ${{ runner.temp }}
+
+      - name: Fix git permissions
+        run: git config --global --add safe.directory "$(realpath .)"
+
+      - name: Trivy cache
+        if: steps.build.outputs.updates == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ./.trivy
+          key: trivy-${{ hashFiles('make.py') }}
+
+      - name: Scan container
+        if: steps.build.outputs.updates == 'true'
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            ./make.py scan ${{ inputs.variant }}
+            cat .trivy/report.md >> $GITHUB_STEP_SUMMARY
+            rm .trivy/report.json
+            rm .trivy/report.md
+            mv .trivy/report.sarif .
+
+      - name: Upload Scan results to GitHub Security tab
+        if: inputs.push
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: "report.sarif"
+          category: ${{ inputs.variant }}

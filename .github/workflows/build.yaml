@@ -380,6 +380,257 @@ jobs:
       digest: ${{ needs['eeems-system76'].outputs.digest }}
 
   ######################################
+  #             SCAN               #
+  ######################################
+
+  scan_rootfs:
+    name: Scan image for rootfs
+    if: github.event_name != 'pull_request' && fromJson(needs['rootfs'].outputs.updates)
+    needs: rootfs
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: rootfs
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['rootfs'].outputs.updates) && 'rootfs' || '' }}
+      digest: ${{ needs['rootfs'].outputs.digest }}
+
+  scan_base:
+    name: Scan image for base
+    if: github.event_name != 'pull_request' && fromJson(needs['base'].outputs.updates)
+    needs: base
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      digest: ${{ needs['base'].outputs.digest }}
+
+  scan_base-nvidia:
+    name: Scan image for base-nvidia
+    if: github.event_name != 'pull_request' && fromJson(needs['base-nvidia'].outputs.updates)
+    needs: base-nvidia
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base-nvidia
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['base-nvidia'].outputs.updates) && 'base-nvidia' || '' }}
+      digest: ${{ needs['base-nvidia'].outputs.digest }}
+
+  scan_base-slim:
+    name: Scan image for base-slim
+    if: github.event_name != 'pull_request' && fromJson(needs['base-slim'].outputs.updates)
+    needs: base-slim
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: base-slim
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['base-slim'].outputs.updates) && 'base-slim' || '' }}
+      digest: ${{ needs['base-slim'].outputs.digest }}
+
+  scan_atomic:
+    name: Scan image for atomic
+    if: github.event_name != 'pull_request' && fromJson(needs['atomic'].outputs.updates)
+    needs: atomic
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      digest: ${{ needs['atomic'].outputs.digest }}
+
+  scan_gnome:
+    name: Scan image for gnome
+    if: github.event_name != 'pull_request' && fromJson(needs['gnome'].outputs.updates)
+    needs: gnome
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
+      digest: ${{ needs['gnome'].outputs.digest }}
+
+  scan_atomic-nvidia:
+    name: Scan image for atomic-nvidia
+    if: github.event_name != 'pull_request' && fromJson(needs['atomic-nvidia'].outputs.updates)
+    needs: atomic-nvidia
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic-nvidia
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['atomic-nvidia'].outputs.updates) && 'atomic-nvidia' || '' }}
+      digest: ${{ needs['atomic-nvidia'].outputs.digest }}
+
+  scan_atomic-slim:
+    name: Scan image for atomic-slim
+    if: github.event_name != 'pull_request' && fromJson(needs['atomic-slim'].outputs.updates)
+    needs: atomic-slim
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic-slim
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['atomic-slim'].outputs.updates) && 'atomic-slim' || '' }}
+      digest: ${{ needs['atomic-slim'].outputs.digest }}
+
+  scan_atomic-system76:
+    name: Scan image for atomic-system76
+    if: github.event_name != 'pull_request' && fromJson(needs['atomic-system76'].outputs.updates)
+    needs: atomic-system76
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic-system76
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['atomic-system76'].outputs.updates) && 'atomic-system76' || '' }}
+      digest: ${{ needs['atomic-system76'].outputs.digest }}
+
+  scan_eeems:
+    name: Scan image for eeems
+    if: github.event_name != 'pull_request' && fromJson(needs['eeems'].outputs.updates)
+    needs: eeems
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
+      digest: ${{ needs['eeems'].outputs.digest }}
+
+  scan_gnome-nvidia:
+    name: Scan image for gnome-nvidia
+    if: github.event_name != 'pull_request' && fromJson(needs['gnome-nvidia'].outputs.updates)
+    needs: gnome-nvidia
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-nvidia
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['gnome-nvidia'].outputs.updates) && 'gnome-nvidia' || '' }}
+      digest: ${{ needs['gnome-nvidia'].outputs.digest }}
+
+  scan_gnome-slim:
+    name: Scan image for gnome-slim
+    if: github.event_name != 'pull_request' && fromJson(needs['gnome-slim'].outputs.updates)
+    needs: gnome-slim
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-slim
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['gnome-slim'].outputs.updates) && 'gnome-slim' || '' }}
+      digest: ${{ needs['gnome-slim'].outputs.digest }}
+
+  scan_gnome-system76:
+    name: Scan image for gnome-system76
+    if: github.event_name != 'pull_request' && fromJson(needs['gnome-system76'].outputs.updates)
+    needs: gnome-system76
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-system76
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['gnome-system76'].outputs.updates) && 'gnome-system76' || '' }}
+      digest: ${{ needs['gnome-system76'].outputs.digest }}
+
+  scan_atomic-system76-nvidia:
+    name: Scan image for atomic-system76-nvidia
+    if: github.event_name != 'pull_request' && fromJson(needs['atomic-system76-nvidia'].outputs.updates)
+    needs: atomic-system76-nvidia
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: atomic-system76-nvidia
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['atomic-system76-nvidia'].outputs.updates) && 'atomic-system76-nvidia' || '' }}
+      digest: ${{ needs['atomic-system76-nvidia'].outputs.digest }}
+
+  scan_eeems-nvidia:
+    name: Scan image for eeems-nvidia
+    if: github.event_name != 'pull_request' && fromJson(needs['eeems-nvidia'].outputs.updates)
+    needs: eeems-nvidia
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-nvidia
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['eeems-nvidia'].outputs.updates) && 'eeems-nvidia' || '' }}
+      digest: ${{ needs['eeems-nvidia'].outputs.digest }}
+
+  scan_eeems-slim:
+    name: Scan image for eeems-slim
+    if: github.event_name != 'pull_request' && fromJson(needs['eeems-slim'].outputs.updates)
+    needs: eeems-slim
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-slim
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['eeems-slim'].outputs.updates) && 'eeems-slim' || '' }}
+      digest: ${{ needs['eeems-slim'].outputs.digest }}
+
+  scan_eeems-system76:
+    name: Scan image for eeems-system76
+    if: github.event_name != 'pull_request' && fromJson(needs['eeems-system76'].outputs.updates)
+    needs: eeems-system76
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-system76
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['eeems-system76'].outputs.updates) && 'eeems-system76' || '' }}
+      digest: ${{ needs['eeems-system76'].outputs.digest }}
+
+  scan_gnome-system76-nvidia:
+    name: Scan image for gnome-system76-nvidia
+    if: github.event_name != 'pull_request' && fromJson(needs['gnome-system76-nvidia'].outputs.updates)
+    needs: gnome-system76-nvidia
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: gnome-system76-nvidia
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['gnome-system76-nvidia'].outputs.updates) && 'gnome-system76-nvidia' || '' }}
+      digest: ${{ needs['gnome-system76-nvidia'].outputs.digest }}
+
+  scan_eeems-system76-nvidia:
+    name: Scan image for eeems-system76-nvidia
+    if: github.event_name != 'pull_request' && fromJson(needs['eeems-system76-nvidia'].outputs.updates)
+    needs: eeems-system76-nvidia
+    uses: ./.github/workflows/scan.yaml
+    secrets: inherit
+    permissions: *permissions
+    with:
+      variant: eeems-system76-nvidia
+      push: ${{ github.event_name != 'pull_request' }}
+      artifact: ${{ fromJson(needs['eeems-system76-nvidia'].outputs.updates) && 'eeems-system76-nvidia' || '' }}
+      digest: ${{ needs['eeems-system76-nvidia'].outputs.digest }}
+
+  ######################################
   #             DELTA              #
   ######################################
 
