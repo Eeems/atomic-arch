@@ -27,3 +27,8 @@ runs:
       with:
         name: ${{ inputs.key }}
         path: ${{ inputs.path }}
+
+    - name: Debug
+      if: inputs.artifact == 'true'
+      shell: bash
+      run: ls -l ${{ steps.download.outputs.download-path }}
