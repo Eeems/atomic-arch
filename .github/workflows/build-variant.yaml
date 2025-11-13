@@ -158,6 +158,7 @@ jobs:
               echo "::endgroup::"
             fi
             echo "updates=$updates" >> $GITHUB_OUTPUT
+            podman image ls
         env:
           TMPDIR: ${{ runner.temp }}
           updates: ${{ inputs.updates }}
