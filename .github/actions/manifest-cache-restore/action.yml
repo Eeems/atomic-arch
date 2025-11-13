@@ -36,4 +36,4 @@ runs:
         ls -la ${{ steps.download.outputs.download-path }}
         mkdir -p $(dirname ${{ inputs.path }})
         mv ${{ steps.download.outputs.download-path }}/manifest_cache ${{ inputs.path }}
-        rmdir ${{ runner.temp }}/_manifest
+        rmdir ${{ steps.download.outputs.download-path }}
