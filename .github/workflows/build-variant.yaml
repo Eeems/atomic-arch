@@ -211,6 +211,7 @@ jobs:
           commit_message: |
             Automated rootfs update
             skip-checks:true
+            file_pattern: 'variants/rootfs.Container'
 
       - name: Trivy cache
         if: steps.build.outputs.updates == 'true'
