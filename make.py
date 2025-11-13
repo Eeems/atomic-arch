@@ -1196,7 +1196,7 @@ def do_workflow(_: argparse.Namespace):
         if job_id != "rootfs":
             lines += [
                 f"    updates: ${{{{ fromJson(needs['{depends}'].outputs.updates) }}}}",
-                "    push: ${{ github.ref_name == 'master' }}",
+                "    push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}",
                 f"    artifact: ${{{{ fromJson(needs['{depends}'].outputs.updates) && '{depends}' || '' }}}}",
             ]
 
@@ -1210,7 +1210,7 @@ def do_workflow(_: argparse.Namespace):
         lines = [
             f"{djob}:",
             f"  name: Generate deltas for {orig}",
-            "  if: github.ref_name == 'master'",
+            "  if: github.event_name == 'push' && github.ref == 'refs/heads/master'",
             f"  needs: {orig}",
             "  uses: ./.github/workflows/delta.yaml",
             "  secrets: inherit",
@@ -1219,7 +1219,9 @@ def do_workflow(_: argparse.Namespace):
             f"    variant: {orig}",
         ]
         if orig != "rootfs":
-            lines.append("    push: ${{ github.ref_name == 'master' }}")
+            lines.append(
+                "    push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}"
+            )
 
         lines.append("    recreate: false")
         return indent(lines)
@@ -1235,7 +1237,7 @@ def do_workflow(_: argparse.Namespace):
                 "  permissions: *permissions",
                 "  with:",
                 f"    variant: {job_id}",
-                f"    pull: ${{{{ github.ref_name == 'master' && fromJson(needs['{job_id}'].outputs.updates) }}}}",
+                f"    pull: ${{{{ github.event_name == 'push' && github.ref == 'refs/heads/master' && fromJson(needs['{job_id}'].outputs.updates) }}}}",
                 f"    offline: {json.dumps(offline)}",
             ]
 
