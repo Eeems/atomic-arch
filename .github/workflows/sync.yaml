@@ -62,6 +62,7 @@ jobs:
       - uses: ./.github/actions/mask-registry-passwords
 
       - name: Generate matrix
+        id: matrix
         shell: bash
         run: |
           set -e
@@ -85,7 +86,9 @@ jobs:
           items=$(echo "$data" | wc -l)
           echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
           if [[ $items -gt 0 ]];then
-            echo "$data" | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' >> $GITHUB_OUTPUT
+            echo "$data" \
+            | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' \
+            >> $GITHUB_OUTPUT
           else
             echo '{"include":[{"tag":""}]}' >> $GITHUB_OUTPUT
           fi
