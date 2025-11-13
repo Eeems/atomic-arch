@@ -39,7 +39,7 @@ jobs:
     name: Generate matrix
     runs-on: ubuntu-latest
     outputs:
-      variant-matrix: ${{ steps.matrix.outputs.JSON_CONTENT }}
+      tag-matrix: ${{ steps.matrix.outputs.JSON_CONTENT }}
       items: ${{ steps.matrix.outputs.items }}
     steps:
       - name: Checkout the repository
