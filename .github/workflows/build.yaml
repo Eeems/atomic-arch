@@ -11,7 +11,11 @@ on:
     paths:
       - .github/workflows/build.yaml
       - .github/workflows/build-variant.yaml
-      - ".github/actions/cleanup/**"
+      - .github/workflows/delta.yaml
+      - .github/workflows/iso.yaml
+      - .github/workflows/manifest.yaml
+      - .github/workflows/sync.yaml
+      - ".github/actions/**"
       - make.py
       - seccomp.json
       - .containerignore
