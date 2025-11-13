@@ -44,7 +44,7 @@ jobs:
         -v /var/lib/containers:/var/lib/containers
         -v /:/run/host
     outputs:
-      variant-matrix: ${{ fromJson(steps.matrix.outputs.outputs).matrix }}
+      variant-matrix: ${{ toJson(fromJson(steps.matrix.outputs.outputs).matrix) }}
       items: ${{ fromJson(steps.matrix.outputs.outputs).items }}
     steps:
       - name: Checkout the repository
