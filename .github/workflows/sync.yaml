@@ -55,7 +55,7 @@ jobs:
       - name: Login to dockerhub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USER }}
+          username: eeems
           password: ${{ secrets.DOCKER_PASSWORD }}
           registry: docker.io
 
@@ -121,7 +121,7 @@ jobs:
       - name: Login to dockerhub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USER }}
+          username: eeems
           password: ${{ secrets.DOCKER_PASSWORD }}
           registry: docker.io
 
