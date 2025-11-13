@@ -65,7 +65,8 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
-      - uses: ./.github/actions/manifest-cache-restore
+      - name: Get manifest cache
+        uses: ./.github/actions/manifest-cache-restore
         with:
           key: manifest_${{ inputs.variant }}
           artifact: true
