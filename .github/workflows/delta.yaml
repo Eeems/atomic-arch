@@ -147,8 +147,10 @@ jobs:
             name=$(python <<EOF
             import make
             from _os.podman import hex_to_base62
-            a = hex_to_base62("${{ matrix.a }}")
-            b = hex_to_base62("${{ matrix.b }}")
+            from _os.podman import image_digest
+            from _os import REPO
+            a = hex_to_base62(image_digest(f"{REPO}:${{ matrix.a }}")
+            b = hex_to_base62(image_digest(f"{REPO}:${{ matrix.b }}")
             print(f"_diff-{a}-{b}")
             EOF
             )
