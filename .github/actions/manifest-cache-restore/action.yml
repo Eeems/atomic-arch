@@ -20,9 +20,15 @@ runs:
         path: ${{ inputs.path }}
         key: ${{ inputs.key }}
 
-    - uses: actions/download-artifact@v5
+    - name: Download artifact
+      id: download
       if: inputs.artifact == 'true'
+      uses: actions/download-artifact@v5
       continue-on-error: true
       with:
-        path: ${{ inputs.path }}
         name: ${{ inputs.key }}
+
+    - name: Move file to correct location
+      if: inputs.artifact == 'true'
+      shell: bash
+      run: mv ${{ steps.download.outputs.download-path }} ${{ inputs.path }}
