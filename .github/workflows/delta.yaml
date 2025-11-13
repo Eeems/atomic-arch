@@ -125,6 +125,7 @@ jobs:
       - uses: ./.github/actions/manifest-cache-restore
         with:
           key: manifest_${{ inputs.variant }}
+          path: ${{ github.workspace }}/.tmp/manifest_cache
           artifact: true
 
       - name: Build
