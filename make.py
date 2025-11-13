@@ -1195,9 +1195,9 @@ def do_workflow(_: argparse.Namespace):
         ]
         if job_id != "rootfs":
             lines += [
-                f"    updates: ${{{{ fromJson(needs.{depends}.outputs.updates) }}}}",
+                f"    updates: ${{{{ fromJson(needs['{depends}'].outputs.updates) }}}}",
                 "    push: ${{ github.ref_name == 'master' }}",
-                f"    artifact: ${{{{ fromJson(needs.{depends}.outputs.updates) && '{depends}' || '' }}}}",
+                f"    artifact: ${{{{ fromJson(needs['{depends}'].outputs.updates) && '{depends}' || '' }}}}",
             ]
 
         if d["cleanup"]:
@@ -1235,7 +1235,7 @@ def do_workflow(_: argparse.Namespace):
                 "  permissions: *permissions",
                 "  with:",
                 f"    variant: {job_id}",
-                f"    pull: ${{{{ github.ref_name == 'master' && fromJson(needs.{job_id}.outputs.updates) }}}}",
+                f"    pull: ${{{{ github.ref_name == 'master' && fromJson(needs['{job_id}'].outputs.updates) }}}}",
                 f"    offline: {json.dumps(offline)}",
             ]
 
