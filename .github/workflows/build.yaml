@@ -368,6 +368,7 @@ jobs:
     permissions: *permissions
     with:
       variant: rootfs
+      push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
   delta_base:

@@ -1208,24 +1208,22 @@ def do_workflow(_: argparse.Namespace):
 
         return indent(lines)
 
-    def render_delta(djob: str) -> list[str]:
-        orig = djob.replace("delta_", "")
-        lines = [
-            f"{djob}:",
-            f"  name: Generate deltas for {orig}",
-            "  if: github.event_name != 'pull_request'",
-            f"  needs: {orig}",
-            "  uses: ./.github/workflows/delta.yaml",
-            "  secrets: inherit",
-            "  permissions: *permissions",
-            "  with:",
-            f"    variant: {orig}",
-        ]
-        if orig != "rootfs":
-            lines.append("    push: ${{ github.event_name != 'pull_request' }}")
-
-        lines.append("    recreate: false")
-        return indent(lines)
+    def render_delta(job_id: str) -> list[str]:
+        return indent(
+            [
+                f"delta_{job_id}:",
+                f"  name: Generate deltas for {job_id}",
+                "  if: github.event_name != 'pull_request'",
+                f"  needs: {job_id}",
+                "  uses: ./.github/workflows/delta.yaml",
+                "  secrets: inherit",
+                "  permissions: *permissions",
+                "  with:",
+                f"    variant: {job_id}",
+                "    push: ${{ github.event_name != 'pull_request' }}",
+                "    recreate: false",
+            ]
+        )
 
     def render_iso(job_id: str) -> list[str]:
         def __(offline: bool):
@@ -1245,7 +1243,6 @@ def do_workflow(_: argparse.Namespace):
         return indent(__(False) + [""] + __(True))
 
     build_order = topological_sort(graph, indegree)
-    delta_jobs = [f"delta_{j}" for j in build_order]
 
     sections = [
         [
@@ -1337,7 +1334,7 @@ def do_workflow(_: argparse.Namespace):
                 "manifest:",
                 "  name: Generate manifest",
                 "  needs:",
-                *[f"    - {j}" for j in sorted(delta_jobs)],
+                *[f"    - delta_{j}" for j in sorted(build_order)],
                 "  uses: ./.github/workflows/manifest.yaml",
                 "  secrets: inherit",
                 "  permissions: &permissions",
@@ -1357,7 +1354,7 @@ def do_workflow(_: argparse.Namespace):
         comment("BUILD"),
         *[render_build(j) for j in build_order],
         comment("DELTA"),
-        *[render_delta(j) for j in delta_jobs],
+        *[render_delta(j) for j in build_order],
         comment("ISO"),
         *[render_iso(j) for j in build_order if j != "rootfs"],
     ]
