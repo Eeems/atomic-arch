@@ -72,7 +72,7 @@ jobs:
       - uses: ./.github/actions/manifest-cache-restore
         if: ${{ !inputs.pull }}
         with:
-          key: ${{ inputs.variant }}
+          key: manifest_${{ inputs.variant }}
           artifact: true
 
       - name: Build

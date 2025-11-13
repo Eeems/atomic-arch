@@ -93,7 +93,7 @@ jobs:
       - uses: ./.github/actions/manifest-cache-restore
         if: inputs.artifact != ''
         with:
-          key: ${{ inputs.artifact != '' }}
+          key: manifest_${{ inputs.artifact != '' }}
           artifact: true
 
       - name: Build
@@ -165,7 +165,7 @@ jobs:
 
       - uses: ./.github/actions/manifest-cache-update
         with:
-          key: ${{ inputs.variant }}
+          key: manifest_${{ inputs.variant }}
           artifact: true
 
       - name: Export image

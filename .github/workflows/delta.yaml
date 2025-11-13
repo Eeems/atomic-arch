@@ -67,7 +67,7 @@ jobs:
 
       - uses: ./.github/actions/manifest-cache-restore
         with:
-          key: ${{ inputs.variant }}
+          key: manifest_${{ inputs.variant }}
           artifact: true
 
       - name: Get matrix
@@ -124,7 +124,7 @@ jobs:
 
       - uses: ./.github/actions/manifest-cache-restore
         with:
-          key: ${{ inputs.variant }}
+          key: manifest_${{ inputs.variant }}
           artifact: true
 
       - name: Build
@@ -141,11 +141,6 @@ jobs:
             ./make.py delta $args --explicit ${{ matrix.a }} ${{ matrix.b }}
         env:
           TMPDIR: ${{ github.workspace }}/.tmp
-
-      - uses: ./.github/actions/manifest-cache-update
-        with:
-          key: ${{ inputs.variant }}
-          artifact: true
 
       - name: Export image
         id: export
