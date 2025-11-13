@@ -122,12 +122,44 @@ def build(target: str):
         build_args["ID"] = f"{labels['os-release.ID']}"
         build_args["HOME_URL"] = f"{labels['os-release.HOME_URL']}"
         build_args["BUG_REPORT_URL"] = f"{labels['os-release.BUG_REPORT_URL']}"
+        if not image_exists(f"{REPO}:{base_variant}", False):
+            pull(f"{REPO}:{base_variant}")
+
+    with open(containerfile, "r") as f:
+        pattern = re.compile(r"\$\{([^}:]+)(?::-(.+?))?\}")
+        # TODO handle line continuations
+        lines = [
+            x
+            for x in f.read().splitlines()
+            if x.startswith("FROM ") or x.startswith("ARG ")
+        ]
+        for base_image in [x[5:].strip() for x in lines if x.startswith("FROM ")]:
+            if " AS " in base_image.upper():
+                base_image = re.split(" AS ", base_image, 1, flags=re.IGNORECASE)[0]
+
+            # TODO handle multiple args in a single ARG statement
+            # TODO only use ARG statements from before this FROM
+            args = {
+                k: v
+                for x in lines
+                for y in [x[4:].strip()]
+                for k, v in [y.split("=", 1) if "=" in y else (y, None)]
+                if x.startswith("ARG ")
+            }
+            args.update(build_args)
+            base_image = pattern.sub(
+                lambda m: cast(str, args.get(m.group(1), m.group(2) or "")),
+                base_image,
+            )
+            if base_image != "scratch" and not image_exists(base_image, False):
+                pull(base_image)
 
     podman(
         "build",
         f"--tag={REPO}:{target}",
         *[f"--build-arg={k}={v}" for k, v in build_args.items()],
         "--force-rm",
+        "--pull=never",
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file={containerfile}",
         "--format=docker",
@@ -266,8 +298,13 @@ def do_iso(args: argparse.Namespace):
         sys.exit(1)
 
     for target in cast(list[str], args.target):
-        _ = in_system("build", target=f"{REPO}:{target}", check=True)
-        _ = in_system("iso", check=True)
+        image = f"{REPO}:{target}"
+        _ = in_system("build", target=image, check=True)
+        _ = in_system(
+            "iso",
+            *([] if cast(bool, args.localImage) else ["--no-local-image"]),
+            check=True,
+        )
 
 
 def do_rootfs(args: argparse.Namespace):
@@ -1042,9 +1079,294 @@ def do_manifest(args: argparse.Namespace):
             podman("push", image)
 
 
-def do_test(_: argparse.Namespace):
-    for _x in progress_bar(range(1000)):
-        sleep(0.5)
+type Graph = dict[str, dict[str, str | list[str] | None | bool]]
+type Indegree = dict[str, int]
+
+
+def do_workflow(_: argparse.Namespace):
+    config: dict[str, list[str] | dict[str, dict[str, str | None | list[str]]]] = {
+        "variants": {
+            "base": {"templates": ["nvidia", "slim"]},
+            "atomic": {
+                "depends": "base",
+                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+            },
+            "gnome": {
+                "depends": "base",
+                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+            },
+            "eeems": {
+                "depends": "atomic",
+                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+            },
+        },
+        "clean": ["slim"],
+    }
+
+    def build_job_graph(
+        config: dict[str, list[str] | dict[str, dict[str, str | None | list[str]]]],
+    ) -> tuple[Graph, Indegree]:
+        graph: Graph = {
+            "rootfs": {
+                "depends": "check",
+                "cleanup": False,
+            }
+        }
+        indegree: Indegree = {"rootfs": 0}
+        for variant, data in cast(
+            dict[str, dict[str, str | None | list[str]]], config["variants"]
+        ).items():
+            if variant in ("check", "rootfs"):
+                raise ValueError(f"Invalid use of protected variant name: {variant}")
+
+            graph[variant] = {
+                "depends": data.get("depends", None) or "rootfs",
+                "cleanup": False,
+            }
+            indegree[variant] = 0
+            for template in cast(list[str], data["templates"]):
+                full_id = f"{variant}-{template}"
+                graph[full_id] = {
+                    "depends": (
+                        f"{variant}-{template.rsplit('-', 1)[0]}"
+                        if "-" in template
+                        else variant
+                    ),
+                    "cleanup": template in config["clean"],
+                }
+                indegree[full_id] = 0
+
+        for job_id, data in graph.items():
+            depends = data["depends"]
+            if job_id == "rootfs":
+                continue
+
+            indegree[job_id] += 1
+            if depends not in graph:
+                raise RuntimeError(f"{job_id} cannot find dependency {depends}")
+
+        return graph, indegree
+
+    def topological_sort(graph: Graph, indegree: Indegree) -> list[str]:
+        queue = deque([job for job, deg in indegree.items() if deg == 0])
+        order: list[str] = []
+        while queue:
+            job = queue.popleft()
+            order.append(job)
+            for dep_job, data in graph.items():
+                if data["depends"] != job:
+                    continue
+
+                indegree[dep_job] -= 1
+                if indegree[dep_job] == 0:
+                    queue.append(dep_job)
+
+        if len(order) != len(graph):
+            raise RuntimeError("Cycle detected in job dependencies")
+
+        return order
+
+    graph, indegree = build_job_graph(config)
+
+    def indent(lines: list[str], level: int = 1) -> list[str]:
+        return [
+            (("  " * level) + line).rstrip() if line.strip() else "" for line in lines
+        ]
+
+    def comment(title: str) -> list[str]:
+        return [
+            "  ######################################",
+            f"  #             {title:<19}#",
+            "  ######################################",
+        ]
+
+    def render_build(job_id: str) -> list[str]:
+        d = graph[job_id]
+        depends = d["depends"]
+        lines = [
+            f"{job_id}:",
+            f"  name: Build atomic-arch:{job_id} image",
+            f"  needs: {depends}",
+            "  uses: ./.github/workflows/build-variant.yaml",
+            "  secrets: inherit",
+            "  permissions: *permissions",
+            "  with:",
+            f"    variant: {job_id}",
+        ]
+        if job_id != "rootfs":
+            lines += [
+                f"    updates: ${{{{ fromJson(needs['{depends}'].outputs.updates) }}}}",
+                "    push: ${{ github.ref_name == 'master' }}",
+                f"    artifact: ${{{{ fromJson(needs['{depends}'].outputs.updates) && '{depends}' || '' }}}}",
+            ]
+
+        if d["cleanup"]:
+            lines.append("    cleanup: true")
+
+        return indent(lines)
+
+    def render_delta(djob: str) -> list[str]:
+        orig = djob.replace("delta_", "")
+        lines = [
+            f"{djob}:",
+            f"  name: Generate deltas for {orig}",
+            "  if: github.ref_name == 'master'",
+            f"  needs: {orig}",
+            "  uses: ./.github/workflows/delta.yaml",
+            "  secrets: inherit",
+            "  permissions: *permissions",
+            "  with:",
+            f"    variant: {orig}",
+        ]
+        if orig != "rootfs":
+            lines.append("    push: ${{ github.ref_name == 'master' }}")
+
+        lines.append("    recreate: false")
+        return indent(lines)
+
+    def render_iso(job_id: str) -> list[str]:
+        def __(offline: bool):
+            return [
+                f"{'offline' if offline else 'online'}_iso_{job_id}:",
+                f"  name: Generate iso for {job_id}",
+                f"  needs: {job_id}",
+                "  uses: ./.github/workflows/iso.yaml",
+                "  secrets: inherit",
+                "  permissions: *permissions",
+                "  with:",
+                f"    variant: {job_id}",
+                f"    pull: ${{{{ github.ref_name == 'master' && fromJson(needs['{job_id}'].outputs.updates) }}}}",
+                f"    offline: {json.dumps(offline)}",
+            ]
+
+        return indent(__(False) + [""] + __(True))
+
+    build_order = topological_sort(graph, indegree)
+    delta_jobs = [f"delta_{j}" for j in build_order]
+
+    sections = [
+        [
+            "#########################################",
+            "# THIS FILE IS DYNAMICALLY GENERATED    #",
+            "# Run the following to update the file: #",
+            "#   $ ./make.py workflow                #",
+            "#########################################",
+            "name: Build images",
+            "on:",
+            "  pull_request: &on-filter",
+            "    branches:",
+            "      - master",
+            "    paths:",
+            "      - .github/workflows/build.yaml",
+            "      - .github/workflows/build-variant.yaml",
+            '      - ".github/actions/cleanup/**"',
+            "      - make.py",
+            "      - seccomp.json",
+            "      - .containerignore",
+            '      - "overlay/**"',
+            '      - "templates/**"',
+            '      - "variants/**"',
+            "  push: *on-filter",
+            "  workflow_dispatch:",
+            "  schedule:",
+            '    - cron: "0 23 * * *"',
+            "",
+            "concurrency:",
+            "  group: build-${{ github.ref_name }}",
+            "  cancel-in-progress: true",
+            "",
+            "jobs:",
+        ],
+        comment("UNIQUE"),
+        indent(
+            [
+                "notifications:",
+                "  name: Clear notifications",
+                "  runs-on: ubuntu-latest",
+                "  steps:",
+                "    - name: Checkout the repository",
+                "      uses: actions/checkout@v4",
+                "    - name: Clean cancellation notifications",
+                "      uses: ./.github/actions/clean-cancelled-notifications",
+                "      with:",
+                "        pat: ${{ secrets.NOTIFICATION_PAT }}",
+                "",
+                "check:",
+                "  name: Ensure config is valid",
+                "  runs-on: ubuntu-latest",
+                "  permissions:",
+                "    contents: read",
+                "    packages: read",
+                "  container:",
+                "    image: ghcr.io/eeems/atomic-arch-builder:latest",
+                "    options: >-",
+                "      --privileged",
+                "      --security-opt seccomp=unconfined",
+                "      --security-opt apparmor=unconfined",
+                "      --cap-add=SYS_ADMIN",
+                "      --cap-add=NET_ADMIN",
+                "      --device /dev/fuse",
+                "      --tmpfs /tmp",
+                "      --tmpfs /run",
+                "      --userns=host",
+                "      -v /var/lib/containers:/var/lib/containers",
+                "      -v /:/run/host",
+                "  steps:",
+                "    - name: Checkout the repository",
+                "      uses: actions/checkout@v4",
+                "    - name: Cache venv",
+                "      uses: actions/cache@v4",
+                "      with:",
+                "        path: .venv",
+                "        key: venv-${{ hashFiles('.github/workflows/Dockerfile.builder') }}-${{ hashFiles('make.py') }}",
+                "    - name: Ensure config is valid",
+                "      run: |",
+                "        set -e",
+                "        ./make.py check",
+                "        ./make.py workflow",
+                '        if [[ -n "$(git status -s)" ]]; then',
+                '          echo "Please run ./make.py workflow, commit the changes, and try again.',
+                "          exit 1",
+                "        fi",
+                "      env:",
+                "        TMPDIR: ${{ runner.temp }}",
+                "",
+                "manifest:",
+                "  name: Generate manifest",
+                "  needs:",
+                *[f"    - {j}" for j in sorted(delta_jobs)],
+                "  uses: ./.github/workflows/manifest.yaml",
+                "  secrets: inherit",
+                "  permissions: &permissions",
+                "    contents: write",
+                "    actions: write",
+                "    packages: write",
+                "    security-events: write",
+                "",
+                "sync:",
+                "  name: Sync repositories",
+                "  needs: manifest",
+                "  uses: ./.github/workflows/sync.yaml",
+                "  secrets: inherit",
+                "  permissions: *permissions",
+            ]
+        ),
+        comment("BUILD"),
+        *[render_build(j) for j in build_order],
+        comment("DELTA"),
+        *[render_delta(j) for j in delta_jobs],
+        comment("ISO"),
+        *[render_iso(j) for j in build_order if j != "rootfs"],
+    ]
+
+    output: list[str] = []
+    for i, sec in enumerate(sections):
+        output.extend(sec)
+        if i < len(sections) - 1:
+            output.append("")
+
+    with open(".github/workflows/build.yaml", "w") as f:
+        _r = f.write("\n".join(output).rstrip() + "\n")
 
 
 if __name__ == "__main__":
@@ -1058,6 +1380,12 @@ if __name__ == "__main__":
 
     subparser = subparsers.add_parser("iso")
     _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
+    _ = subparser.add_argument(
+        "--no-local-image",
+        help="If the image should be copied to the iso container storage",
+        dest="localImage",
+        action="store_false",
+    )
     subparser.set_defaults(func=do_iso)
 
     subparser = subparsers.add_parser("rootfs")
@@ -1128,8 +1456,8 @@ if __name__ == "__main__":
     _ = subparser.add_argument("--push", action="store_true")
     subparser.set_defaults(func=do_manifest)
 
-    subparser = subparsers.add_parser("test")
-    subparser.set_defaults(func=do_test)
+    subparser = subparsers.add_parser("workflow")
+    subparser.set_defaults(func=do_workflow)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

@@ -1,24 +1,32 @@
 name: Build an iso
 
 on:
-  workflow_dispatch:
-    inputs:
+  workflow_call:
+    inputs: &inputs
       variant:
         description: Which variant to generate an ISO for
         type: string
         required: true
+      pull:
+        description: Pull the latest image, or use the workflow artifact
+        type: boolean
+        default: false
+        required: false
+      offline:
+        description: Offline installable?
+        type: boolean
+        default: true
+        required: false
+  workflow_dispatch:
+    inputs: *inputs
 
 permissions:
   contents: read
   packages: read
 
-concurrency:
-  group: delta-${{ inputs.variant }}
-  cancel-in-progress: true
-
 jobs:
   run:
-    name: atomic-arch:${{ inputs.variant }} iso
+    name: atomic-arch:${{ inputs.variant }} iso${{ inputs.offline && ' (offline)' || ''}}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/eeems/atomic-arch-builder:latest
@@ -55,15 +63,36 @@ jobs:
         with:
           root: /run/host
 
+      - name: Download image artifact
+        id: download
+        if: ${{ !inputs.pull }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.variant }}
+
+      - name: Load image artifact
+        if: ${{ !inputs.pull }}
+        uses: ./.github/actions/run-with-podman-service
+        with:
+          run: |
+            cd "${{ steps.download.outputs.download-path }}"
+            zstdcat "${{ inputs.variant }}.tar.zstd" | podman load
+            rm "${{ inputs.variant }}.tar.zstd"
+
       - name: Build
         uses: ./.github/actions/run-with-podman-service
         with:
-          run: ./make.py iso ${{ inputs.variant }}
+          run: |
+            args=""
+            if [[ "${{ inputs.offline }}" != "true" ]];then
+              args="$args --no-local-image"
+            fi
+            ./make.py iso $args ${{ inputs.variant }}
         env:
           TMPDIR: ${{ runner.temp }}
 
       - name: Upload iso
         uses: actions/upload-artifact@v4
         with:
-          name: atomic-arch-${{ inputs.variant }}.iso
+          name: ${{ inputs.offline && 'offline' || 'online' }}_atomic-arch-${{ inputs.variant }}.iso
           path: /var/lib/system/atomic-arch-${{ inputs.variant }}-*.iso

@@ -1,14 +1,19 @@
 name: Sync images
 on:
-  pull_request: &on-filter
-    branches:
-      - master
-    paths:
-      - .github/workflows/sync.yaml
-  push: *on-filter
   workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * 0"
+    inputs: &inputs
+      from:
+        description: "Repository to sync from"
+        default: ghcr.io
+        type: string
+        required: false
+      to:
+        description: "Repository to sync to"
+        default: docker.io
+        type: string
+        required: false
+  workflow_call:
+    inputs: *inputs
 
 permissions:
   contents: read
@@ -30,8 +35,12 @@ jobs:
         with:
           pat: ${{ secrets.NOTIFICATION_PAT }}
 
-  build-and-push:
+  matrix:
+    name: Generate matrix
     runs-on: ubuntu-latest
+    outputs:
+      tag-matrix: ${{ steps.matrix.outputs.JSON_CONTENT }}
+      items: ${{ steps.matrix.outputs.items }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -46,28 +55,18 @@ jobs:
       - name: Login to dockerhub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USER }}
+          username: eeems
           password: ${{ secrets.DOCKER_PASSWORD }}
           registry: docker.io
 
       - uses: ./.github/actions/mask-registry-passwords
 
-      - name: Synchronize images
+      - name: Generate matrix
+        id: matrix
         shell: bash
         run: |
           set -e
-          image=eeems/atomic-arch
-          from=ghcr.io
-          to=docker.io
-          while read -r tag;do
-            echo "::group::$tag"
-            skopeo copy \
-              --multi-arch all \
-              --retry-times 10 \
-              "docker://$from/$image:$tag" \
-              "docker://$to/$image:$tag"
-            echo "::endgroup::"
-          done < <( \
+          data=$(cat <( \
             comm -23 \
               <(
                 skopeo list-tags \
@@ -83,4 +82,61 @@ jobs:
                 | jq -r '.Tags.[]' \
                 | sort \
               ) \
-          )
+          ))
+          items=$(echo "$data" | wc -l)
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          if [[ $items -gt 0 ]];then
+            echo "$data" \
+            | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' \
+            >> $GITHUB_OUTPUT
+          else
+            echo '{"include":[{"tag":""}]}' >> $GITHUB_OUTPUT
+          fi
+          echo 'EOF' >> $GITHUB_OUTPUT
+          echo "items=$items" >> $GITHUB_OUTPUT
+        env:
+          from: ${{ inputs.from }}
+          to: ${{ inputs.to }}
+          image: eeems/atomic-arch
+
+  sync:
+    name: Sync eeems/atomic-arch:${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    if: ${{ needs.matrix.outputs.items > 0 }}
+    needs: matrix
+    strategy:
+      matrix: ${{ fromJson(needs.matrix.outputs.tag-matrix) }}
+      fail-fast: false
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Login to ghcr
+        uses: docker/login-action@v3
+        with:
+          username: ${{github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+
+      - name: Login to dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: eeems
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+
+      - uses: ./.github/actions/mask-registry-passwords
+
+      - name: Synchronize images
+        shell: bash
+        run: |
+          skopeo copy \
+            --multi-arch all \
+            --retry-times 10 \
+            "docker://$from/$image:$tag" \
+            "docker://$to/$image:$tag"
+        env:
+          from: ${{ inputs.from }}
+          to: ${{ inputs.to }}
+          image: eeems/atomic-arch
+          tag: ${{ matrix.tag }}

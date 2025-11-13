@@ -4,14 +4,14 @@ FROM ${BASE_IMAGE}
 
 ARG UUID
 
-RUN \
-  rm /home \
+RUN rm /home \
   && mkdir /home \
-  && /usr/lib/system/setup_live_user
-RUN \
-  mkdir -p /etc/mkinitcpio{,.conf}.d \
+  && /usr/lib/system/setup_live_user \
+  && mkdir -p /etc/mkinitcpio{,.conf}.d \
   && cp -lf /etc/system/mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf \
-  && cp -lf /etc/system/linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset
+  && cp -lf /etc/system/linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset \
+  && cp -lf /etc/system/pacman-initialize.service /etc/systemd/system/pacman-initialize.service \
+  && systemctl enable pacman-initialize.service
 
 RUN /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_packages \
@@ -28,7 +28,9 @@ RUN /usr/lib/system/initialize_pacman \
   syslinux \
   nvidia-open-dkms \
   nvidia-container-toolkit \
-  nvidia-utils
+  nvidia-utils \
+  && /usr/lib/system/remove_pacman_files
 
-RUN /usr/lib/system/build_kernel
-RUN /usr/lib/system/create_live_bootloader
+RUN sed -i '/11-dm-initramfs.rules/d' /usr/lib/initcpio/install/archiso \
+  && /usr/lib/system/build_kernel \
+  && /usr/lib/system/create_live_bootloader

@@ -1,0 +1,12 @@
+[Unit]
+Description=initialize_pacman
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/system/initialize_pacman
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

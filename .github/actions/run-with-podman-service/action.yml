@@ -8,6 +8,9 @@ outputs:
   updates:
     description: If an update happened
     value: ${{ steps.run.outputs.updates }}
+  outputs:
+    description: Custom outputs
+    value: ${{ steps.run.outputs.outputs }}
 runs:
   using: composite
   steps:

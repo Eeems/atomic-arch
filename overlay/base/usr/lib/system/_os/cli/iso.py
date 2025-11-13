@@ -11,8 +11,9 @@ from typing import cast
 
 from .. import OS_NAME
 from .. import SYSTEM_PATH
-from ..system import is_root
 
+from ..system import is_root
+from ..system import baseImage
 from ..system import execute
 from ..podman import podman
 from ..podman import export
@@ -20,20 +21,25 @@ from ..podman import export
 kwds = {"help": "Build a bootable ISO image to install your system"}
 
 
-def register(_: ArgumentParser):
-    pass
+def register(parser: ArgumentParser):
+    _ = parser.add_argument(
+        "--no-local-image",
+        help="If the image should be copied to the iso container storage",
+        dest="localImage",
+        action="store_false",
+    )
 
 
-def command(_: Namespace):
+def command(args: Namespace):
     if not is_root():
         print("Must be run as root")
         sys.exit(1)
 
-    name = iso()
+    name = iso(cast(bool, args.localImage))
     print(f"ISO Created: {name}")
 
 
-def iso():
+def iso(local_image: bool):
     cwd = os.getcwd()
     os.chdir(SYSTEM_PATH)
     if os.path.exists("archiso"):
@@ -43,10 +49,7 @@ def iso():
         shutil.rmtree("work")
 
     uuid = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-00")
-    with open("/etc/system/Systemfile", "r") as f:
-        buildImage = [
-            x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")
-        ][0]
+    buildImage = baseImage()
 
     os.chdir("/etc/system")
     podman(
@@ -54,6 +57,7 @@ def iso():
         f"--build-arg=UUID={uuid}",
         f"--build-arg=BASE_IMAGE={buildImage}",
         "--force-rm",
+        "--pull=never",
         f"--tag=system:iso-{uuid}",
         "--file=/etc/system/Isofile",
     )
@@ -65,7 +69,7 @@ def iso():
 
     with export(
         f"iso-{uuid}",
-        f"podman --remote save {buildImage} | podman load",
+        f"podman --remote save {buildImage} | podman load" if local_image else "",
         workingDir=SYSTEM_PATH,
     ) as t:
         if not os.path.exists(rootfs):

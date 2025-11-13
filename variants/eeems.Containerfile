@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1.4
 ARG HASH
 
-FROM ghcr.io/eeems/atomic-arch:atomic
+FROM eeems/atomic-arch:atomic
 
 ARG \
   VARIANT="Eeems" \

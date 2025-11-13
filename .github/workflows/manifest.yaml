@@ -1,13 +1,16 @@
 name: Build manifest
 
 on:
-  pull_request: &on-filter
-    branches:
-      - master
-    paths:
-      - .github/workflows/manifest.yaml
-      - make.py
   workflow_dispatch:
+    inputs: &inputs
+      cache:
+        description: Should the cache be used
+        default: true
+        required: false
+        type: boolean
+  workflow_call:
+    inputs: *inputs
+
 permissions:
   contents: read
   packages: write
@@ -69,6 +72,7 @@ jobs:
           workflow: "delta.yaml"
 
       - uses: ./.github/actions/manifest-cache-restore
+        if: ${{ inputs.cache }}
 
       - name: Build
         uses: ./.github/actions/run-with-podman-service

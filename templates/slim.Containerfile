@@ -1,7 +1,7 @@
 #syntax=docker/dockerfile:1.4
 ARG BASE_VARIANT_ID
 
-FROM ghcr.io/eeems/atomic-arch:${BASE_VARIANT_ID} AS build
+FROM eeems/atomic-arch:${BASE_VARIANT_ID} AS build
 
 RUN /usr/lib/system/initialize_pacman \
   && echo "[system] Installing bleachbit" \
@@ -31,7 +31,8 @@ RUN /usr/lib/system/initialize_pacman \
 
 ARG \
   VARIANT \
-  VARIANT_ID
+  VARIANT_ID \
+  VERSION_ID
 
 RUN VARIANT="${VARIANT}" \
   VARIANT_ID="${VARIANT_ID}" \
@@ -55,11 +56,11 @@ ARG \
   BUG_REPORT_URL
 
 LABEL \
-  os-release.NAME="Atomic Arch" \
-  os-release.PRETTY_NAME="Atomic Arch Linux" \
-  os-release.ID="atomic-arch" \
-  os-release.HOME_URL="https://github.com/Eeems/atomic-arch" \
-  os-release.BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues" \
+  os-release.NAME="${NAME}" \
+  os-release.PRETTY_NAME="${PRETTY_NAME}" \
+  os-release.ID="${ID}" \
+  os-release.HOME_URL="${HOME_URL}" \
+  os-release.BUG_REPORT_URL="${BUG_REPORT_URL}" \
   os-release.VERSION="${VERSION}" \
   os-release.VERSION_ID="${VERSION_ID}" \
   os-release.VARIANT="${VARIANT}" \
@@ -70,3 +71,5 @@ LABEL \
   hash="${HASH}" \
   mirrorlist="${MIRRORLIST}"
 
+WORKDIR /
+ENTRYPOINT [ "/bin/bash" ]
