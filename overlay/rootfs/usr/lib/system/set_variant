@@ -4,8 +4,12 @@ update(){
   if ! [ -f "$1" ]; then
     return
   fi
-  sed -Ei "/FROM (ghcr.io\/)?eeems\/atomic-arch:/ s|:.*|:${VARIANT_ID:?}|" "$1"
-  sed -Ei "/ARG BASE_IMAGE=(ghcr.io\/)?eeems\/atomic-arch:/ s|:.*|:${VARIANT_ID:?}|" $1
+  sed -Ei \
+    "/FROM (ghcr.io\/)?eeems\/atomic-arch:/ s|:.*|:${VARIANT_ID:?}|" \
+    "$1"
+  sed -Ei \
+    "/ARG BASE_IMAGE=(ghcr.io\/)?eeems\/atomic-arch:/ s|:.*|:${VARIANT_ID:?}|" \
+    "$1"
 }
 echo "[system] Variant: ${VARIANT:?}"
 update /etc/system/Isofile
