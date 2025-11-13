@@ -1079,8 +1079,6 @@ type Indegree = dict[str, int]
 
 
 def do_workflow(_: argparse.Namespace):
-    from collections import deque
-
     config: dict[str, list[str] | dict[str, dict[str, str | None | list[str]]]] = {
         "variants": {
             "base": {"templates": ["nvidia", "slim"]},
