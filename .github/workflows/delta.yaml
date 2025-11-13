@@ -145,17 +145,16 @@ jobs:
       - name: Get image name
         id: image
         run: |
-          python <<EOF
-          import make
-          import json
-          from _os.podman import hex_to_base62
-          from _os.podman import image_digest
+          python <<'EOF'
+          import os, json, make
+          from _os.podman import hex_to_base62, image_digest
           from _os import REPO
           a = hex_to_base62(image_digest(f"{REPO}:${{ matrix.a }}"))
           b = hex_to_base62(image_digest(f"{REPO}:${{ matrix.b }}"))
-          print(f"tag={json.dumps(f"_diff-{a}-{b}")}")
-          print(f"image={json.dumps(REPO)}")
-          EOF >> $GITHUB_OUTPUT
+          with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
+            _ = f.write(f"tag={json.dumps(f"_diff-{a}-{b}")}\n")
+            _ = f.write(f"image={json.dumps(REPO)}\n")
+          EOF
 
       - name: Upload image artifact
         if: steps.build.outputs.updates == 'true'

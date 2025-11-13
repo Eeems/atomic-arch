@@ -65,12 +65,6 @@ jobs:
 
       - uses: ./.github/actions/mask-registry-passwords
 
-      - name: Wait for all deltas to finish generating
-        uses: NathanFirmo/wait-for-other-action@v1.0.4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: "delta.yaml"
-
       - uses: ./.github/actions/manifest-cache-restore
         if: ${{ inputs.cache }}
 
