@@ -20,7 +20,7 @@ runs:
       with:
         run: |
           podman image ls
-          podman save "${{ inputs.image }}" | zstd -o ${{ inputs.name }}.tar.zstd
+          podman save ${{ inputs.image }} | zstd -o ${{ inputs.name }}.tar.zstd
           echo \
             "outputs={\"path\":\"${{ inputs.name }}.tar.zstd\"}" \
           >> $GITHUB_OUTPUT

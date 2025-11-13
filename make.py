@@ -173,6 +173,7 @@ def push(target: str):
     image = f"{REPO}:{target}"
     labels = image_labels(image, False)
     tags: list[str] = []
+    # TODO handle when trying to push a versioned image
     if labels.get("os-release.VERSION", None):
         version = labels["os-release.VERSION"]
         version_id = labels.get("os-release.VERSION_ID", None)

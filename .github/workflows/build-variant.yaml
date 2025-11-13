@@ -176,7 +176,7 @@ jobs:
           import os, json, make
           from _os import REPO
           with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-            _ = f.write(f"name={json.dumps(REPO)}\n")
+            _ = f.write(f"name={json.dumps(REPO)}:${{ inputs.variant }}\n")
           EOF
 
       - name: Upload image artifact
