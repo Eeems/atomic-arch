@@ -33,6 +33,8 @@ on:
     outputs:
       updates:
         value: ${{ jobs.run.outputs.updates }}
+      digest:
+        value: ${{ jobs.run.outputs.digest }}
   workflow_dispatch:
     inputs: *inputs
 
@@ -48,6 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       updates: ${{ steps.build.outputs.updates }}
+      digest: ${{ steps.image.outputs.digest }}
     container:
       image: ghcr.io/eeems/atomic-arch-builder:latest
       options: >-
@@ -152,13 +155,12 @@ jobs:
                 echo "::endgroup::"
               fi
             fi
-            if $push && [[ "$updates" != "true" ]];then
+            if $push && ! $updates;then
               echo "::group::push"
               ./make.py push ${{ inputs.variant }}
               echo "::endgroup::"
             fi
             echo "updates=$updates" >> $GITHUB_OUTPUT
-            podman image ls
         env:
           TMPDIR: ${{ runner.temp }}
           updates: ${{ inputs.updates }}
@@ -169,14 +171,26 @@ jobs:
           key: manifest_${{ inputs.variant }}
           artifact: true
 
-      - name: Get image name
+      - name: Get image information
         id: image
         run: |
           python <<'EOF'
           import os, json, make
+          from subprocess import check_output
           from _os import REPO
+          from _os.podman import podman_cmd
+          name = f"{REPO}:${{ inputs.variant }}"
+          digest = check_output(
+            podman_cmd(
+              "image",
+              "inspect",
+              "--format={{.Digest}}",
+              name,
+            )
+          ).strip().decode("utf-8")
           with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-            _ = f.write(f"name={json.dumps(REPO)}:${{ inputs.variant }}\n")
+            _ = f.write(f"name={json.dumps(name)}\n")
+            _ = f.write(f"digest={digest}")
           EOF
 
       - name: Upload image artifact
