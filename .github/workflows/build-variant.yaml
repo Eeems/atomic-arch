@@ -101,6 +101,10 @@ jobs:
             rm "${{ inputs.artifact }}.tar.zstd"
 
       - uses: ./.github/actions/manifest-cache-restore
+        if: inputs.artifact != ''
+        with:
+          key: ${{ inputs.artifact != '' }}
+          artifact: true
 
       - name: Build
         id: build
@@ -173,11 +177,13 @@ jobs:
           VARIANT: ${{ inputs.variant }}
 
       - uses: ./.github/actions/manifest-cache-update
-        if: ${{ inputs.push }}
+        with:
+          key: ${{ inputs.variant }}
+          artifact: true
 
       - name: Export image
         id: export
-        if: steps.build.outputs.updates == 'true' && !inputs.push
+        if: steps.build.outputs.updates == 'true'
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |
@@ -193,7 +199,7 @@ jobs:
             >> $GITHUB_OUTPUT
 
       - name: Upload ${{ fromJson(steps.export.outputs.outputs).name }} image
-        if: steps.build.outputs.updates == 'true' && !inputs.push
+        if: steps.build.outputs.updates == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ fromJson(steps.export.outputs.outputs).name }}
@@ -209,14 +215,14 @@ jobs:
             skip-checks:true
 
       - name: Trivy cache
-        if: steps.build.outputs.updates == 'true' && inputs.push
+        if: steps.build.outputs.updates == 'true'
         uses: actions/cache@v4
         with:
           path: ./.trivy
           key: trivy-${{ hashFiles('make.py') }}
 
       - name: Scan container
-        if: steps.build.outputs.updates == 'true' && inputs.push
+        if: steps.build.outputs.updates == 'true'
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |

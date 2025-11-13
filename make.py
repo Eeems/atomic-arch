@@ -1344,6 +1344,8 @@ def do_workflow(_: argparse.Namespace):
                 "    actions: write",
                 "    packages: write",
                 "    security-events: write",
+                "  with:",
+                "    cache: false",
                 "",
                 "sync:",
                 "  name: Sync repositories",

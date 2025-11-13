@@ -7,10 +7,22 @@ inputs:
   key:
     description: Cache key
     default: manifest-cache-${{ github.ref_name }}
+  artifact:
+    description: Use artifact instead of cache
+    default: "false"
+    required: false
 runs:
   using: composite
   steps:
     - uses: actions/cache/restore@v4
+      if: inputs.artifact == 'false'
       with:
         path: ${{ inputs.path }}
         key: ${{ inputs.key }}
+
+    - uses: actions/download-artifact@v5
+      if: inputs.artifact == 'true'
+      continue-on-error: true
+      with:
+        path: ${{ inputs.path }}
+        name: ${{ inputs.key }}
