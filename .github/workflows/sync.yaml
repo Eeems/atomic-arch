@@ -139,3 +139,4 @@ jobs:
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
           image: eeems/atomic-arch
+          tag: ${{ matrix.tag }}
