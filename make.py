@@ -138,6 +138,7 @@ def build(target: str):
                 base_image = re.split(" AS ", base_image, 1, flags=re.IGNORECASE)[0]
 
             # TODO handle multiple args in a single ARG statement
+            # TODO only use ARG statements from before this FROM
             args = {
                 k: v
                 for x in lines
@@ -1230,7 +1231,7 @@ def do_workflow(_: argparse.Namespace):
                 "  permissions: *permissions",
                 "  with:",
                 f"    variant: {job_id}",
-                "    pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}",
+                f"    pull: ${{{{ github.ref_name == 'master' && fromJson(needs.{job_id}.outputs.updates) }}}}",
                 f"    offline: {json.dumps(offline)}",
             ]
 

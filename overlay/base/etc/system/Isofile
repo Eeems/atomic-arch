@@ -11,7 +11,7 @@ RUN rm /home \
   && cp -lf /etc/system/mkinitcpio-archiso.conf /etc/mkinitcpio.conf.d/archiso.conf \
   && cp -lf /etc/system/linux-zen-archiso.preset /etc/mkinitcpio.d/linux-zen.preset \
   && cp -lf /etc/system/pacman-initialize.service /etc/systemd/system/pacman-initialize.service \
-  && sytemctl enable pacman-initialize.service
+  && systemctl enable pacman-initialize.service
 
 RUN /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_packages \

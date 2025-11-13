@@ -583,7 +583,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.base.outputs.updates) }}
       offline: false
 
   offline_iso_base:
@@ -594,7 +594,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.base.outputs.updates) }}
       offline: true
 
   online_iso_base-nvidia:
@@ -605,7 +605,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.base-nvidia.outputs.updates) }}
       offline: false
 
   offline_iso_base-nvidia:
@@ -616,7 +616,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.base-nvidia.outputs.updates) }}
       offline: true
 
   online_iso_base-slim:
@@ -627,7 +627,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.base-slim.outputs.updates) }}
       offline: false
 
   offline_iso_base-slim:
@@ -638,7 +638,7 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.base-slim.outputs.updates) }}
       offline: true
 
   online_iso_atomic:
@@ -649,7 +649,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic.outputs.updates) }}
       offline: false
 
   offline_iso_atomic:
@@ -660,7 +660,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic.outputs.updates) }}
       offline: true
 
   online_iso_gnome:
@@ -671,7 +671,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome.outputs.updates) }}
       offline: false
 
   offline_iso_gnome:
@@ -682,7 +682,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome.outputs.updates) }}
       offline: true
 
   online_iso_atomic-nvidia:
@@ -693,7 +693,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic-nvidia.outputs.updates) }}
       offline: false
 
   offline_iso_atomic-nvidia:
@@ -704,7 +704,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic-nvidia.outputs.updates) }}
       offline: true
 
   online_iso_atomic-slim:
@@ -715,7 +715,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-slim
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic-slim.outputs.updates) }}
       offline: false
 
   offline_iso_atomic-slim:
@@ -726,7 +726,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-slim
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic-slim.outputs.updates) }}
       offline: true
 
   online_iso_atomic-system76:
@@ -737,7 +737,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic-system76.outputs.updates) }}
       offline: false
 
   offline_iso_atomic-system76:
@@ -748,7 +748,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic-system76.outputs.updates) }}
       offline: true
 
   online_iso_eeems:
@@ -759,7 +759,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems.outputs.updates) }}
       offline: false
 
   offline_iso_eeems:
@@ -770,7 +770,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems.outputs.updates) }}
       offline: true
 
   online_iso_gnome-nvidia:
@@ -781,7 +781,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome-nvidia.outputs.updates) }}
       offline: false
 
   offline_iso_gnome-nvidia:
@@ -792,7 +792,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome-nvidia.outputs.updates) }}
       offline: true
 
   online_iso_gnome-slim:
@@ -803,7 +803,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-slim
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome-slim.outputs.updates) }}
       offline: false
 
   offline_iso_gnome-slim:
@@ -814,7 +814,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-slim
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome-slim.outputs.updates) }}
       offline: true
 
   online_iso_gnome-system76:
@@ -825,7 +825,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome-system76.outputs.updates) }}
       offline: false
 
   offline_iso_gnome-system76:
@@ -836,7 +836,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome-system76.outputs.updates) }}
       offline: true
 
   online_iso_atomic-system76-nvidia:
@@ -847,7 +847,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic-system76-nvidia.outputs.updates) }}
       offline: false
 
   offline_iso_atomic-system76-nvidia:
@@ -858,7 +858,7 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-system76-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.atomic-system76-nvidia.outputs.updates) }}
       offline: true
 
   online_iso_eeems-nvidia:
@@ -869,7 +869,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems-nvidia.outputs.updates) }}
       offline: false
 
   offline_iso_eeems-nvidia:
@@ -880,7 +880,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems-nvidia.outputs.updates) }}
       offline: true
 
   online_iso_eeems-slim:
@@ -891,7 +891,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-slim
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems-slim.outputs.updates) }}
       offline: false
 
   offline_iso_eeems-slim:
@@ -902,7 +902,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-slim
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems-slim.outputs.updates) }}
       offline: true
 
   online_iso_eeems-system76:
@@ -913,7 +913,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems-system76.outputs.updates) }}
       offline: false
 
   offline_iso_eeems-system76:
@@ -924,7 +924,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems-system76.outputs.updates) }}
       offline: true
 
   online_iso_gnome-system76-nvidia:
@@ -935,7 +935,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome-system76-nvidia.outputs.updates) }}
       offline: false
 
   offline_iso_gnome-system76-nvidia:
@@ -946,7 +946,7 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome-system76-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.gnome-system76-nvidia.outputs.updates) }}
       offline: true
 
   online_iso_eeems-system76-nvidia:
@@ -957,7 +957,7 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems-system76-nvidia.outputs.updates) }}
       offline: false
 
   offline_iso_eeems-system76-nvidia:
@@ -968,5 +968,5 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76-nvidia
-      pull: ${{ github.ref_name == 'master' && fromJson(needs.rootfs.outputs.updates) }}
+      pull: ${{ github.ref_name == 'master' && fromJson(needs.eeems-system76-nvidia.outputs.updates) }}
       offline: true
