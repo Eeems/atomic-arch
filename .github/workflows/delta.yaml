@@ -142,37 +142,25 @@ jobs:
         env:
           TMPDIR: ${{ github.workspace }}/.tmp
 
-      - name: Export image
-        id: export
-        if: ${{ ! inputs.push }}
-        uses: ./.github/actions/run-with-podman-service
-        with:
-          run: |
-            name=$(python <<EOF
-            import make
-            from _os.podman import hex_to_base62
-            from _os.podman import image_digest
-            from _os import REPO
-            a = hex_to_base62(image_digest(f"{REPO}:${{ matrix.a }}"))
-            b = hex_to_base62(image_digest(f"{REPO}:${{ matrix.b }}"))
-            print(f"_diff-{a}-{b}")
-            EOF
-            )
-            image=$(python <<EOF
-            import make
-            from _os import REPO
-            print(REPO)
-            EOF
-            )
-            podman save "$image:$name" | zstd -o $name.tar.zstd
-            echo \
-              "outputs={\"name\":\"$name\",\"path\":\"$name.tar.zstd\"}" \
-            >> $GITHUB_OUTPUT
+      - name: Get image name
+        id: image
+        run: |
+          python <<EOF
+          import make
+          import json
+          from _os.podman import hex_to_base62
+          from _os.podman import image_digest
+          from _os import REPO
+          a = hex_to_base62(image_digest(f"{REPO}:${{ matrix.a }}"))
+          b = hex_to_base62(image_digest(f"{REPO}:${{ matrix.b }}"))
+          print(f"tag={json.dumps(f"_diff-{a}-{b}")}")
+          print(f"image={json.dumps(REPO)}")
+          EOF >> $GITHUB_OUTPUT
 
-      - name: Upload ${{ fromJson(steps.export.outputs.outputs).name }} image
-        if: ${{ !inputs.push }}
-        uses: actions/upload-artifact@v4
+      - name: Upload image artifact
+        if: steps.build.outputs.updates == 'true'
+        uses: ./.github/actions/upload-image
         with:
-          name: ${{ fromJson(steps.export.outputs.outputs).name }}
-          path: ${{ fromJson(steps.export.outputs.outputs).path }}
+          image: ${{ steps.image.outputs.image }}
+          name: ${{ steps.image.outputs.tag }}
           if-no-files-found: ignore

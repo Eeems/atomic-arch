@@ -1,0 +1,33 @@
+name: Upload container image
+description: Upload a container image as a build artifact
+inputs:
+  image:
+    description: Image to upload
+    required: true
+  name:
+    description: Artifact name to use
+    required: true
+  if-no-files-found:
+    description: Action to take if no files are found
+    default: error
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Export image
+      id: export
+      uses: ./.github/actions/run-with-podman-service
+      with:
+        run: |
+          podman image ls
+          podman save "${{ inputs.image }}" | zstd -o ${{ inputs.name }}.tar.zstd
+          echo \
+            "outputs={\"path\":\"${{ inputs.name }}.tar.zstd\"}" \
+          >> $GITHUB_OUTPUT
+
+    - name: Upload image
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ fromJson(steps.export.outputs.outputs).path }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}

@@ -168,29 +168,22 @@ jobs:
           key: manifest_${{ inputs.variant }}
           artifact: true
 
-      - name: Export image
-        id: export
-        if: steps.build.outputs.updates == 'true'
-        uses: ./.github/actions/run-with-podman-service
-        with:
-          run: |
-            image=$(python <<EOF
-            import make
-            from _os import REPO
-            print(REPO)
-            EOF
-            )
-            podman save "$image:${{ inputs.variant }}" | zstd -o ${{ inputs.variant }}.tar.zstd
-            echo \
-              "outputs={\"name\":\"${{ inputs.variant }}\",\"path\":\"${{ inputs.variant }}.tar.zstd\"}" \
-            >> $GITHUB_OUTPUT
+      - name: Get image name
+        id: image
+        run: |
+          python <<EOF
+          import json
+          import make
+          from _os import REPO
+          print(f"name={json.dumps(REPO)}")
+          EOF >> $GITHUB_OUTPUT
 
-      - name: Upload ${{ fromJson(steps.export.outputs.outputs).name }} image
+      - name: Upload image artifact
         if: steps.build.outputs.updates == 'true'
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-image
         with:
-          name: ${{ fromJson(steps.export.outputs.outputs).name }}
-          path: ${{ fromJson(steps.export.outputs.outputs).path }}
+          image: ${{ steps.image.outputs.name }}
+          name: ${{ inputs.variant }}
           if-no-files-found: ignore
 
       - name: Auto commit any updates
