@@ -24,10 +24,6 @@ permissions:
   contents: read
   packages: read
 
-concurrency:
-  group: iso-${{ inputs.variant }}
-  cancel-in-progress: true
-
 jobs:
   run:
     name: atomic-arch:${{ inputs.variant }} iso
