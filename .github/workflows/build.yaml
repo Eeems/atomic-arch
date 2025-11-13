@@ -385,7 +385,7 @@ jobs:
 
   scan_rootfs:
     name: Scan image for rootfs
-    if: github.event_name != 'pull_request' && fromJson(needs['rootfs'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['rootfs'].outputs.updates)
     needs: rootfs
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -398,7 +398,7 @@ jobs:
 
   scan_base:
     name: Scan image for base
-    if: github.event_name != 'pull_request' && fromJson(needs['base'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['base'].outputs.updates)
     needs: base
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -411,7 +411,7 @@ jobs:
 
   scan_base-nvidia:
     name: Scan image for base-nvidia
-    if: github.event_name != 'pull_request' && fromJson(needs['base-nvidia'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['base-nvidia'].outputs.updates)
     needs: base-nvidia
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -424,7 +424,7 @@ jobs:
 
   scan_base-slim:
     name: Scan image for base-slim
-    if: github.event_name != 'pull_request' && fromJson(needs['base-slim'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['base-slim'].outputs.updates)
     needs: base-slim
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -437,7 +437,7 @@ jobs:
 
   scan_atomic:
     name: Scan image for atomic
-    if: github.event_name != 'pull_request' && fromJson(needs['atomic'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['atomic'].outputs.updates)
     needs: atomic
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -450,7 +450,7 @@ jobs:
 
   scan_gnome:
     name: Scan image for gnome
-    if: github.event_name != 'pull_request' && fromJson(needs['gnome'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['gnome'].outputs.updates)
     needs: gnome
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -463,7 +463,7 @@ jobs:
 
   scan_atomic-nvidia:
     name: Scan image for atomic-nvidia
-    if: github.event_name != 'pull_request' && fromJson(needs['atomic-nvidia'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['atomic-nvidia'].outputs.updates)
     needs: atomic-nvidia
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -476,7 +476,7 @@ jobs:
 
   scan_atomic-slim:
     name: Scan image for atomic-slim
-    if: github.event_name != 'pull_request' && fromJson(needs['atomic-slim'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['atomic-slim'].outputs.updates)
     needs: atomic-slim
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -489,7 +489,7 @@ jobs:
 
   scan_atomic-system76:
     name: Scan image for atomic-system76
-    if: github.event_name != 'pull_request' && fromJson(needs['atomic-system76'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['atomic-system76'].outputs.updates)
     needs: atomic-system76
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -502,7 +502,7 @@ jobs:
 
   scan_eeems:
     name: Scan image for eeems
-    if: github.event_name != 'pull_request' && fromJson(needs['eeems'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['eeems'].outputs.updates)
     needs: eeems
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -515,7 +515,7 @@ jobs:
 
   scan_gnome-nvidia:
     name: Scan image for gnome-nvidia
-    if: github.event_name != 'pull_request' && fromJson(needs['gnome-nvidia'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['gnome-nvidia'].outputs.updates)
     needs: gnome-nvidia
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -528,7 +528,7 @@ jobs:
 
   scan_gnome-slim:
     name: Scan image for gnome-slim
-    if: github.event_name != 'pull_request' && fromJson(needs['gnome-slim'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['gnome-slim'].outputs.updates)
     needs: gnome-slim
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -541,7 +541,7 @@ jobs:
 
   scan_gnome-system76:
     name: Scan image for gnome-system76
-    if: github.event_name != 'pull_request' && fromJson(needs['gnome-system76'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['gnome-system76'].outputs.updates)
     needs: gnome-system76
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -554,7 +554,7 @@ jobs:
 
   scan_atomic-system76-nvidia:
     name: Scan image for atomic-system76-nvidia
-    if: github.event_name != 'pull_request' && fromJson(needs['atomic-system76-nvidia'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['atomic-system76-nvidia'].outputs.updates)
     needs: atomic-system76-nvidia
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -567,7 +567,7 @@ jobs:
 
   scan_eeems-nvidia:
     name: Scan image for eeems-nvidia
-    if: github.event_name != 'pull_request' && fromJson(needs['eeems-nvidia'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['eeems-nvidia'].outputs.updates)
     needs: eeems-nvidia
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -580,7 +580,7 @@ jobs:
 
   scan_eeems-slim:
     name: Scan image for eeems-slim
-    if: github.event_name != 'pull_request' && fromJson(needs['eeems-slim'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['eeems-slim'].outputs.updates)
     needs: eeems-slim
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -593,7 +593,7 @@ jobs:
 
   scan_eeems-system76:
     name: Scan image for eeems-system76
-    if: github.event_name != 'pull_request' && fromJson(needs['eeems-system76'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['eeems-system76'].outputs.updates)
     needs: eeems-system76
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -606,7 +606,7 @@ jobs:
 
   scan_gnome-system76-nvidia:
     name: Scan image for gnome-system76-nvidia
-    if: github.event_name != 'pull_request' && fromJson(needs['gnome-system76-nvidia'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['gnome-system76-nvidia'].outputs.updates)
     needs: gnome-system76-nvidia
     uses: ./.github/workflows/scan.yaml
     secrets: inherit
@@ -619,7 +619,7 @@ jobs:
 
   scan_eeems-system76-nvidia:
     name: Scan image for eeems-system76-nvidia
-    if: github.event_name != 'pull_request' && fromJson(needs['eeems-system76-nvidia'].outputs.updates)
+    if: github.event_name != 'pull_request' || fromJson(needs['eeems-system76-nvidia'].outputs.updates)
     needs: eeems-system76-nvidia
     uses: ./.github/workflows/scan.yaml
     secrets: inherit

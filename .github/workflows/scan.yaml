@@ -105,14 +105,12 @@ jobs:
         run: git config --global --add safe.directory "$(realpath .)"
 
       - name: Trivy cache
-        if: steps.build.outputs.updates == 'true'
         uses: actions/cache@v4
         with:
           path: ./.trivy
           key: trivy-${{ hashFiles('make.py') }}
 
       - name: Scan container
-        if: steps.build.outputs.updates == 'true'
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |

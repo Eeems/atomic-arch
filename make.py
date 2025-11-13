@@ -65,6 +65,11 @@ hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:
 pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 escape_label = cast(Callable[[str], str], _os.podman.escape_label)  # pyright: ignore[reportUnknownMemberType]
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
+image_name_parts = cast(
+    Callable[[str], tuple[str | None, str, str | None, str | None]],
+    _os.podman.image_name_parts,  # pyright:ignore [reportUnknownMemberType]
+)
+
 IMAGE = cast(str, _os.IMAGE)
 REGISTRY = cast(str, _os.REGISTRY)
 REPO = cast(str, _os.REPO)
@@ -884,6 +889,10 @@ def _image_digests_write_cache(image: str, digest: str):
     with _image_digests_write_lock:
         if isinstance(_image_digests.get(image), str):
             return
+
+        registry, repo, tag, _ = image_name_parts(image)
+        if registry and registry == REGISTRY and repo == IMAGE:
+            _image_digests[f"{IMAGE}:{tag}"] = digest
 
         _image_digests[image] = digest
         with open(DIGEST_CACHE_PATH, "w+") as f:
