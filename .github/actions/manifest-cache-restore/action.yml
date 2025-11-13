@@ -26,9 +26,11 @@ runs:
       uses: actions/download-artifact@v5
       with:
         name: ${{ inputs.key }}
-        path: ${{ inputs.path }}
+        path: ${{ runner.temp }}/_manifest
 
-    - name: Debug
+    - name: Fix download location
       if: inputs.artifact == 'true'
       shell: bash
-      run: ls -l ${{ steps.download.outputs.download-path }}
+      run: |
+        mv ${{ steps.download.outputs.download-path }}/manifest_cache ${{ inputs.path }}
+        rmdir ${{ runner.temp }}/_manifest
