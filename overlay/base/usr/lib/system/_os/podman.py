@@ -19,6 +19,7 @@ from contextlib import contextmanager
 
 from . import SYSTEM_PATH
 from . import REGISTRY
+from . import IMAGE
 from . import REPO
 
 from .system import execute
@@ -275,17 +276,19 @@ def image_digest(image: str, remote: bool = True) -> str:
             .decode("utf-8")
         )
 
-    registry, _, tag, _ = image_name_parts(image)
-    if not registry or not tag or registry != REGISTRY:
-        return _image_digest_remote(image)
+    registry, repo, tag, _ = image_name_parts(image)
+    if (
+        tag
+        and (not registry or registry == REGISTRY)
+        and repo == IMAGE
+        and _latest_manifest()
+    ):
+        return image_labels(f"{REPO}:_manifest", False).get(
+            f"atomic.manifest.tag.{tag}",
+            _image_digest_remote(image),
+        )
 
-    if _latest_manifest():
-        return _image_digest_remote(image)
-
-    return image_labels(f"{REPO}:_manifest", False).get(
-        f"atomic.manifest.tag.{tag}",
-        _image_digest_remote(image),
-    )
+    return _image_digest_remote(image)
 
 
 def image_size(image: str) -> int:
