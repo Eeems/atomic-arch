@@ -27,8 +27,11 @@ runs:
       continue-on-error: true
       with:
         name: ${{ inputs.key }}
+        path: ${{ runner.temp }}/_manifest
 
     - name: Move file to correct location
       if: inputs.artifact == 'true'
       shell: bash
-      run: mv ${{ steps.download.outputs.download-path }} ${{ inputs.path }}
+      run: |
+        mv ${{ steps.download.outputs.download-path }}/manifest_cache ${{ inputs.path }}
+        rmdir ${{ steps.download.outputs.download-path }}
