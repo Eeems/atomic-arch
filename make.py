@@ -1341,7 +1341,7 @@ def do_workflow(_: argparse.Namespace):
                 "sync:",
                 "  name: Sync repositories",
                 "  needs: manifest",
-                "  uses: ./github/workflows/sync.yaml",
+                "  uses: ./.github/workflows/sync.yaml",
                 "  secrets: inherit",
                 "  permissions: *permissions",
             ]
