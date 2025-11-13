@@ -11,11 +11,7 @@ on:
     paths:
       - .github/workflows/build.yaml
       - .github/workflows/build-variant.yaml
-      - .github/workflows/delta.yaml
-      - .github/workflows/iso.yaml
-      - .github/workflows/manifest.yaml
-      - .github/workflows/sync.yaml
-      - ".github/actions/**"
+      - ".github/actions/cleanup/**"
       - make.py
       - seccomp.json
       - .containerignore
@@ -32,6 +28,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
   ######################################
   #             UNIQUE             #
   ######################################
@@ -150,7 +147,8 @@ jobs:
       variant: base
       updates: ${{ fromJson(needs['rootfs'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['rootfs'].outputs.updates) && 'rootfs' || '' }}
+      artifact: ${{ fromJson(needs['rootfs'].outputs.updates) && 'rootfs' || '' }}
+      digest: ${{ needs['rootfs'].outputs.digest }}
 
   base-nvidia:
     name: Build atomic-arch:base-nvidia image
@@ -162,7 +160,8 @@ jobs:
       variant: base-nvidia
       updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      digest: ${{ needs['base'].outputs.digest }}
 
   base-slim:
     name: Build atomic-arch:base-slim image
@@ -174,7 +173,8 @@ jobs:
       variant: base-slim
       updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      digest: ${{ needs['base'].outputs.digest }}
       cleanup: true
 
   atomic:
@@ -187,7 +187,8 @@ jobs:
       variant: atomic
       updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      digest: ${{ needs['base'].outputs.digest }}
 
   gnome:
     name: Build atomic-arch:gnome image
@@ -199,7 +200,8 @@ jobs:
       variant: gnome
       updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      artifact: ${{ fromJson(needs['base'].outputs.updates) && 'base' || '' }}
+      digest: ${{ needs['base'].outputs.digest }}
 
   atomic-nvidia:
     name: Build atomic-arch:atomic-nvidia image
@@ -211,7 +213,8 @@ jobs:
       variant: atomic-nvidia
       updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      digest: ${{ needs['atomic'].outputs.digest }}
 
   atomic-slim:
     name: Build atomic-arch:atomic-slim image
@@ -223,7 +226,8 @@ jobs:
       variant: atomic-slim
       updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      digest: ${{ needs['atomic'].outputs.digest }}
       cleanup: true
 
   atomic-system76:
@@ -236,7 +240,8 @@ jobs:
       variant: atomic-system76
       updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      digest: ${{ needs['atomic'].outputs.digest }}
 
   eeems:
     name: Build atomic-arch:eeems image
@@ -248,7 +253,8 @@ jobs:
       variant: eeems
       updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
+      digest: ${{ needs['atomic'].outputs.digest }}
 
   gnome-nvidia:
     name: Build atomic-arch:gnome-nvidia image
@@ -260,7 +266,8 @@ jobs:
       variant: gnome-nvidia
       updates: ${{ fromJson(needs['gnome'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
+      artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
+      digest: ${{ needs['gnome'].outputs.digest }}
 
   gnome-slim:
     name: Build atomic-arch:gnome-slim image
@@ -272,7 +279,8 @@ jobs:
       variant: gnome-slim
       updates: ${{ fromJson(needs['gnome'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
+      artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
+      digest: ${{ needs['gnome'].outputs.digest }}
       cleanup: true
 
   gnome-system76:
@@ -285,7 +293,8 @@ jobs:
       variant: gnome-system76
       updates: ${{ fromJson(needs['gnome'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
+      artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
+      digest: ${{ needs['gnome'].outputs.digest }}
 
   atomic-system76-nvidia:
     name: Build atomic-arch:atomic-system76-nvidia image
@@ -297,7 +306,8 @@ jobs:
       variant: atomic-system76-nvidia
       updates: ${{ fromJson(needs['atomic-system76'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['atomic-system76'].outputs.updates) && 'atomic-system76' || '' }}
+      artifact: ${{ fromJson(needs['atomic-system76'].outputs.updates) && 'atomic-system76' || '' }}
+      digest: ${{ needs['atomic-system76'].outputs.digest }}
 
   eeems-nvidia:
     name: Build atomic-arch:eeems-nvidia image
@@ -309,7 +319,8 @@ jobs:
       variant: eeems-nvidia
       updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
+      artifact: ${{ fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
+      digest: ${{ needs['eeems'].outputs.digest }}
 
   eeems-slim:
     name: Build atomic-arch:eeems-slim image
@@ -321,7 +332,8 @@ jobs:
       variant: eeems-slim
       updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
+      artifact: ${{ fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
+      digest: ${{ needs['eeems'].outputs.digest }}
       cleanup: true
 
   eeems-system76:
@@ -334,7 +346,8 @@ jobs:
       variant: eeems-system76
       updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
+      artifact: ${{ fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
+      digest: ${{ needs['eeems'].outputs.digest }}
 
   gnome-system76-nvidia:
     name: Build atomic-arch:gnome-system76-nvidia image
@@ -346,7 +359,8 @@ jobs:
       variant: gnome-system76-nvidia
       updates: ${{ fromJson(needs['gnome-system76'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['gnome-system76'].outputs.updates) && 'gnome-system76' || '' }}
+      artifact: ${{ fromJson(needs['gnome-system76'].outputs.updates) && 'gnome-system76' || '' }}
+      digest: ${{ needs['gnome-system76'].outputs.digest }}
 
   eeems-system76-nvidia:
     name: Build atomic-arch:eeems-system76-nvidia image
@@ -358,7 +372,8 @@ jobs:
       variant: eeems-system76-nvidia
       updates: ${{ fromJson(needs['eeems-system76'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ github.event_name == 'pull_request' && fromJson(needs['eeems-system76'].outputs.updates) && 'eeems-system76' || '' }}
+      artifact: ${{ fromJson(needs['eeems-system76'].outputs.updates) && 'eeems-system76' || '' }}
+      digest: ${{ needs['eeems-system76'].outputs.digest }}
 
   ######################################
   #             DELTA              #

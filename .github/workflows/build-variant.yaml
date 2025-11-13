@@ -30,6 +30,11 @@ on:
         type: string
         required: false
         default: ""
+      digest:
+        description: Digest to expect base image to be
+        type: string
+        required: false
+        default: ""
     outputs:
       updates:
         value: ${{ jobs.run.outputs.updates }}
@@ -98,6 +103,17 @@ jobs:
         with:
           key: manifest_${{ inputs.artifact != '' }}
           artifact: true
+
+      - name: Force digest
+        if: inputs.digest != '' && inputs.artifact != ''
+        run: |
+          python <<'EOF'
+          import os, make
+          make._image_digests_write_cache(os.environ["image"], os.environ["digest"])
+          EOF
+        env:
+          image: ${{ inputs.artifact }}
+          digest: ${{ inputs.digest }}
 
       - name: Build
         id: build

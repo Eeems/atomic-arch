@@ -24,7 +24,6 @@ runs:
       id: download
       if: inputs.artifact == 'true'
       uses: actions/download-artifact@v5
-      continue-on-error: true
       with:
         name: ${{ inputs.key }}
         path: ${{ inputs.path }}
