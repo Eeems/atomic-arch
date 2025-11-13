@@ -59,7 +59,8 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           registry: docker.io
 
-      - uses: ./.github/actions/mask-registry-passwords
+      - name: Mask registry passwords
+        uses: ./.github/actions/mask-registry-passwords
 
       - name: Generate matrix
         id: matrix
@@ -125,7 +126,8 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           registry: docker.io
 
-      - uses: ./.github/actions/mask-registry-passwords
+      - name: Mask registry passwords
+        uses: ./.github/actions/mask-registry-passwords
 
       - name: Synchronize images
         shell: bash

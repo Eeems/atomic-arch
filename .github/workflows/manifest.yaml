@@ -53,7 +53,8 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-container
+      - name: Setup container
+        uses: ./.github/actions/setup-container
 
       - name: Login to ghcr
         uses: redhat-actions/podman-login@v1
@@ -63,10 +64,12 @@ jobs:
           registry: ghcr.io
           auth_file_path: /run/containers/0/auth.json
 
-      - uses: ./.github/actions/mask-registry-passwords
+      - name: Mask registry passwords
+        uses: ./.github/actions/mask-registry-passwords
 
-      - uses: ./.github/actions/manifest-cache-restore
+      - name: Get manifest cache
         if: ${{ inputs.cache }}
+        uses: ./.github/actions/manifest-cache-restore
 
       - name: Build
         uses: ./.github/actions/run-with-podman-service
@@ -81,4 +84,6 @@ jobs:
           TMPDIR: ${{ runner.temp }}
           push: ${{ github.event_name != 'pull_request' }}
 
-      - uses: ./.github/actions/manifest-cache-update
+      - name: Save manifest cache
+        if: ${{ inputs.cache }}
+        uses: ./.github/actions/manifest-cache-update
