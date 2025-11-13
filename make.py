@@ -300,7 +300,11 @@ def do_iso(args: argparse.Namespace):
     for target in cast(list[str], args.target):
         image = f"{REPO}:{target}"
         _ = in_system("build", target=image, check=True)
-        _ = in_system("iso", check=True)
+        _ = in_system(
+            "iso",
+            *([] if cast(bool, args.localImage) else ["--no-local-image"]),
+            check=True,
+        )
 
 
 def do_rootfs(args: argparse.Namespace):
@@ -1364,6 +1368,12 @@ if __name__ == "__main__":
 
     subparser = subparsers.add_parser("iso")
     _ = subparser.add_argument("target", action="extend", nargs="*", type=str)
+    _ = subparser.add_argument(
+        "--no-local-image",
+        help="If the image should be copied to the iso container storage",
+        dest="localImage",
+        action="store_false",
+    )
     subparser.set_defaults(func=do_iso)
 
     subparser = subparsers.add_parser("rootfs")
