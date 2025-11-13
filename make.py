@@ -135,7 +135,9 @@ def build(target: str):
         ]
         for base_image in [x[5:].strip() for x in lines if x.startswith("FROM ")]:
             if " AS " in base_image.upper():
-                base_image = re.split(" AS ", base_image, 1, flags=re.IGNORECASE)[0]
+                base_image = re.split(
+                    " AS ", base_image, maxsplit=1, flags=re.IGNORECASE
+                )[0]
 
             # TODO handle multiple args in a single ARG statement
             # TODO only use ARG statements from before this FROM

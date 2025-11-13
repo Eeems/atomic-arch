@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-update(){
+update() {
   if ! [ -f "$1" ]; then
     return
   fi
@@ -14,6 +14,6 @@ update(){
 echo "[system] Variant: ${VARIANT:?}"
 update /etc/system/Isofile
 update /etc/system/Systemfile
-sed -i "/VARIANT=/ s|=.*|=${VARIANT:?}|" /usr/lib/os-release
+sed -i "/VARIANT=/ s|=.*|=\"${VARIANT:?}\"|" /usr/lib/os-release
 sed -i "/VARIANT_ID=/ s|=.*|=${VARIANT_ID:?}|" /usr/lib/os-release
 sed -i "/VERSION_ID=/ s|.*|VERSION_ID=${VERSION_ID:?}|" /usr/lib/os-release
