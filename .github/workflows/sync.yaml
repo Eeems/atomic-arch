@@ -1,11 +1,5 @@
 name: Sync images
 on:
-  pull_request: &on-filter
-    branches:
-      - master
-    paths:
-      - .github/workflows/sync.yaml
-  push: *on-filter
   workflow_dispatch:
   workflow_call:
 
