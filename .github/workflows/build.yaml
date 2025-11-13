@@ -133,6 +133,7 @@ jobs:
     permissions: *permissions
     with:
       variant: rootfs
+      push: true
 
   base:
     name: Build atomic-arch:base image

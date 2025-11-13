@@ -1193,7 +1193,10 @@ def do_workflow(_: argparse.Namespace):
             "  with:",
             f"    variant: {job_id}",
         ]
-        if job_id != "rootfs":
+        if job_id == "rootfs":
+            lines.append("    push: true")
+
+        else:
             lines += [
                 f"    updates: ${{{{ fromJson(needs['{depends}'].outputs.updates) }}}}",
                 "    push: ${{ github.event_name != 'pull_request' }}",
