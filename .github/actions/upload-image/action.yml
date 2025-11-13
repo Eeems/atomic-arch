@@ -31,3 +31,7 @@ runs:
         name: ${{ inputs.name }}
         path: ${{ fromJson(steps.export.outputs.outputs).path }}
         if-no-files-found: ${{ inputs.if-no-files-found }}
+
+    - name: Cleanup
+      shell: bash
+      run: rm ${{ fromJson(steps.export.outputs.outputs).path }}
