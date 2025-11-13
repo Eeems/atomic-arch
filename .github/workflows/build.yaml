@@ -130,7 +130,7 @@ jobs:
       variant: base
       updates: ${{ fromJson(needs.rootfs.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: rootfs
+      artifact: ${{ fromJson(needs.rootfs.outputs.updates) && 'rootfs' || '' }}
 
   base-nvidia:
     name: Build atomic-arch:base-nvidia image
@@ -142,7 +142,7 @@ jobs:
       variant: base-nvidia
       updates: ${{ fromJson(needs.base.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: base
+      artifact: ${{ fromJson(needs.base.outputs.updates) && 'base' || '' }}
 
   base-slim:
     name: Build atomic-arch:base-slim image
@@ -154,7 +154,7 @@ jobs:
       variant: base-slim
       updates: ${{ fromJson(needs.base.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: base
+      artifact: ${{ fromJson(needs.base.outputs.updates) && 'base' || '' }}
       cleanup: true
 
   atomic:
@@ -167,7 +167,7 @@ jobs:
       variant: atomic
       updates: ${{ fromJson(needs.base.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: base
+      artifact: ${{ fromJson(needs.base.outputs.updates) && 'base' || '' }}
 
   gnome:
     name: Build atomic-arch:gnome image
@@ -179,7 +179,7 @@ jobs:
       variant: gnome
       updates: ${{ fromJson(needs.base.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: base
+      artifact: ${{ fromJson(needs.base.outputs.updates) && 'base' || '' }}
 
   atomic-nvidia:
     name: Build atomic-arch:atomic-nvidia image
@@ -191,7 +191,7 @@ jobs:
       variant: atomic-nvidia
       updates: ${{ fromJson(needs.atomic.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: atomic
+      artifact: ${{ fromJson(needs.atomic.outputs.updates) && 'atomic' || '' }}
 
   atomic-slim:
     name: Build atomic-arch:atomic-slim image
@@ -203,7 +203,7 @@ jobs:
       variant: atomic-slim
       updates: ${{ fromJson(needs.atomic.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: atomic
+      artifact: ${{ fromJson(needs.atomic.outputs.updates) && 'atomic' || '' }}
       cleanup: true
 
   atomic-system76:
@@ -216,7 +216,7 @@ jobs:
       variant: atomic-system76
       updates: ${{ fromJson(needs.atomic.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: atomic
+      artifact: ${{ fromJson(needs.atomic.outputs.updates) && 'atomic' || '' }}
 
   eeems:
     name: Build atomic-arch:eeems image
@@ -228,7 +228,7 @@ jobs:
       variant: eeems
       updates: ${{ fromJson(needs.atomic.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: atomic
+      artifact: ${{ fromJson(needs.atomic.outputs.updates) && 'atomic' || '' }}
 
   gnome-nvidia:
     name: Build atomic-arch:gnome-nvidia image
@@ -240,7 +240,7 @@ jobs:
       variant: gnome-nvidia
       updates: ${{ fromJson(needs.gnome.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: gnome
+      artifact: ${{ fromJson(needs.gnome.outputs.updates) && 'gnome' || '' }}
 
   gnome-slim:
     name: Build atomic-arch:gnome-slim image
@@ -252,7 +252,7 @@ jobs:
       variant: gnome-slim
       updates: ${{ fromJson(needs.gnome.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: gnome
+      artifact: ${{ fromJson(needs.gnome.outputs.updates) && 'gnome' || '' }}
       cleanup: true
 
   gnome-system76:
@@ -265,7 +265,7 @@ jobs:
       variant: gnome-system76
       updates: ${{ fromJson(needs.gnome.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: gnome
+      artifact: ${{ fromJson(needs.gnome.outputs.updates) && 'gnome' || '' }}
 
   atomic-system76-nvidia:
     name: Build atomic-arch:atomic-system76-nvidia image
@@ -277,7 +277,7 @@ jobs:
       variant: atomic-system76-nvidia
       updates: ${{ fromJson(needs.atomic-system76.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: atomic-system76
+      artifact: ${{ fromJson(needs.atomic-system76.outputs.updates) && 'atomic-system76' || '' }}
 
   eeems-nvidia:
     name: Build atomic-arch:eeems-nvidia image
@@ -289,7 +289,7 @@ jobs:
       variant: eeems-nvidia
       updates: ${{ fromJson(needs.eeems.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: eeems
+      artifact: ${{ fromJson(needs.eeems.outputs.updates) && 'eeems' || '' }}
 
   eeems-slim:
     name: Build atomic-arch:eeems-slim image
@@ -301,7 +301,7 @@ jobs:
       variant: eeems-slim
       updates: ${{ fromJson(needs.eeems.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: eeems
+      artifact: ${{ fromJson(needs.eeems.outputs.updates) && 'eeems' || '' }}
       cleanup: true
 
   eeems-system76:
@@ -314,7 +314,7 @@ jobs:
       variant: eeems-system76
       updates: ${{ fromJson(needs.eeems.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: eeems
+      artifact: ${{ fromJson(needs.eeems.outputs.updates) && 'eeems' || '' }}
 
   gnome-system76-nvidia:
     name: Build atomic-arch:gnome-system76-nvidia image
@@ -326,7 +326,7 @@ jobs:
       variant: gnome-system76-nvidia
       updates: ${{ fromJson(needs.gnome-system76.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: gnome-system76
+      artifact: ${{ fromJson(needs.gnome-system76.outputs.updates) && 'gnome-system76' || '' }}
 
   eeems-system76-nvidia:
     name: Build atomic-arch:eeems-system76-nvidia image
@@ -338,7 +338,7 @@ jobs:
       variant: eeems-system76-nvidia
       updates: ${{ fromJson(needs.eeems-system76.outputs.updates) }}
       push: ${{ github.ref_name == 'master' }}
-      artifact: eeems-system76
+      artifact: ${{ fromJson(needs.eeems-system76.outputs.updates) && 'eeems-system76' || '' }}
 
   ######################################
   #             DELTA              #

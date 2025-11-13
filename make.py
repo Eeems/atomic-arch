@@ -1192,7 +1192,7 @@ def do_workflow(_: argparse.Namespace):
             lines += [
                 f"    updates: ${{{{ fromJson(needs.{depends}.outputs.updates) }}}}",
                 "    push: ${{ github.ref_name == 'master' }}",
-                f"    artifact: {depends}",
+                f"    artifact: ${{{{ fromJson(needs.{depends}.outputs.updates) && '{depends}' || '' }}}}",
             ]
 
         if d["cleanup"]:
