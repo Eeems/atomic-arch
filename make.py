@@ -1245,7 +1245,7 @@ def do_workflow(_: argparse.Namespace):
             lines += [
                 f"    updates: ${{{{ fromJson(needs['{depends}'].outputs.updates) }}}}",
                 "    push: ${{ github.event_name != 'pull_request' }}",
-                f"    artifact: ${{{{ fromJson(needs['{depends}'].outputs.updates) && '{depends}' || '' }}}}",
+                f"    artifact: {depends}",
                 f"    digest: ${{{{ needs['{depends}'].outputs.digest }}}}",
             ]
 

@@ -224,7 +224,6 @@ jobs:
           EOF
 
       - name: Upload image artifact
-        if: steps.build.outputs.updates == 'true'
         uses: ./.github/actions/upload-image
         with:
           image: ${{ steps.image.outputs.name }}

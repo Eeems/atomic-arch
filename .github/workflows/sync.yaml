@@ -39,8 +39,10 @@ jobs:
     name: Generate matrix
     runs-on: ubuntu-latest
     outputs:
-      tag-matrix: ${{ steps.matrix.outputs.JSON_CONTENT }}
-      items: ${{ steps.matrix.outputs.items }}
+      variant-matrix: ${{ steps.matrix.outputs.variant-matrix }}
+      variant-items: ${{ steps.matrix.outputs.variant-items }}
+      diff-matrix: ${{ steps.matrix.outputs.diff-matrix }}
+      diff-items: ${{ steps.matrix.outputs.diff-items }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -84,29 +86,130 @@ jobs:
                 | sort \
               ) \
           ))
-          items=$(echo "$data" | wc -l)
-          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          matrix=$(echo "$data" | grep -v _diff_)
+          items=$(echo "$matrix" | wc -l)
+          echo 'variant-matrix<<EOF' >> $GITHUB_OUTPUT
           if [[ $items -gt 0 ]];then
-            echo "$data" \
+            echo "$matrix" \
             | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' \
             >> $GITHUB_OUTPUT
           else
             echo '{"include":[{"tag":""}]}' >> $GITHUB_OUTPUT
           fi
           echo 'EOF' >> $GITHUB_OUTPUT
-          echo "items=$items" >> $GITHUB_OUTPUT
+          echo "variant-items=$items" >> $GITHUB_OUTPUT
+
+          matrix=$(echo "$data" | grep _diff_)
+          items=$(echo "$matrix" | wc -l)
+          echo 'diff-matrix<<EOF' >> $GITHUB_OUTPUT
+          if [[ $items -gt 0 ]];then
+            echo "$matrix" \
+            | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' \
+            >> $GITHUB_OUTPUT
+          else
+            echo '{"include":[{"tag":""}]}' >> $GITHUB_OUTPUT
+          fi
+          echo 'EOF' >> $GITHUB_OUTPUT
+          echo "diff-items=$items" >> $GITHUB_OUTPUT
         env:
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
           image: eeems/atomic-arch
 
-  sync:
+  sync-variants:
     name: Sync eeems/atomic-arch:${{ matrix.tag }}
     runs-on: ubuntu-latest
-    if: ${{ needs.matrix.outputs.items > 0 }}
+    if: ${{ needs.matrix.outputs.variant-items > 0 }}
     needs: matrix
     strategy:
-      matrix: ${{ fromJson(needs.matrix.outputs.tag-matrix) }}
+      matrix: ${{ fromJson(needs.matrix.outputs.variant-matrix) }}
+      fail-fast: false
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Login to ghcr
+        uses: docker/login-action@v3
+        with:
+          username: ${{github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+
+      - name: Login to dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: eeems
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+
+      - name: Mask registry passwords
+        uses: ./.github/actions/mask-registry-passwords
+
+      - name: Synchronize images
+        shell: bash
+        run: |
+          skopeo copy \
+            --multi-arch all \
+            --retry-times 10 \
+            "docker://$from/$image:$tag" \
+            "docker://$to/$image:$tag"
+        env:
+          from: ${{ inputs.from }}
+          to: ${{ inputs.to }}
+          image: eeems/atomic-arch
+          tag: ${{ matrix.tag }}
+
+  sync-diffs:
+    name: Sync eeems/atomic-arch:${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    if: ${{ needs.matrix.outputs.diff-items > 0 }}
+    needs: matrix
+    strategy:
+      matrix: ${{ fromJson(needs.matrix.outputs.diff-matrix) }}
+      fail-fast: false
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Login to ghcr
+        uses: docker/login-action@v3
+        with:
+          username: ${{github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+
+      - name: Login to dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: eeems
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+
+      - name: Mask registry passwords
+        uses: ./.github/actions/mask-registry-passwords
+
+      - name: Synchronize images
+        shell: bash
+        run: |
+          skopeo copy \
+            --multi-arch all \
+            --retry-times 10 \
+            "docker://$from/$image:$tag" \
+            "docker://$to/$image:$tag"
+        env:
+          from: ${{ inputs.from }}
+          to: ${{ inputs.to }}
+          image: eeems/atomic-arch
+          tag: ${{ matrix.tag }}
+
+  sync-explicit:
+    name: Sync eeems/atomic-arch:${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    needs: matrix
+    strategy:
+      matrix:
+        tag:
+          - _manifest
       fail-fast: false
     steps:
       - name: Checkout the repository

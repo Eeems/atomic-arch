@@ -1,5 +1,4 @@
 # syntax=docker/dockerfile:1.4
-# x-templates=slim
 ARG HASH
 
 ARG BASE_VARIANT_ID

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # x-depends=base
-# x-templates=slim,nvidia
+# x-templates=nvidia
 ARG HASH
 
 FROM eeems/atomic-arch:base
