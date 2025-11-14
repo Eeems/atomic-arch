@@ -86,6 +86,7 @@ jobs:
           fi
           echo 'EOF' >> $GITHUB_OUTPUT
           echo "explicit-items=$items" >> $GITHUB_OUTPUT
+          echo "Explicit Items: $items"
 
           # TODO use manifest instead of relying on tags, this allows
           #      prioritizing which diffs should be first
@@ -122,6 +123,7 @@ jobs:
           fi
           echo 'EOF' >> $GITHUB_OUTPUT
           echo "variant-items=$items" >> $GITHUB_OUTPUT
+          echo "Variant Items: $items"
 
           matrix=$(echo "$data" | grep -E ^_diff-)
           items=$(echo "$matrix" | wc -l)
@@ -140,6 +142,7 @@ jobs:
           fi
           echo 'EOF' >> $GITHUB_OUTPUT
           echo "diff-items=$items" >> $GITHUB_OUTPUT
+          echo "Diff Items: $items"
 
         env:
           from: ${{ inputs.from }}
