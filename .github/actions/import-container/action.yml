@@ -3,9 +3,19 @@ description: Import a container from a build artifact
 inputs:
   artifact:
     description: Artifact to import
+  prune:
+    description: If podman system prune should happen first
+    default: "true"
+    required: false
 runs:
   using: "composite"
   steps:
+    - name: GC
+      if: ${{ fromJson(inputs.prune) }}
+      uses: ./.github/actions/run-with-podman-service
+      with:
+        run: podman system prune --force
+
     - name: Download image
       id: download
       uses: actions/download-artifact@v4

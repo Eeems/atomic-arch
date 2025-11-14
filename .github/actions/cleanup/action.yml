@@ -37,3 +37,10 @@ runs:
           echo
           df -h
         EOF
+    - name: Podman GC
+      uses: ./.github/actions/run-with-podman-service
+      with:
+        run: |
+          podman system prune --force
+          podman rmi $(podman image ls -aq) || true
+          podman system prune --force
