@@ -1401,6 +1401,7 @@ def do_workflow(_: argparse.Namespace):
                 "",
                 "manifest:",
                 "  name: Generate manifest",
+                "  if: always()",
                 "  needs:",
                 *[f"    - delta_{j}" for j in sorted(build_order)],
                 "  uses: ./.github/workflows/manifest.yaml",
