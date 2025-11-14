@@ -226,6 +226,10 @@ jobs:
       - name: Synchronize images
         shell: bash
         run: |
+          # TODO detect when this is a specific tag
+          #      e.g. base_2025.11.09.01281697
+          #      and also sync generic tag
+          #      e.g. base_2025.11.09
           skopeo copy \
             --multi-arch all \
             --retry-times 10 \
