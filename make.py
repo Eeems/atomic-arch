@@ -723,6 +723,9 @@ def progress_bar[T](
         return
 
     no_progress = "CI" in os.environ or not out.isatty()
+    if no_progress and interval < 10:
+        interval = 10
+
     current = 0
 
     def show():
