@@ -192,7 +192,7 @@ def push(target: str):
         podman("tag", image, tag)
 
     for tag in tags + [image]:
-        podman("push", tag)
+        podman("push", "--retry=5", tag)
         print(f"Pushed {tag}")
         _image_digests_write_cache(tag, image_digest(tag, False))
 
@@ -1091,33 +1091,66 @@ def do_manifest(args: argparse.Namespace):
             podman("push", image)
 
 
+type ConfigItem = dict[str, str | None | list[str] | bool]
+type Config = dict[str, dict[str, ConfigItem]]
+
+
+def _get_config_data(
+    lines: list[str], prefix: str, multiple: bool = False
+) -> list[str] | str | None:
+    data = [x[len(prefix) :] for x in lines if x.startswith(prefix)]
+    assert len(data) < 2
+    if not data:
+        return None if not multiple else []
+
+    data = data[0]
+    if not multiple:
+        return data
+
+    return [x.strip() for x in data.split(",")]
+
+
+def parse_config(containerfile: str) -> tuple[str, ConfigItem]:
+    filename = os.path.basename(containerfile)
+    assert filename.endswith(".Containerfile")
+    with open(containerfile, "r") as f:
+        lines = f.read().splitlines()
+
+    config: ConfigItem = {}
+    depends = cast(str | None, _get_config_data(lines, "# x-depends="))
+    if depends is not None:
+        config["depends"] = depends
+
+    templates = cast(
+        str | None, _get_config_data(lines, "# x-templates=", multiple=True)
+    )
+    if templates is not None:
+        config["templates"] = templates
+
+    # TODO sort out how to set clean property in a way so it's only for
+    #      one template if it's set for a template
+    return filename[:-14], config
+
+
+def parse_all_config() -> Config:
+    return {
+        "variants": {
+            k: v
+            for x in iglob("variants/*.Containerfile")
+            for k, v in [parse_config(x)]
+            if k != "rootfs"
+        }
+    }
+
+
 type Graph = dict[str, dict[str, str | list[str] | None | bool]]
 type Indegree = dict[str, int]
 
 
 def do_workflow(_: argparse.Namespace):
-    config: dict[str, list[str] | dict[str, dict[str, str | None | list[str]]]] = {
-        "variants": {
-            "base": {"templates": ["nvidia", "slim"]},
-            "atomic": {
-                "depends": "base",
-                "templates": ["nvidia", "slim"],
-            },
-            "gnome": {
-                "depends": "base",
-                "templates": ["nvidia", "slim"],
-            },
-            "eeems": {
-                "depends": "atomic",
-                "templates": ["nvidia", "slim", "system76"],
-            },
-        },
-        "clean": ["slim"],
-    }
+    config: Config = parse_all_config()
 
-    def build_job_graph(
-        config: dict[str, list[str] | dict[str, dict[str, str | None | list[str]]]],
-    ) -> tuple[Graph, Indegree]:
+    def build_job_graph(config: Config) -> tuple[Graph, Indegree]:
         graph: Graph = {
             "rootfs": {
                 "depends": "check",
@@ -1144,7 +1177,7 @@ def do_workflow(_: argparse.Namespace):
                         if "-" in template
                         else variant
                     ),
-                    "cleanup": template in config["clean"],
+                    "cleanup": cast(bool, data.get("clean", False)),
                 }
                 indegree[full_id] = 0
 

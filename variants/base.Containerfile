@@ -1,4 +1,6 @@
-#syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.4
+# x-depends=rootfs
+# x-templates=slim,nvidia
 ARG HASH
 
 FROM eeems/atomic-arch:rootfs

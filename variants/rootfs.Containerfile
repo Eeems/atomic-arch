@@ -1,4 +1,4 @@
-#syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.4
 ARG ARCHIVE_YEAR=2025
 ARG ARCHIVE_MONTH=11
 ARG ARCHIVE_DAY=13

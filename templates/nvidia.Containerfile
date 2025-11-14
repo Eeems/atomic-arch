@@ -1,4 +1,4 @@
-#syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.4
 ARG BASE_VARIANT_ID
 
 FROM eeems/atomic-arch:${BASE_VARIANT_ID}
