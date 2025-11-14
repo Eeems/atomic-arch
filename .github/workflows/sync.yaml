@@ -129,7 +129,7 @@ jobs:
           items=$(echo "$matrix" | wc -l)
           if [[ $items -gt 256 ]];then
             matrix=$(echo "$matrix" | head -n256 || true)
-            echo "::warning title=Diffs skipped::There are more than 256 diffs, skipping some"
+            echo "::warning title=Diffs skipped::There are $items diffs, skipping some"
             items=256
           fi
           echo 'diff-matrix<<EOF' >> $GITHUB_OUTPUT
