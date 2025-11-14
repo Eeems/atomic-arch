@@ -274,7 +274,11 @@ def delta(
     ci_log("::endgroup::")
     if push:
         ci_log("::group::push")
-        podman("push", imageD)
+        tries = 3
+        while tries:
+            podman("push", imageD)
+            tries -= 1
+
         ci_log("::endgroup::")
         _image_digests_write_cache(imageD, image_digest(imageD, False))
 

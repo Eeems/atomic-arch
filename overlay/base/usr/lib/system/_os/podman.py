@@ -575,7 +575,16 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
                 labels[label] = src_labels[full_label]
 
         containerfile = os.path.join(tmpdir, "Containerfile")
-        success = os.path.getsize(diff_path) < image_size(imageB) * 0.6
+        sizeA = os.path.getsize(old_oci_path)
+        sizeB = image_size(imageB)
+        sizeD = os.path.getsize(diff_path)
+        maxSize = int(sizeB * 0.6)
+
+        print(f"Size of {imageA}: {bytes_to_iec(sizeA)}")
+        print(f"Size of {imageB}: {bytes_to_iec(sizeB)}")
+        print(f"Size of delta: {bytes_to_iec(sizeD)}")
+        print(f"Threshhold size: {bytes_to_iec(maxSize)}")
+        success = sizeD < maxSize
         with open(containerfile, "w") as f:
             _ = f.write(f"""\
 FROM scratch
