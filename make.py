@@ -856,9 +856,12 @@ if os.path.exists(DIGEST_CACHE_PATH):
             data = json.load(f)  # pyright: ignore[reportAny]
             assert isinstance(data, dict)
             for image, digest in cast(dict[str, str], data).items():
+                assert isinstance(image, str)
+                assert isinstance(digest, str)
                 _image_digests[image] = digest
 
-        except Exception:
+        except Exception as e:
+            print(f"Failed to load digest cache: {e}", file=sys.stderr)
             os.unlink(DIGEST_CACHE_PATH)
 
 
@@ -968,6 +971,8 @@ def do_manifest(args: argparse.Namespace):
             graph[a][b] = (tag, -1)
 
     assert to_classify, "No tags found"
+
+    # TODO filter out tags that aren't part of the config
 
     def _digest_worker(data: tuple[str, str]) -> tuple[str, str, Future[str] | str]:
         image = f"{REPO}:{data[1]}"

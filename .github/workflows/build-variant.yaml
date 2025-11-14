@@ -108,6 +108,9 @@ jobs:
         run: |
           python <<'EOF'
           import os, make
+          if !os.path.exists(make.DIGEST_CACHE_PATH):
+            print('No cache found, creating new cache')
+
           make._image_digests_write_cache(os.environ["image"], os.environ["digest"])
           EOF
         env:
