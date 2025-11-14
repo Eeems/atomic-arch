@@ -1,4 +1,4 @@
-FROM eeems/atomic-arch:base
+FROM ghcr.io/eeems/atomic-arch:base
 
 RUN \
   HOSTNAME=atomic \

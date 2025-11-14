@@ -171,6 +171,7 @@ def system_hash() -> str:
 
 
 def image_info(image: str, remote: bool = True) -> dict[str, object]:
+    image = image_qualified_name(image)
     if remote:
         args = ["skopeo", "inspect", f"docker://{image}"]
 
@@ -194,6 +195,7 @@ def image_exists(image: str, remote: bool = True) -> bool:
     if image_exists or not remote:
         return image_exists
 
+    image = image_qualified_name(image)
     registry, image, tag, ref = image_name_parts(image)
     if ref is not None:
         raise NotImplementedError()
@@ -206,8 +208,8 @@ def image_exists(image: str, remote: bool = True) -> bool:
 
 
 def image_tags(image: str) -> list[str]:
+    image = image_qualified_name(image)
     registry, image, _, _ = image_name_parts(image)
-    registry = registry or REGISTRY
     data: dict[str, str | list[str]] = json.loads(  # pyright:ignore [reportAny]
         subprocess.check_output(
             [
@@ -229,6 +231,9 @@ def image_name_parts(name: str) -> tuple[str | None, str, str | None, str | None
     ref = None
     if "/" in name:
         registry, name = name.split("/", 1)
+        if "." not in registry and registry != "localhost":
+            name = f"{registry}/{name}"
+            registry = None
 
     if "@" in name:
         name, ref = name.split("@", 1)
@@ -240,7 +245,23 @@ def image_name_parts(name: str) -> tuple[str | None, str, str | None, str | None
     return registry, name, tag, ref
 
 
+def image_qualified_name(image: str) -> str:
+    registry, repo, tag, digest = image_name_parts(image)
+    if tag and (not registry or registry == REGISTRY) and repo == IMAGE:
+        registry = REGISTRY
+
+    suffix = ""
+    if tag is not None:
+        suffix = f":{tag}"
+
+    elif digest is not None:
+        suffix = f"@{digest}"
+
+    return f"{registry or 'docker.io'}/{repo}{suffix}"
+
+
 def _image_digest_remote(image: str) -> str:
+    image = image_qualified_name(image)
     return (
         subprocess.check_output(
             [
@@ -267,6 +288,7 @@ def _latest_manifest() -> bool:
 
 
 def image_digest(image: str, remote: bool = True) -> str:
+    image = image_qualified_name(image)
     if not remote:
         return (
             subprocess.check_output(
@@ -277,12 +299,7 @@ def image_digest(image: str, remote: bool = True) -> str:
         )
 
     registry, repo, tag, _ = image_name_parts(image)
-    if (
-        tag
-        and (not registry or registry == REGISTRY)
-        and repo == IMAGE
-        and _latest_manifest()
-    ):
+    if tag and registry == REGISTRY and repo == IMAGE and _latest_manifest():
         return image_labels(f"{REPO}:_manifest", False).get(
             f"atomic.manifest.tag.{tag}",
             _image_digest_remote(image),
@@ -292,6 +309,7 @@ def image_digest(image: str, remote: bool = True) -> str:
 
 
 def image_size(image: str) -> int:
+    image = image_qualified_name(image)
     manifest: dict[str, list[dict[str, int]]] = json.loads(  # pyright: ignore[reportAny]
         subprocess.check_output(
             [
@@ -487,7 +505,7 @@ def _wait_for_processes(
         cleanup()
 
     if errors:
-        raise ExceptionGroup("CalledProcessError", errors)
+        raise ExceptionGroup("CalledProcessError", errors)  # noqa: F821
 
 
 def _save_image_to_file(image: str, path: str):
@@ -589,6 +607,8 @@ def apply_delta(
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
+    image = image_qualified_name(image)
+    delta_image = image_qualified_name(delta_image)
     if not image_exists(delta_image, False):
         podman("pull", delta_image, onstdout=onstdout, onstderr=onstderr)
 
@@ -643,6 +663,7 @@ def pull(
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
+    image = image_qualified_name(image)
     remote_digest = image_digest(image, remote=True)
     image_exists_locally = image_exists(image, remote=False)
     candidates: list[tuple[str, str]] = []
@@ -660,7 +681,7 @@ def pull(
         podman("pull", image, onstdout=onstdout, onstderr=onstderr)
 
     target_tag = target_tag or "latest"
-    base_image = f"{registry or REGISTRY}/{name}"
+    base_image = f"{registry}/{name}"
     tags = image_tags(base_image)
     tags.sort()
     tag_base = target_tag.split("_")[0] if "_" in target_tag else target_tag

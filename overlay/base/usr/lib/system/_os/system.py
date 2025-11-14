@@ -20,10 +20,12 @@ from .console import bytes_to_stderr
 
 
 def baseImage(systemFile: str = "/etc/system/Systemfile") -> str:
+    from .podman import image_qualified_name
+
     with open(systemFile, "r") as f:
-        return [x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM")][
-            0
-        ]
+        return image_qualified_name(
+            [x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM ")][0]
+        )
 
 
 def _execute(cmd: str) -> int:
