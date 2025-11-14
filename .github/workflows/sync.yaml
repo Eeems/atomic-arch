@@ -20,7 +20,7 @@ permissions:
   packages: read
 
 concurrency:
-  group: sync
+  group: sync-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
