@@ -1415,6 +1415,7 @@ def do_workflow(_: argparse.Namespace):
                 "    cache: false",
                 "",
                 "sync:",
+                "  if: always()",
                 "  name: Sync repositories",
                 "  needs: manifest",
                 "  uses: ./.github/workflows/sync.yaml",
