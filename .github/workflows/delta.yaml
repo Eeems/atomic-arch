@@ -150,8 +150,8 @@ jobs:
             import os, json, make
             from _os.podman import hex_to_base62, image_digest
             from _os import REPO
-            a = hex_to_base62(image_digest(f"{REPO}:${{ matrix.a }, False}"))
-            b = hex_to_base62(image_digest(f"{REPO}:${{ matrix.b }, False}"))
+            a = hex_to_base62(image_digest(f"{REPO}:${{ matrix.a }}", False))
+            b = hex_to_base62(image_digest(f"{REPO}:${{ matrix.b }}", False))
             print(f"{REPO}:_diff-{a}-{b}")
             EOF
             )
