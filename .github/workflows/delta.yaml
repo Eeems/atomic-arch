@@ -137,14 +137,36 @@ jobs:
         uses: ./.github/actions/run-with-podman-service
         with:
           run: |
+            echo "::group::build"
             args=""
             if [[ "${{ inputs.recreate }}" == "true" ]];then
               args="$args --force"
             fi
+            ./make.py delta $args --no-clean --explicit ${{ matrix.a }} ${{ matrix.b }}
+            echo "::endgroup::"
+            echo "::group::layers"
+            name=$(
+            python <<'EOF'
+            import os, json, make
+            from _os.podman import hex_to_base62, image_digest
+            from _os import REPO
+            a = hex_to_base62(image_digest(f"{REPO}:${{ matrix.a }, False}"))
+            b = hex_to_base62(image_digest(f"{REPO}:${{ matrix.b }, False}"))
+            print(f"{REPO}:_diff-{a}-{b}")
+            EOF
+            )
+            echo "outputs=$name" >> $GITHUB_OUTPUT
+            skopeo inspect containers-storage:$name --raw \
+            | jq -r '.layers[] | "\(.digest) \(.size)"' \
+            | while read -r hash size;do
+              printf '%s %s\n' "$hash" "$(numfmt --to=iec $size)"
+            done
+            echo "::endgroup::"
             if [[ "${{ inputs.push }}" == "true" ]];then
-              args="$args --push"
+              echo "::group::push"
+              podman push $name
+              echo "::endgroup::"
             fi
-            ./make.py delta $args --explicit ${{ matrix.a }} ${{ matrix.b }}
         env:
           TMPDIR: ${{ github.workspace }}/.tmp
 
@@ -153,14 +175,13 @@ jobs:
         run: |
           python <<'EOF'
           import os, json, make
-          from _os.podman import hex_to_base62, image_digest
           from _os import REPO
-          a = hex_to_base62(image_digest(f"{REPO}:${{ matrix.a }}"))
-          b = hex_to_base62(image_digest(f"{REPO}:${{ matrix.b }}"))
           with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-            _ = f.write(f"tag={json.dumps(f"_diff-{a}-{b}")}\n")
+            _ = f.write(f"image={json.dumps(os.environ['name'])}\n")
             _ = f.write(f"image={json.dumps(REPO)}\n")
           EOF
+        env:
+          name: ${{ steps.build.outputs.outputs }}
 
       - name: Upload image artifact
         if: steps.build.outputs.updates == 'true'
