@@ -123,10 +123,10 @@ jobs:
           echo 'EOF' >> $GITHUB_OUTPUT
           echo "variant-items=$items" >> $GITHUB_OUTPUT
 
-          matrix=$(echo "$data" | grep _diff_)
+          matrix=$(echo "$data" | grep -E ^_diff-)
           items=$(echo "$matrix" | wc -l)
           if [[ $items -gt 256 ]];then
-            matrix=$(echo "$matrix" | head -n256)
+            matrix=$(echo "$matrix" | head -n256 || true)
             echo "::warning title=Diffs skipped::There are more than 256 diffs, skipping some"
             items=256
           fi
@@ -140,6 +140,7 @@ jobs:
           fi
           echo 'EOF' >> $GITHUB_OUTPUT
           echo "diff-items=$items" >> $GITHUB_OUTPUT
+
         env:
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
