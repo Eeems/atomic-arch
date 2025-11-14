@@ -81,7 +81,7 @@ jobs:
           echo 'explicit-matrix<<EOF' >> $GITHUB_OUTPUT
           if [[ $items -gt 0 ]];then
             echo "$matrix" \
-            | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' \
+            | jq -Rcn '{"include":[{"tag":inputs | select(length > 0)}]}' \
             >> $GITHUB_OUTPUT
           else
             echo '{"include":[{"tag":""}]}' >> $GITHUB_OUTPUT
@@ -118,7 +118,7 @@ jobs:
           echo 'variant-matrix<<EOF' >> $GITHUB_OUTPUT
           if [[ $items -gt 0 ]];then
             echo "$matrix" \
-            | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' \
+            | jq -Rcn '{"include":[{"tag":inputs | select(length > 0)}]}' \
             >> $GITHUB_OUTPUT
           else
             echo '{"include":[{"tag":""}]}' >> $GITHUB_OUTPUT
@@ -137,7 +137,7 @@ jobs:
           echo 'diff-matrix<<EOF' >> $GITHUB_OUTPUT
           if [[ $items -gt 0 ]];then
             echo "$matrix" \
-            | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' \
+            | jq -Rcn '{"include":[{"tag":inputs | select(length > 0)}]}' \
             >> $GITHUB_OUTPUT
           else
             echo '{"include":[{"tag":""}]}' >> $GITHUB_OUTPUT
