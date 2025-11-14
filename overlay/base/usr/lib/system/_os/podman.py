@@ -505,7 +505,7 @@ def escape_label(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\\n")
 
 
-def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
+def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bool:
     digestA = image_digest(imageA)
     digestB = image_digest(imageB)
     with TemporaryDirectory() as tmpdir:
@@ -520,8 +520,9 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
         )
         tar_proc.stdout.close()
         assert xdelta_proc.stdout is not None
+        diff_path = os.path.join(tmpdir, "diff.xd3.zstd")
         zstd_proc = subprocess.Popen(
-            ["zstd", "-19", "-T0", "-o", os.path.join(tmpdir, "diff.xd3.zstd")],
+            ["zstd", "-19", "-T0", "-o", diff_path],
             stdin=xdelta_proc.stdout,
             stdout=subprocess.PIPE,
         )
@@ -556,15 +557,21 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True):
                 labels[label] = src_labels[full_label]
 
         containerfile = os.path.join(tmpdir, "Containerfile")
+        success = os.path.getsize(diff_path) < image_size(imageB) * 0.6
         with open(containerfile, "w") as f:
             _ = f.write(f"""\
 FROM scratch
-COPY diff.xd3.zstd /diff.xd3.zstd
 LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k, v in labels.items()])}
   atomic.patch.prev="{digestA}" \\
   atomic.patch.ref="{digestB}" \\
   atomic.patch.format="xdelta3+zstd"
 """)
+            if success:
+                print("Delta is too large, creating empty delta instead")
+
+            else:
+                _ = f.write("COPY diff.xd3.zstd /diff.xd3.zstd\n")
+
         podman(
             "build",
             f"--tag={imageD}",
@@ -573,6 +580,7 @@ LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k
             f"--pull={'newer' if pull else 'never'}",
             tmpdir,
         )
+        return success
 
 
 def apply_delta(
@@ -681,10 +689,14 @@ def pull(
             onstderr(b"Wrong digest\n")
             continue
 
+        if delta_labels.get("atomic.patch.format", "none") == "none":
+            onstderr(b"Empty patch, likely paching will be too large\n")
+            continue
+
         delta_size = image_size(delta_image)
         target_size = image_size(image)
-        if delta_size >= target_size:
-            onstderr(b"Larger than full image\n")
+        if delta_size >= target_size * 0.6:
+            onstderr(b"Delta is too large\n")
             continue
 
         target_size_fmt = bytes_to_iec(target_size)

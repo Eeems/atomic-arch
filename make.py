@@ -60,7 +60,7 @@ image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_inf
 image_labels = cast(Callable[[str, bool], dict[str, str]], _os.podman.image_labels)  # pyright:ignore [reportUnknownMemberType]
 image_exists = cast(Callable[[str, bool], bool], _os.podman.image_exists)  # pyright:ignore [reportUnknownMemberType]
 image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:ignore [reportUnknownMemberType]
-create_delta = cast(Callable[[str, str, str, bool], None], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
+create_delta = cast(Callable[[str, str, str, bool], bool], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
 hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:ignore [reportUnknownMemberType]
 pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 escape_label = cast(Callable[[str], str], _os.podman.escape_label)  # pyright: ignore[reportUnknownMemberType]
@@ -270,7 +270,7 @@ def delta(
         imageD = f"{REPO}:_diff-{digestA}-{digestB}"
 
     ci_log(f"::group::delta {a} and {b}")
-    create_delta(imageA, imageB, imageD, allow_pull)
+    _ = create_delta(imageA, imageB, imageD, allow_pull)
     ci_log("::endgroup::")
     if push:
         ci_log("::group::push")
