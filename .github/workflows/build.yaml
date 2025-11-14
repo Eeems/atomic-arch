@@ -90,6 +90,7 @@ jobs:
 
   manifest:
     name: Generate manifest
+    if: always()
     needs:
       - delta_atomic
       - delta_atomic-nvidia
@@ -116,6 +117,7 @@ jobs:
       cache: false
 
   sync:
+    if: always()
     name: Sync repositories
     needs: manifest
     uses: ./.github/workflows/sync.yaml
