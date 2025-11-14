@@ -43,6 +43,8 @@ jobs:
       variant-items: ${{ steps.matrix.outputs.variant-items }}
       diff-matrix: ${{ steps.matrix.outputs.diff-matrix }}
       diff-items: ${{ steps.matrix.outputs.diff-items }}
+      explicit-matrix: ${{ steps.matrix.outputs.explicit-matrix }}
+      explicit-items: ${{ steps.matrix.outputs.explicit-items }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
