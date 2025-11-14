@@ -1443,6 +1443,10 @@ def do_workflow(_: argparse.Namespace):
         _r = f.write("\n".join(output).rstrip() + "\n")
 
 
+def do_config(_: argparse.Namespace):
+    print(json.dumps(parse_all_config()))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers()
@@ -1532,6 +1536,9 @@ if __name__ == "__main__":
 
     subparser = subparsers.add_parser("workflow")
     subparser.set_defaults(func=do_workflow)
+
+    subparser = subparsers.add_parser("config")
+    subparser.set_defaults(func=do_config)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

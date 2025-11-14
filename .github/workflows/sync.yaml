@@ -69,6 +69,26 @@ jobs:
         shell: bash
         run: |
           set -e
+          variants=$( \
+            ./make.py config \
+            | jq -r \
+              '.variants | keys[] as $k | $k, ( [.[$k].templates[] | "\($k)-\(.)"] | join("\n") )' \
+          )
+          matrix=$(echo "_manifest $variants" | xargs -n1 echo)
+          items=$(echo "$variants" | wc -l)
+          echo 'explicit-matrix<<EOF' >> $GITHUB_OUTPUT
+          if [[ $items -gt 0 ]];then
+            echo "$matrix" \
+            | jq -Rc '{"include":[{"tag":inputs | select(length > 0)}]}' \
+            >> $GITHUB_OUTPUT
+          else
+            echo '{"include":[{"tag":""}]}' >> $GITHUB_OUTPUT
+          fi
+          echo 'EOF' >> $GITHUB_OUTPUT
+          echo "explicit-items=$items" >> $GITHUB_OUTPUT
+
+          # TODO use manifest instead of relying on tags, this allows
+          #      prioritizing which diffs should be first
           data=$(cat <( \
             comm -23 \
               <(
@@ -86,7 +106,11 @@ jobs:
                 | sort \
               ) \
           ))
-          matrix=$(echo "$data" | grep -v _diff_)
+          matrix=$( \
+            printf '%s\n' "$data" \
+            | grep -E \
+              "^($(printf '%s\n' "$variants" | sed 's/[.^$*+?()|[\]{}]/\\&/g' | sed 's/$/_/' | paste -sd '|' -))" \
+          )
           items=$(echo "$matrix" | wc -l)
           echo 'variant-matrix<<EOF' >> $GITHUB_OUTPUT
           if [[ $items -gt 0 ]];then
@@ -101,6 +125,11 @@ jobs:
 
           matrix=$(echo "$data" | grep _diff_)
           items=$(echo "$matrix" | wc -l)
+          if [[ $items -gt 256 ]];then
+            matrix=$(echo "$matrix" | head -n256)
+            echo "::warning title=Diffs skipped::There are more than 256 diffs, skipping some"
+            items=256
+          fi
           echo 'diff-matrix<<EOF' >> $GITHUB_OUTPUT
           if [[ $items -gt 0 ]];then
             echo "$matrix" \
@@ -115,6 +144,49 @@ jobs:
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
           image: eeems/atomic-arch
+
+  sync-explicit:
+    name: Sync eeems/atomic-arch:${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    if: ${{ needs.matrix.outputs.explicit-items > 0 }}
+    needs: matrix
+    strategy:
+      matrix: ${{ fromJson(needs.matrix.outputs.explicit-matrix) }}
+      fail-fast: false
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Login to ghcr
+        uses: docker/login-action@v3
+        with:
+          username: ${{github.actor}}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+
+      - name: Login to dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: eeems
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: docker.io
+
+      - name: Mask registry passwords
+        uses: ./.github/actions/mask-registry-passwords
+
+      - name: Synchronize images
+        shell: bash
+        run: |
+          skopeo copy \
+            --multi-arch all \
+            --retry-times 10 \
+            "docker://$from/$image:$tag" \
+            "docker://$to/$image:$tag"
+        env:
+          from: ${{ inputs.from }}
+          to: ${{ inputs.to }}
+          image: eeems/atomic-arch
+          tag: ${{ matrix.tag }}
 
   sync-variants:
     name: Sync eeems/atomic-arch:${{ matrix.tag }}
@@ -166,50 +238,6 @@ jobs:
     needs: matrix
     strategy:
       matrix: ${{ fromJson(needs.matrix.outputs.diff-matrix) }}
-      fail-fast: false
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
-
-      - name: Login to ghcr
-        uses: docker/login-action@v3
-        with:
-          username: ${{github.actor}}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ghcr.io
-
-      - name: Login to dockerhub
-        uses: docker/login-action@v3
-        with:
-          username: eeems
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          registry: docker.io
-
-      - name: Mask registry passwords
-        uses: ./.github/actions/mask-registry-passwords
-
-      - name: Synchronize images
-        shell: bash
-        run: |
-          skopeo copy \
-            --multi-arch all \
-            --retry-times 10 \
-            "docker://$from/$image:$tag" \
-            "docker://$to/$image:$tag"
-        env:
-          from: ${{ inputs.from }}
-          to: ${{ inputs.to }}
-          image: eeems/atomic-arch
-          tag: ${{ matrix.tag }}
-
-  sync-explicit:
-    name: Sync eeems/atomic-arch:${{ matrix.tag }}
-    runs-on: ubuntu-latest
-    needs: matrix
-    strategy:
-      matrix:
-        tag:
-          - _manifest
       fail-fast: false
     steps:
       - name: Checkout the repository
