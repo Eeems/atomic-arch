@@ -94,8 +94,6 @@ jobs:
       - delta_atomic
       - delta_atomic-nvidia
       - delta_atomic-slim
-      - delta_atomic-system76
-      - delta_atomic-system76-nvidia
       - delta_base
       - delta_base-nvidia
       - delta_base-slim
@@ -107,8 +105,6 @@ jobs:
       - delta_gnome
       - delta_gnome-nvidia
       - delta_gnome-slim
-      - delta_gnome-system76
-      - delta_gnome-system76-nvidia
       - delta_rootfs
     uses: ./.github/workflows/manifest.yaml
     secrets: inherit
@@ -234,19 +230,6 @@ jobs:
       digest: ${{ needs['atomic'].outputs.digest }}
       cleanup: true
 
-  atomic-system76:
-    name: Build atomic-arch:atomic-system76 image
-    needs: atomic
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76
-      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
-      push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ fromJson(needs['atomic'].outputs.updates) && 'atomic' || '' }}
-      digest: ${{ needs['atomic'].outputs.digest }}
-
   eeems:
     name: Build atomic-arch:eeems image
     needs: atomic
@@ -287,32 +270,6 @@ jobs:
       digest: ${{ needs['gnome'].outputs.digest }}
       cleanup: true
 
-  gnome-system76:
-    name: Build atomic-arch:gnome-system76 image
-    needs: gnome
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76
-      updates: ${{ fromJson(needs['gnome'].outputs.updates) }}
-      push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
-      digest: ${{ needs['gnome'].outputs.digest }}
-
-  atomic-system76-nvidia:
-    name: Build atomic-arch:atomic-system76-nvidia image
-    needs: atomic-system76
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76-nvidia
-      updates: ${{ fromJson(needs['atomic-system76'].outputs.updates) }}
-      push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ fromJson(needs['atomic-system76'].outputs.updates) && 'atomic-system76' || '' }}
-      digest: ${{ needs['atomic-system76'].outputs.digest }}
-
   eeems-nvidia:
     name: Build atomic-arch:eeems-nvidia image
     needs: eeems
@@ -352,19 +309,6 @@ jobs:
       push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['eeems'].outputs.updates) && 'eeems' || '' }}
       digest: ${{ needs['eeems'].outputs.digest }}
-
-  gnome-system76-nvidia:
-    name: Build atomic-arch:gnome-system76-nvidia image
-    needs: gnome-system76
-    uses: ./.github/workflows/build-variant.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76-nvidia
-      updates: ${{ fromJson(needs['gnome-system76'].outputs.updates) }}
-      push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ fromJson(needs['gnome-system76'].outputs.updates) && 'gnome-system76' || '' }}
-      digest: ${{ needs['gnome-system76'].outputs.digest }}
 
   eeems-system76-nvidia:
     name: Build atomic-arch:eeems-system76-nvidia image
@@ -487,19 +431,6 @@ jobs:
       artifact: ${{ fromJson(needs['atomic-slim'].outputs.updates) && 'atomic-slim' || '' }}
       digest: ${{ needs['atomic-slim'].outputs.digest }}
 
-  scan_atomic-system76:
-    name: Scan image for atomic-system76
-    if: github.event_name != 'pull_request' || fromJson(needs['atomic-system76'].outputs.updates)
-    needs: atomic-system76
-    uses: ./.github/workflows/scan.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76
-      push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ fromJson(needs['atomic-system76'].outputs.updates) && 'atomic-system76' || '' }}
-      digest: ${{ needs['atomic-system76'].outputs.digest }}
-
   scan_eeems:
     name: Scan image for eeems
     if: github.event_name != 'pull_request' || fromJson(needs['eeems'].outputs.updates)
@@ -539,32 +470,6 @@ jobs:
       artifact: ${{ fromJson(needs['gnome-slim'].outputs.updates) && 'gnome-slim' || '' }}
       digest: ${{ needs['gnome-slim'].outputs.digest }}
 
-  scan_gnome-system76:
-    name: Scan image for gnome-system76
-    if: github.event_name != 'pull_request' || fromJson(needs['gnome-system76'].outputs.updates)
-    needs: gnome-system76
-    uses: ./.github/workflows/scan.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76
-      push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ fromJson(needs['gnome-system76'].outputs.updates) && 'gnome-system76' || '' }}
-      digest: ${{ needs['gnome-system76'].outputs.digest }}
-
-  scan_atomic-system76-nvidia:
-    name: Scan image for atomic-system76-nvidia
-    if: github.event_name != 'pull_request' || fromJson(needs['atomic-system76-nvidia'].outputs.updates)
-    needs: atomic-system76-nvidia
-    uses: ./.github/workflows/scan.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76-nvidia
-      push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ fromJson(needs['atomic-system76-nvidia'].outputs.updates) && 'atomic-system76-nvidia' || '' }}
-      digest: ${{ needs['atomic-system76-nvidia'].outputs.digest }}
-
   scan_eeems-nvidia:
     name: Scan image for eeems-nvidia
     if: github.event_name != 'pull_request' || fromJson(needs['eeems-nvidia'].outputs.updates)
@@ -603,19 +508,6 @@ jobs:
       push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['eeems-system76'].outputs.updates) && 'eeems-system76' || '' }}
       digest: ${{ needs['eeems-system76'].outputs.digest }}
-
-  scan_gnome-system76-nvidia:
-    name: Scan image for gnome-system76-nvidia
-    if: github.event_name != 'pull_request' || fromJson(needs['gnome-system76-nvidia'].outputs.updates)
-    needs: gnome-system76-nvidia
-    uses: ./.github/workflows/scan.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76-nvidia
-      push: ${{ github.event_name != 'pull_request' }}
-      artifact: ${{ fromJson(needs['gnome-system76-nvidia'].outputs.updates) && 'gnome-system76-nvidia' || '' }}
-      digest: ${{ needs['gnome-system76-nvidia'].outputs.digest }}
 
   scan_eeems-system76-nvidia:
     name: Scan image for eeems-system76-nvidia
@@ -730,18 +622,6 @@ jobs:
       push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
-  delta_atomic-system76:
-    name: Generate deltas for atomic-system76
-    if: github.event_name != 'pull_request'
-    needs: atomic-system76
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
   delta_eeems:
     name: Generate deltas for eeems
     if: github.event_name != 'pull_request'
@@ -778,30 +658,6 @@ jobs:
       push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
-  delta_gnome-system76:
-    name: Generate deltas for gnome-system76
-    if: github.event_name != 'pull_request'
-    needs: gnome-system76
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_atomic-system76-nvidia:
-    name: Generate deltas for atomic-system76-nvidia
-    if: github.event_name != 'pull_request'
-    needs: atomic-system76-nvidia
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76-nvidia
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
   delta_eeems-nvidia:
     name: Generate deltas for eeems-nvidia
     if: github.event_name != 'pull_request'
@@ -835,18 +691,6 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_gnome-system76-nvidia:
-    name: Generate deltas for gnome-system76-nvidia
-    if: github.event_name != 'pull_request'
-    needs: gnome-system76-nvidia
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76-nvidia
       push: ${{ github.event_name != 'pull_request' }}
       recreate: false
 
@@ -1020,28 +864,6 @@ jobs:
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-slim'].outputs.updates) }}
       offline: true
 
-  online_iso_atomic-system76:
-    name: Generate iso for atomic-system76
-    needs: atomic-system76
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76
-      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-system76'].outputs.updates) }}
-      offline: false
-
-  offline_iso_atomic-system76:
-    name: Generate iso for atomic-system76
-    needs: atomic-system76
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76
-      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-system76'].outputs.updates) }}
-      offline: true
-
   online_iso_eeems:
     name: Generate iso for eeems
     needs: eeems
@@ -1108,50 +930,6 @@ jobs:
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-slim'].outputs.updates) }}
       offline: true
 
-  online_iso_gnome-system76:
-    name: Generate iso for gnome-system76
-    needs: gnome-system76
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76
-      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-system76'].outputs.updates) }}
-      offline: false
-
-  offline_iso_gnome-system76:
-    name: Generate iso for gnome-system76
-    needs: gnome-system76
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76
-      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-system76'].outputs.updates) }}
-      offline: true
-
-  online_iso_atomic-system76-nvidia:
-    name: Generate iso for atomic-system76-nvidia
-    needs: atomic-system76-nvidia
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76-nvidia
-      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-system76-nvidia'].outputs.updates) }}
-      offline: false
-
-  offline_iso_atomic-system76-nvidia:
-    name: Generate iso for atomic-system76-nvidia
-    needs: atomic-system76-nvidia
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-system76-nvidia
-      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-system76-nvidia'].outputs.updates) }}
-      offline: true
-
   online_iso_eeems-nvidia:
     name: Generate iso for eeems-nvidia
     needs: eeems-nvidia
@@ -1216,28 +994,6 @@ jobs:
     with:
       variant: eeems-system76
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-system76'].outputs.updates) }}
-      offline: true
-
-  online_iso_gnome-system76-nvidia:
-    name: Generate iso for gnome-system76-nvidia
-    needs: gnome-system76-nvidia
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76-nvidia
-      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-system76-nvidia'].outputs.updates) }}
-      offline: false
-
-  offline_iso_gnome-system76-nvidia:
-    name: Generate iso for gnome-system76-nvidia
-    needs: gnome-system76-nvidia
-    uses: ./.github/workflows/iso.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome-system76-nvidia
-      pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome-system76-nvidia'].outputs.updates) }}
       offline: true
 
   online_iso_eeems-system76-nvidia:

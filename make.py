@@ -1101,15 +1101,15 @@ def do_workflow(_: argparse.Namespace):
             "base": {"templates": ["nvidia", "slim"]},
             "atomic": {
                 "depends": "base",
-                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+                "templates": ["nvidia", "slim"],
             },
             "gnome": {
                 "depends": "base",
-                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+                "templates": ["nvidia", "slim"],
             },
             "eeems": {
                 "depends": "atomic",
-                "templates": ["nvidia", "slim", "system76", "system76-nvidia"],
+                "templates": ["nvidia", "slim", "system76"],
             },
         },
         "clean": ["slim"],
