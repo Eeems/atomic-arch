@@ -192,7 +192,7 @@ def push(target: str):
         podman("tag", image, tag)
 
     for tag in tags + [image]:
-        podman("push", "--retry=5", tag)
+        podman("push", tag)
         print(f"Pushed {tag}")
         _image_digests_write_cache(tag, image_digest(tag, False))
 

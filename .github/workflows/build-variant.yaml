@@ -121,10 +121,8 @@ jobs:
           run: |
             echo "::group::checkupdates"
             push=false
-            args=""
             if [[ "${{ inputs.push }}" == "true" ]];then
               push=true
-              args="--push"
             fi
             if [[ "$VARIANT" == "rootfs" ]];then
               set +e
@@ -136,9 +134,9 @@ jobs:
                 echo "::endgroup::"
                 echo "::group::build"
                 if [[ "$output" == *"mirrorlist "* ]]; then
-                  ./make.py rootfs $args
+                  ./make.py rootfs
                 else
-                  ./make.py build $args rootfs
+                  ./make.py build rootfs
                 fi
                 updates="true"
               elif [ $res -ne 0 ];then
@@ -160,7 +158,7 @@ jobs:
               if [ $res -eq 2 ];then
                 echo "::endgroup::"
                 echo "::group::build"
-                ./make.py build $args ${{ inputs.variant }}
+                ./make.py build ${{ inputs.variant }}
                 updates="true"
                 echo "::endgroup::"
               elif [ $res -ne 0 ];then
@@ -170,7 +168,21 @@ jobs:
                 echo "::endgroup::"
               fi
             fi
-            if $push && ! $updates;then
+            name=$(
+            python <<'EOF'
+            import os, json, make
+            from subprocess import check_output
+            from _os import REPO
+            from _os.podman import podman_cmd
+            print(f"{REPO}:${{ inputs.variant }}")
+            EOF
+            )
+            skopeo inspect containers-storage:$name --raw \
+            | jq -r '.layers[] | "\(.digest) \(.size)"' \
+            | while read -r hash size;do
+              printf '%s %s\n' "$hash" "$(numfmt --to=iec $size)"
+            done
+            if $push;then
               echo "::group::push"
               ./make.py push ${{ inputs.variant }}
               echo "::endgroup::"
