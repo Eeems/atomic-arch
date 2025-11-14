@@ -177,11 +177,13 @@ jobs:
             print(f"{REPO}:${{ inputs.variant }}")
             EOF
             )
+            echo "::group::layers"
             skopeo inspect containers-storage:$name --raw \
             | jq -r '.layers[] | "\(.digest) \(.size)"' \
             | while read -r hash size;do
               printf '%s %s\n' "$hash" "$(numfmt --to=iec $size)"
             done
+            echo "::endgroup::"
             if $push;then
               echo "::group::push"
               ./make.py push ${{ inputs.variant }}
