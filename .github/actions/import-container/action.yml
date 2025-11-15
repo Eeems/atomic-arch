@@ -30,3 +30,4 @@ runs:
           cd "${{ steps.download.outputs.download-path }}"
           zstdcat "${{ inputs.artifact }}.tar.zstd" | podman load
           rm "${{ inputs.artifact }}.tar.zstd"
+          podman image ls

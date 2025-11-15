@@ -17,7 +17,6 @@ runs:
           from make import DIGEST_CACHE_PATH
           from make import _image_digests_write_cache
           from _os import REPO
-          from _os import IMAGE
           from _os.podman import podman
           if not os.path.exists(DIGEST_CACHE_PATH):
             print(f'No cache found at {DIGEST_CACHE_PATH}, creating new cache')

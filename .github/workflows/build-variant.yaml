@@ -203,16 +203,9 @@ jobs:
           import os, json, make
           from subprocess import check_output
           from _os import REPO
-          from _os.podman import podman_cmd
+          from _os.podman import image_digest
           name = f"{REPO}:${{ inputs.variant }}"
-          digest = check_output(
-            podman_cmd(
-              "image",
-              "inspect",
-              "--format={{.Digest}}",
-              name,
-            )
-          ).strip().decode("utf-8")
+          digest = image_digest(name, remote=False)
           with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
             _ = f.write(f"name={json.dumps(name)}\n")
             _ = f.write(f"digest={digest}")
