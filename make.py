@@ -1484,6 +1484,7 @@ def do_workflow(_: argparse.Namespace):
                 "          ~/.cache/go-build",
                 "        key: go-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}",
                 "    - name: Ensure config is valid",
+                "      shell: bash",
                 "      run: |",
                 "        set -e",
                 "        ./make.py check",
