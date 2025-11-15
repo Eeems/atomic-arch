@@ -29,7 +29,7 @@ RUN apt-get update \
     sudo \
     jq \
     gh \
-    go \
+    golang-go \
     meson \
     uidmap \
     netavark \
