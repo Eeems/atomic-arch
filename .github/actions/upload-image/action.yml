@@ -11,10 +11,6 @@ inputs:
     description: Action to take if no files are found
     default: error
     required: false
-outputs:
-  digest:
-    description: Digest of exported image
-    value: ${{ fromJson(steps.export.outputs.outputs).digest }}
 runs:
   using: "composite"
   steps:
@@ -38,7 +34,7 @@ runs:
           echo "}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           echo "::group::outputs"
-          cat $GITHUB_OUTPUT
+          bash -c ". $GITHUB_OUTPUT; echo $outputs | jq"
           echo "::endgroup::"
       env:
         image: ${{ inputs.image }}
