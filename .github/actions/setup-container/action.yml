@@ -6,7 +6,7 @@ runs:
     - name: Setup container
       shell: bash
       run: |
-        mkdir -p /github/home/.docker
+        mkdir -p /github/home/.docker /home/runner
         if ! [ -f /github/home/.docker/config.json ];then
           echo '{"auths":{}}' > /github/home/.docker/config.json
         fi
@@ -14,3 +14,4 @@ runs:
           cp seccomp.json /etc/containers/seccomp.json
         fi
         echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
+        ln -s /__w /home/runner/work
