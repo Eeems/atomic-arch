@@ -30,13 +30,13 @@ runs:
         run: |
           set -e
           cd "${{ steps.download.outputs.download-path }}"
-          zstd \
-            --rm -do \
-            "${{ inputs.artifact }}.tar" \
-            "${{ inputs.artifact }}.tar.zstd"
+          zstd --rm -do "$tar" "$zstd"
           skopeo copy \
             --preserve-digests \
-            oci-archive:"${{ inputs.artifact }}.tar" \
+            oci-archive:"$tar" \
             containers-storage:${{ inputs.image }}
-          rm "${{ inputs.artifact }}.tar.zstd"
+          rm "$tar"
           podman image ls
+      env:
+        zstd: ${{ inputs.artifact }}.tar.zstd
+        tar: ${{ inputs.artifact }}.tar

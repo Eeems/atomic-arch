@@ -668,7 +668,7 @@ def apply_delta(
 
     new_digest = image_digest(new_image, remote=True)
     if labels.get("atomic.patch.ref", "") != new_digest:
-        raise ValueError("Patch does not result in the correct iamge")
+        raise ValueError("Patch does not result in the correct image")
 
     if not image_exists(image, False) or image_digest(image, False) != digest:
         podman("pull", image, onstdout=onstdout, onstderr=onstderr)
