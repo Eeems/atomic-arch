@@ -1382,6 +1382,9 @@ def do_workflow(_: argparse.Namespace):
         return indent(__(False) + [""] + __(True))
 
     build_order = topological_sort(graph, indegree)
+    # TODO make topological_sort determenistic
+    #      and don't sort anymore
+    build_order.sort()
 
     sections = [
         [
