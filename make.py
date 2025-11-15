@@ -67,7 +67,7 @@ pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnk
 escape_label = cast(Callable[[str], str], _os.podman.escape_label)  # pyright: ignore[reportUnknownMemberType]
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 base_images = cast(
-    Callable[[str, dict[str, str] | None], list[str]],
+    Callable[[str, dict[str, str] | None], Iterable[str]],
     _os.podman.base_images,  # pyright:ignore [reportUnknownMemberType]
 )
 image_name_parts = cast(
