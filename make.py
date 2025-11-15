@@ -1492,6 +1492,7 @@ def do_workflow(_: argparse.Namespace):
                 '        git config --global --add safe.directory "$(realpath .)"',
                 '        if [[ -n "$(git status -s)" ]]; then',
                 '          echo "Please run ./make.py workflow, commit the changes, and try again."',
+                "          git status -s",
                 "          exit 1",
                 "        fi",
                 "      env:",
