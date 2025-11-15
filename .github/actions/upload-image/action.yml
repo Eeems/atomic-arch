@@ -20,7 +20,11 @@ runs:
       with:
         run: |
           podman image ls
-          podman save ${{ inputs.image }} | zstd -o ${{ inputs.name }}.tar.zstd
+          skopeo copy \
+            --preserve-digests \
+            docker://${{ inputs.image }} \
+            oci-archive:${{ inputs.name }}.tar
+          zstd --rm -o ${{ inputs.name }}.tar.zstd ${{ inputs.name }}.tar
           echo \
             "outputs={\"path\":\"${{ inputs.name }}.tar.zstd\"}" \
           >> $GITHUB_OUTPUT
