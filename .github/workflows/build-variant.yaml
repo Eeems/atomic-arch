@@ -123,6 +123,7 @@ jobs:
         env:
           image: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
+          TMPDIR: ${{ runner.temp }}
 
       - name: Build
         id: build
