@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import argparse
-from io import TextIOWrapper
 import itertools
 import signal
+import subprocess
 import sys
 import shlex
 import shutil
@@ -13,6 +13,7 @@ import tempfile
 import json
 import threading
 
+from io import TextIOWrapper
 from collections import defaultdict
 from collections import deque
 from concurrent.futures import as_completed
@@ -481,6 +482,13 @@ def do_checkupdates(args: argparse.Namespace):
     target = cast(str, args.target)
     image = image_qualified_name(f"{REPO}:{target}")
     exists = image_exists(image, True)
+    if exists and not image_exists(image, False):
+        try:
+            pull(image)
+
+        except subprocess.CalledProcessError:
+            pass
+
     if exists:
         mirror = [
             x.split(" = ", 1)[1]
@@ -520,8 +528,11 @@ def do_checkupdates(args: argparse.Namespace):
         print(f"context {current_hash[:9] or '(none)'} -> {new_hash[:9]}")
         has_updates = True
 
-    if not exists:
-        sys.exit(2)
+    if not image_exists(image, False):
+        if has_updates:
+            sys.exit(2)
+
+        return
 
     res = in_system(
         "-ec",
