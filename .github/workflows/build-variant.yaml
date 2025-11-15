@@ -95,7 +95,7 @@ jobs:
         uses: ./.github/actions/import-container
         with:
           artifact: ${{ inputs.artifact }}
-          image: ghcr.io/eeems-atomic:${{ inputs.artifact }}
+          image: ghcr.io/eeems/atomic-arch:${{ inputs.artifact }}
 
       - name: Get manifest cache
         if: inputs.artifact != ''
