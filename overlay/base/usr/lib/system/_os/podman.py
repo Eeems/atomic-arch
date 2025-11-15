@@ -649,6 +649,7 @@ LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k
 def apply_delta(
     image: str,
     delta_image: str,
+    new_image: str,
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
@@ -661,9 +662,13 @@ def apply_delta(
     if labels.get("atomic.patch.format", "") != "xdelta3+zstd":
         raise ValueError("Incompatible patch format")
 
-    digest = image_digest(image, True)
+    digest = image_digest(image, remote=False)
     if labels.get("atomic.patch.prev", "") != digest:
         raise ValueError("Patch does not apply to this image")
+
+    new_digest = image_digest(new_image, remote=True)
+    if labels.get("atomic.patch.ref", "") != new_digest:
+        raise ValueError("Patch does not result in the correct iamge")
 
     if not image_exists(image, False) or image_digest(image, False) != digest:
         podman("pull", image, onstdout=onstdout, onstderr=onstderr)
@@ -687,20 +692,26 @@ def apply_delta(
             stdout=subprocess.PIPE,
         )
         assert podman_run_proc.stdout is not None
+        new_oci_path = os.path.join(tmpdir, "new.oci")
         xdelta3_proc = subprocess.Popen(
-            ["xdelta3", "-d", "-s", old_oci_path, "-", "-"],
-            stdout=subprocess.PIPE,
+            ["xdelta3", "-d", "-s", old_oci_path, "-", new_oci_path],
             stdin=podman_run_proc.stdout,
         )
         podman_run_proc.stdout.close()
-        assert xdelta3_proc.stdout is not None
-        podman_load_proc = subprocess.Popen(
-            podman_cmd("load"),
-            stdin=xdelta3_proc.stdout,
+        _ = xdelta3_proc.communicate()
+        _wait_for_processes(xdelta3_proc, podman_run_proc)
+        os.unlink(old_oci_path)
+        _ = subprocess.check_call(
+            [
+                "skopeo",
+                "copy",
+                "--preserve-digests",
+                f"oci-archive:{new_oci_path}",
+                f"containers-storage:{new_image}",
+            ]
         )
-        xdelta3_proc.stdout.close()
-        _ = podman_load_proc.communicate()
-        _wait_for_processes(podman_load_proc, xdelta3_proc, podman_run_proc)
+        if image_digest(image, remote=False) != new_digest:
+            raise RuntimeError("Resulting image has the wrong digest")
 
 
 def pull(
@@ -773,8 +784,14 @@ def pull(
             )
         )
         try:
-            apply_delta(local_image, delta_image, onstdout=onstdout, onstderr=onstderr)
-            podman("tag", remote_digest, image, onstdout=onstdout, onstderr=onstderr)
+            apply_delta(
+                local_image,
+                delta_image,
+                image,
+                onstdout=onstdout,
+                onstderr=onstderr,
+            )
+
             return
 
         except Exception as e:

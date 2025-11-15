@@ -70,6 +70,7 @@ jobs:
         uses: ./.github/actions/import-container
         with:
           artifact: ${{ inputs.variant }}
+          image: ghcr.io/eeems-atomic:${{ inputs.artifact }}
 
       - name: Get manifest cache
         if: ${{ !inputs.pull }}

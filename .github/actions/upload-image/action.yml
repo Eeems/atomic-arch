@@ -5,7 +5,7 @@ inputs:
     description: Image to upload
     required: true
   name:
-    description: Artifact name to use
+    description: Name of tag, and of artifact
     required: true
   if-no-files-found:
     description: Action to take if no files are found
@@ -23,7 +23,7 @@ runs:
           skopeo copy \
             --preserve-digests \
             docker://${{ inputs.image }} \
-            oci-archive:${{ inputs.name }}.tar
+            oci-archive:${{ inputs.name }}.tar:${{ inputs.name }}
           zstd --rm -o ${{ inputs.name }}.tar.zstd ${{ inputs.name }}.tar
           echo \
             "outputs={\"path\":\"${{ inputs.name }}.tar.zstd\"}" \
