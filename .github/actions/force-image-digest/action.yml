@@ -23,7 +23,8 @@ runs:
 
         tag = os.environ["tag"]
         digest = os.environ["digest"]
-        _image_digests_write_cache(f"{REPO}:{tag}", digest)
+        image = f"{REPO}:{tag}"
+        _image_digests_write_cache(image, digest)
         podman("tag", digest, image)
         EOF
       env:
