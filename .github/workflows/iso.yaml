@@ -87,8 +87,6 @@ jobs:
               args="$args --no-local-image"
             fi
             ./make.py iso $args ${{ inputs.variant }}
-        env:
-          TMPDIR: ${{ runner.temp }}
 
       - name: Upload iso
         uses: actions/upload-artifact@v4
