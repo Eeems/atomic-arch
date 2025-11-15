@@ -97,9 +97,18 @@ func main() {
 }
 func write(output *string, b []byte) {
 	if *output != "" {
-		os.WriteFile(*output, b, 0644)
-	} else {
-		os.Stdout.Write(b)
-		os.Stdout.WriteString("\n")
+		err := os.WriteFile(*output, b, 0644)
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+	_, err := os.Stdout.Write(b)
+	if err != nil {
+		panic(err)
+	}
+	_, err = os.Stdout.WriteString("\n")
+	if err != nil {
+		panic(err)
 	}
 }
