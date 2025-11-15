@@ -105,24 +105,9 @@ jobs:
 
       - name: Force digest
         if: inputs.digest != '' && inputs.artifact != ''
-        run: |
-          python <<'EOF'
-          import os
-          from make import DIGEST_CACHE_PATH
-          from make import _image_digests_write_cache
-          from _os import REPO
-          from _os import IMAGE
-          from _os.podman import podman
-          if not os.path.exists(DIGEST_CACHE_PATH):
-            print(f'No cache found at {DIGEST_CACHE_PATH}, creating new cache')
-
-          tag = os.environ["image"]
-          digest = os.environ["digest"]
-          _image_digests_write_cache(f"{REPO}:{tag}", digest)
-          podman("tag", digest, image)
-          EOF
-        env:
-          image: ${{ inputs.artifact }}
+        uses: ./.github/actions/force-image-digest
+        with:
+          tag: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
 
       - name: Build
