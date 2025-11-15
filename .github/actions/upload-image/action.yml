@@ -29,7 +29,7 @@ runs:
             --preserve-digests \
             docker://$image \
             oci-archive:$tar:$name
-          digest=$(skopeo inspect --format='{{.Digest}}' oci-archive:$image)
+          digest=$(skopeo inspect --format='{{.Digest}}' oci-archive:$tar:$name)
           zstd --rm -o $zstd $tar
           echo "Digest: $digest"
           echo "outputs<<EOF" >> $GITHUB_OUTPUT

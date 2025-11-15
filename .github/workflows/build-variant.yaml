@@ -201,14 +201,14 @@ jobs:
         id: image
         run: |
           python <<'EOF'
-          import os, json, make
+          import os, make
           from subprocess import check_output
           from _os import REPO
           from _os.podman import image_digest
           name = f"{REPO}:${{ inputs.variant }}"
           digest = image_digest(name, remote=False)
           with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-            _ = f.write(f"name={json.dumps(name)}\n")
+            _ = f.write(f"name={name}\n")
             _ = f.write(f"digest={digest}")
           EOF
 
