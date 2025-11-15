@@ -33,7 +33,7 @@ runs:
           zstd --rm -do "$tar" "$zstd"
           skopeo copy \
             --preserve-digests \
-            oci-archive:"$tar" \
+            docker-archive:"$tar" \
             containers-storage:${{ inputs.image }}
           rm "$tar"
           podman image ls
