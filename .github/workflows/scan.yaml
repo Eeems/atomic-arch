@@ -102,15 +102,12 @@ jobs:
         env:
           image: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
-          TMPDIR: ${{ runner.temp }}
 
       - name: Build
         id: build
         uses: ./.github/actions/run-with-podman-service
         with:
           run: ./make.py pull ${{ inputs.variant }}
-        env:
-          TMPDIR: ${{ runner.temp }}
 
       - name: Fix git permissions
         run: git config --global --add safe.directory "$(realpath .)"

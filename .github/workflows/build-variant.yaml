@@ -123,7 +123,6 @@ jobs:
         env:
           image: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
-          TMPDIR: ${{ runner.temp }}
 
       - name: Build
         id: build
@@ -202,7 +201,6 @@ jobs:
             fi
             echo "updates=$updates" >> $GITHUB_OUTPUT
         env:
-          TMPDIR: ${{ runner.temp }}
           updates: ${{ inputs.updates }}
           VARIANT: ${{ inputs.variant }}
 

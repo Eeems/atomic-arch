@@ -13,3 +13,4 @@ runs:
         if [ ! -f /etc/containers/seccomp.json ];then
           cp seccomp.json /etc/containers/seccomp.json
         fi
+        echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
