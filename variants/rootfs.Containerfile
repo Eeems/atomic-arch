@@ -35,6 +35,14 @@ RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
   && rm -rf srv && ln -s var/srv srv \
   && rm -rf usr/local && ln -s ../var/usrlocal usr/local
 
+FROM golang:1.25.4-alpine as dockerfile2llbjson
+
+WORKDIR /app
+COPY tools/dockerfile2llbjson/go.mod tools/dockerfile2llbjson/go.sum ./
+RUN go mod download
+COPY tools/dockerfile2llbjson/main.go ./
+RUN CGO_ENABLED=0 go build -o /app/dockerfile2llbjson .
+
 FROM scratch AS rootfs
 
 ARG \
@@ -67,6 +75,7 @@ LABEL \
 WORKDIR /
 COPY --from=pacstrap /rootfs /
 COPY overlay/rootfs /
+COPY --from=dockerfile2llbjson /app/dockerfile2llbjson /usr/bin/dockerfile2llbjson
 
 RUN  echo 'NAME="Atomic Arch"' > /usr/lib/os-release \
   && echo 'PRETTY_NAME="Atomic Arch Linux"' >> /usr/lib/os-release \

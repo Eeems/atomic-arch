@@ -95,6 +95,7 @@ jobs:
         uses: ./.github/actions/import-container
         with:
           artifact: ${{ inputs.artifact }}
+          image: ghcr.io/eeems/atomic-arch:${{ inputs.artifact }}
 
       - name: Get manifest cache
         if: inputs.artifact != ''
@@ -105,16 +106,9 @@ jobs:
 
       - name: Force digest
         if: inputs.digest != '' && inputs.artifact != ''
-        run: |
-          python <<'EOF'
-          import os, make
-          if not os.path.exists(make.DIGEST_CACHE_PATH):
-            print('No cache found, creating new cache')
-
-          make._image_digests_write_cache(os.environ["image"], os.environ["digest"])
-          EOF
-        env:
-          image: ${{ inputs.artifact }}
+        uses: ./.github/actions/force-image-digest
+        with:
+          tag: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
 
       - name: Build
@@ -194,7 +188,6 @@ jobs:
             fi
             echo "updates=$updates" >> $GITHUB_OUTPUT
         env:
-          TMPDIR: ${{ runner.temp }}
           updates: ${{ inputs.updates }}
           VARIANT: ${{ inputs.variant }}
 
@@ -208,21 +201,14 @@ jobs:
         id: image
         run: |
           python <<'EOF'
-          import os, json, make
+          import os, make
           from subprocess import check_output
           from _os import REPO
-          from _os.podman import podman_cmd
+          from _os.podman import image_digest
           name = f"{REPO}:${{ inputs.variant }}"
-          digest = check_output(
-            podman_cmd(
-              "image",
-              "inspect",
-              "--format={{.Digest}}",
-              name,
-            )
-          ).strip().decode("utf-8")
+          digest = image_digest(name, remote=False)
           with open(os.environ["GITHUB_OUTPUT"], 'a') as f:
-            _ = f.write(f"name={json.dumps(name)}\n")
+            _ = f.write(f"name={name}\n")
             _ = f.write(f"digest={digest}")
           EOF
 

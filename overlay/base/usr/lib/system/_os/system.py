@@ -20,12 +20,18 @@ from .console import bytes_to_stderr
 
 
 def baseImage(systemFile: str = "/etc/system/Systemfile") -> str:
-    from .podman import image_qualified_name
+    from .podman import base_images
 
-    with open(systemFile, "r") as f:
-        return image_qualified_name(
-            [x.split(" ")[1].strip() for x in f.readlines() if x.startswith("FROM ")][0]
+    results = list(base_images(systemFile))
+    if not results:
+        raise RuntimeError("No FROM statement in the Systemfile")
+
+    if len(results) > 1:
+        raise RuntimeError(
+            "Multiple FROM statements are not currently supported in a Systemfile"
         )
+
+    return results[0]
 
 
 def _execute(cmd: str) -> int:

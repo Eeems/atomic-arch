@@ -2,7 +2,7 @@
 # x-depends=base
 ARG HASH
 
-FROM eeems/atomic-arch:base
+FROM ghcr.io/eeems/atomic-arch:base
 
 ARG \
   VARIANT="GNOME" \

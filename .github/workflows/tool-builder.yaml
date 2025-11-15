@@ -4,8 +4,8 @@ on:
     branches:
       - master
     paths:
-      - .github/workflows/builder.yaml
-      - .github/workflows/Dockerfile.builder
+      - .github/workflows/tool-builder.yaml
+      - tools/builder/**
   push: *on-filter
   workflow_dispatch:
   schedule:
@@ -16,7 +16,7 @@ permissions:
   packages: write
 
 jobs:
-  build-and-push:
+  builder:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,8 +44,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .github/workflows
-          file: .github/workflows/Dockerfile.builder
+          context: .
+          file: tools/builder/Containerfile
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

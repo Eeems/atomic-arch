@@ -5,7 +5,7 @@ inputs:
     description: Image to upload
     required: true
   name:
-    description: Artifact name to use
+    description: Name of tag, and of artifact
     required: true
   if-no-files-found:
     description: Action to take if no files are found
@@ -19,11 +19,28 @@ runs:
       uses: ./.github/actions/run-with-podman-service
       with:
         run: |
+          set -e
           podman image ls
-          podman save ${{ inputs.image }} | zstd -o ${{ inputs.name }}.tar.zstd
-          echo \
-            "outputs={\"path\":\"${{ inputs.name }}.tar.zstd\"}" \
-          >> $GITHUB_OUTPUT
+          skopeo copy \
+            --preserve-digests \
+            docker://$image \
+            docker-archive:$tar:$name
+          digest=$(skopeo inspect --format='{{.Digest}}' docker-archive:$tar:$name)
+          zstd --rm -o $zstd $tar
+          echo "outputs<<EOF" >> $GITHUB_OUTPUT
+          echo "{" >> $GITHUB_OUTPUT
+          echo "\"path\":\"$zstd\"" >> $GITHUB_OUTPUT
+          echo ",\"digest\":\"$digest\"" >> $GITHUB_OUTPUT
+          echo "}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "::group::outputs"
+          echo $GITHUB_OUTPUT
+          echo "::endgroup::"
+      env:
+        image: ${{ inputs.image }}
+        name: ${{ inputs.name }}
+        tar: ${{ inputs.name }}.tar
+        zstd: ${{ inputs.name }}.tar.zstd
 
     - name: Upload image
       uses: actions/upload-artifact@v4

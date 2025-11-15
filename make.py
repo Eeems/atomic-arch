@@ -2,6 +2,7 @@
 import argparse
 import itertools
 import signal
+import subprocess
 import sys
 import shlex
 import shutil
@@ -12,6 +13,7 @@ import tempfile
 import json
 import threading
 
+from io import TextIOWrapper
 from collections import defaultdict
 from collections import deque
 from concurrent.futures import as_completed
@@ -20,7 +22,7 @@ from concurrent.futures import ThreadPoolExecutor
 from glob import iglob
 from hashlib import sha256
 from time import sleep, time
-from typing import TextIO, cast
+from typing import IO, Any, TextIO, cast
 from datetime import datetime
 from datetime import UTC
 from collections.abc import Iterable
@@ -65,9 +67,22 @@ hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:
 pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 escape_label = cast(Callable[[str], str], _os.podman.escape_label)  # pyright: ignore[reportUnknownMemberType]
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
+image_qualified_name = cast(Callable[[str], str], _os.podman.image_qualified_name)  # pyright:ignore [reportUnknownMemberType]
+base_images = cast(
+    Callable[[str, dict[str, str] | None], Iterable[str]],
+    _os.podman.base_images,  # pyright:ignore [reportUnknownMemberType]
+)
 image_name_parts = cast(
     Callable[[str], tuple[str | None, str, str | None, str | None]],
     _os.podman.image_name_parts,  # pyright:ignore [reportUnknownMemberType]
+)
+image_name_from_parts = cast(
+    Callable[[str | None, str, str | None, str | None], str],
+    _os.podman.image_name_from_parts,  # pyright:ignore [reportUnknownMemberType]
+)
+parse_containerfile = cast(
+    Callable[[str | IO[str], dict[str, str] | None, bool], list[dict[str, Any]]],  # pyright: ignore[reportExplicitAny]
+    _os.podman.parse_containerfile,  # pyright: ignore[reportUnknownMemberType]
 )
 
 IMAGE = cast(str, _os.IMAGE)
@@ -130,36 +145,10 @@ def build(target: str):
         if not image_exists(f"{REPO}:{base_variant}", False):
             pull(f"{REPO}:{base_variant}")
 
-    with open(containerfile, "r") as f:
-        pattern = re.compile(r"\$\{([^}:]+)(?::-(.+?))?\}")
-        # TODO handle line continuations
-        lines = [
-            x
-            for x in f.read().splitlines()
-            if x.startswith("FROM ") or x.startswith("ARG ")
-        ]
-        for base_image in [x[5:].strip() for x in lines if x.startswith("FROM ")]:
-            if " AS " in base_image.upper():
-                base_image = re.split(
-                    " AS ", base_image, maxsplit=1, flags=re.IGNORECASE
-                )[0]
-
-            # TODO handle multiple args in a single ARG statement
-            # TODO only use ARG statements from before this FROM
-            args = {
-                k: v
-                for x in lines
-                for y in [x[4:].strip()]
-                for k, v in [y.split("=", 1) if "=" in y else (y, None)]
-                if x.startswith("ARG ")
-            }
-            args.update(build_args)
-            base_image = pattern.sub(
-                lambda m: cast(str, args.get(m.group(1), m.group(2) or "")),
-                base_image,
-            )
-            if base_image != "scratch" and not image_exists(base_image, False):
-                pull(base_image)
+    for base_image in base_images(containerfile, build_args):
+        print(f"Base image {base_image}")
+        if not image_exists(base_image, False):
+            pull(base_image)
 
     podman(
         "build",
@@ -491,8 +480,15 @@ def do_checkupdates(args: argparse.Namespace):
         sys.exit(1)
 
     target = cast(str, args.target)
-    image = f"{REPO}:{target}"
+    image = image_qualified_name(f"{REPO}:{target}")
     exists = image_exists(image, True)
+    if exists and not image_exists(image, False):
+        try:
+            pull(image)
+
+        except subprocess.CalledProcessError:
+            pass
+
     if exists:
         mirror = [
             x.split(" = ", 1)[1]
@@ -532,8 +528,11 @@ def do_checkupdates(args: argparse.Namespace):
         print(f"context {current_hash[:9] or '(none)'} -> {new_hash[:9]}")
         has_updates = True
 
-    if not exists:
-        sys.exit(2)
+    if not image_exists(image, False):
+        if has_updates:
+            sys.exit(2)
+
+        return
 
     res = in_system(
         "-ec",
@@ -565,6 +564,49 @@ def do_checkupdates(args: argparse.Namespace):
 def do_check(args: argparse.Namespace):
     failed = False
     fix = cast(bool, args.fix)
+
+    def _assert_name(name: str, expected: str) -> bool:
+        image = image_qualified_name(name)
+        if image == expected:
+            return True
+
+        print(f" Failed: image_qualified_name({json.dumps(name)})")
+        print(f"  Expected: {json.dumps(expected)}")
+        print(f"  Actual: {json.dumps(image)}")
+        return False
+
+    print("[check] Running tests")
+    failed = failed or not _assert_name(
+        "hello-world:latest@sha256:123",
+        "docker.io/hello-world@sha256:123",
+    )
+    failed = failed or not _assert_name(
+        "hello-world@sha256:123",
+        "docker.io/hello-world@sha256:123",
+    )
+    failed = failed or not _assert_name(
+        "hello-world:latest",
+        "docker.io/hello-world:latest",
+    )
+    failed = failed or not _assert_name(
+        "hello-world:latest",
+        "docker.io/hello-world:latest",
+    )
+    failed = failed or not _assert_name("hello-world", "docker.io/hello-world")
+    failed = failed or not _assert_name("system:latest", "localhost/system:latest")
+    failed = failed or not _assert_name(
+        f"{REPO}:latest@sha256:123",
+        f"{REPO}@sha256:123",
+    )
+    failed = failed or not _assert_name(f"{REPO}:latest", f"{REPO}:latest")
+    failed = failed or not _assert_name(f"{REPO}@sha256:123", f"{REPO}@sha256:123")
+    failed = failed or not _assert_name(REPO, REPO)
+    failed = failed or not _assert_name(
+        f"{IMAGE}:latest@sha256:123",
+        f"{REPO}@sha256:123",
+    )
+    failed = failed or not _assert_name(f"{IMAGE}:latest", f"{REPO}:latest")
+    failed = failed or not _assert_name(IMAGE, REPO)
     if shutil.which("niri") is not None:
         print("[check] Checking niri config", file=sys.stderr)
         cmd = shlex.join(
@@ -575,6 +617,29 @@ def do_check(args: argparse.Namespace):
             ]
         )
         res = _execute(cmd)
+        if res:
+            print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
+            failed = True
+
+    if shutil.which("gofmt") is not None:
+        print("[check] Checking go formatting", file=sys.stderr)
+        cmd = shlex.join(
+            ["gofmt", "-e"]
+            + (["-w", "-l"] if fix else ["-d"])
+            + ["tools/dockerfile2llbjson"]
+        )
+        res = _execute(cmd)
+        if res:
+            print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
+            failed = True
+
+    if shutil.which("go") is not None:
+        cwd = os.getcwd()
+        print("[check] Analyzing go code", file=sys.stderr)
+        cmd = shlex.join(["go", "vet"])
+        os.chdir("tools/dockerfile2llbjson")
+        res = _execute(cmd)
+        os.chdir(cwd)
         if res:
             print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
             failed = True
@@ -882,6 +947,7 @@ def _remote_image_digest(image: str) -> str:
 
 def _image_digest_cached(image: str) -> Future[str] | str:
     global _image_digests
+    image = image_qualified_name(image)
     future = _image_digests.get(image, None)
     if future is None:
         with _image_digests_lock:
@@ -897,12 +963,9 @@ def _image_digest_cached(image: str) -> Future[str] | str:
 def _image_digests_write_cache(image: str, digest: str):
     global _image_digests
     with _image_digests_write_lock:
+        image = image_qualified_name(image)
         if isinstance(_image_digests.get(image), str):
             return
-
-        registry, repo, tag, _ = image_name_parts(image)
-        if registry and registry == REGISTRY and repo == IMAGE:
-            _image_digests[f"{IMAGE}:{tag}"] = digest
 
         _image_digests[image] = digest
         with open(DIGEST_CACHE_PATH, "w+") as f:
@@ -1205,7 +1268,7 @@ def do_workflow(_: argparse.Namespace):
         return graph, indegree
 
     def topological_sort(graph: Graph, indegree: Indegree) -> list[str]:
-        queue = deque([job for job, deg in indegree.items() if deg == 0])
+        queue = deque(sorted([job for job, deg in indegree.items() if deg == 0]))
         order: list[str] = []
         while queue:
             job = queue.popleft()
@@ -1319,6 +1382,9 @@ def do_workflow(_: argparse.Namespace):
         return indent(__(False) + [""] + __(True))
 
     build_order = topological_sort(graph, indegree)
+    # TODO make topological_sort determenistic
+    #      and don't sort anymore
+    build_order.sort()
 
     sections = [
         [
@@ -1371,9 +1437,23 @@ def do_workflow(_: argparse.Namespace):
                 "      with:",
                 "        pat: ${{ secrets.NOTIFICATION_PAT }}",
                 "",
+                "wait:",
+                "  name: Wait for builder to finish",
+                "  runs-on: ubuntu-latest",
+                "  permissions:",
+                "    contents: read",
+                "    actions: read",
+                "  steps:",
+                "    - name: Wait",
+                "      uses: NathanFirmo/wait-for-other-action@8241e29ea2e9661a8af6d319b1d074825a299730",
+                "      with:",
+                "        token: ${{ github.token }}",
+                "        workflow: 'tool-builder.yaml'",
+                "",
                 "check:",
                 "  name: Ensure config is valid",
                 "  runs-on: ubuntu-latest",
+                "  needs: wait",
                 "  permissions:",
                 "    contents: read",
                 "    packages: read",
@@ -1399,13 +1479,23 @@ def do_workflow(_: argparse.Namespace):
                 "      with:",
                 "        path: .venv",
                 "        key: venv-${{ hashFiles('.github/workflows/Dockerfile.builder') }}-${{ hashFiles('make.py') }}",
+                "    - name: Cache go",
+                "      uses: actions/cache@v4",
+                "      with:",
+                "        path: |",
+                "          ~/go/pkg/mod",
+                "          ~/.cache/go-build",
+                "        key: go-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}",
                 "    - name: Ensure config is valid",
+                "      shell: bash",
                 "      run: |",
                 "        set -e",
                 "        ./make.py check",
                 "        ./make.py workflow",
+                '        git config --global --add safe.directory "$(realpath .)"',
                 '        if [[ -n "$(git status -s)" ]]; then',
                 '          echo "Please run ./make.py workflow, commit the changes, and try again."',
+                "          git status -s",
                 "          exit 1",
                 "        fi",
                 "      env:",
@@ -1413,7 +1503,7 @@ def do_workflow(_: argparse.Namespace):
                 "",
                 "manifest:",
                 "  name: Generate manifest",
-                "  if: always()",
+                '  if: "!cancelled()"',
                 "  needs:",
                 *[f"    - delta_{j}" for j in sorted(build_order)],
                 "  uses: ./.github/workflows/manifest.yaml",
@@ -1457,6 +1547,23 @@ def do_workflow(_: argparse.Namespace):
 
 def do_config(_: argparse.Namespace):
     print(json.dumps(parse_all_config()))
+
+
+def do_parse_containerfile(args: argparse.Namespace):
+    print(
+        json.dumps(
+            parse_containerfile(
+                cast(TextIOWrapper, args.file),
+                {
+                    k: v
+                    for x in cast(list[str], args.build_arg or [])
+                    for k, v in [x.split("=", 1)]
+                },
+                cast(bool, args.pretty),
+            ),
+            indent=2 if cast(bool, args.pretty) else None,
+        )
+    )
 
 
 if __name__ == "__main__":
@@ -1551,6 +1658,12 @@ if __name__ == "__main__":
 
     subparser = subparsers.add_parser("config")
     subparser.set_defaults(func=do_config)
+
+    subparser = subparsers.add_parser("parse-containerfile")
+    _ = subparser.add_argument("--pretty", action="store_true")
+    _ = subparser.add_argument("--build_arg", action="extend", nargs="*", type=str)
+    _ = subparser.add_argument("file", type=argparse.FileType("r"))
+    subparser.set_defaults(func=do_parse_containerfile)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

@@ -42,3 +42,4 @@ runs:
         path: ${{ inputs.path }}
         name: ${{ inputs.key }}
         overwrite: true
+        if-no-files-found: error

@@ -1,0 +1,35 @@
+name: Force digest
+description: Force a digest for an image tag
+inputs:
+  tag:
+    description: Artifact to import
+  digest:
+    description: Digest to expect base image to be
+runs:
+  using: "composite"
+  steps:
+    - name: Force digest
+      uses: ./.github/actions/run-with-podman-service
+      with:
+        run: |
+          python <<'EOF'
+          import os
+          from make import DIGEST_CACHE_PATH
+          from make import _image_digests_write_cache
+          from _os import REPO
+          from _os.podman import image_digest
+          if not os.path.exists(DIGEST_CACHE_PATH):
+            print(f'No cache found at {DIGEST_CACHE_PATH}, creating new cache')
+
+          tag = os.environ["tag"]
+          digest = os.environ["digest"]
+          image = f"{REPO}:{tag}"
+          # TODO do this check when it's working
+          # if digest != image_digest(image, remote=False):
+          #   raise RuntimeError(f"{image} is not {digest}")
+
+          _image_digests_write_cache(image, image_digest(image, remote=False))
+          EOF
+      env:
+        tag: ${{ inputs.tag }}
+        digest: ${{ inputs.digest }}

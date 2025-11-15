@@ -12,9 +12,9 @@ from tempfile import TemporaryDirectory
 from time import time
 from hashlib import sha256
 from glob import iglob
-from typing import cast
+from typing import IO, Any, cast
 from typing import Callable
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 
 from . import SYSTEM_PATH
@@ -93,6 +93,7 @@ def in_system_cmd(
     entrypoint: str = "/usr/bin/os",
     volumes: list[str] | None = None,
 ) -> list[str]:
+    target = image_qualified_name(target)
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
         _ostree = "/ostree"
         if not os.path.exists(SYSTEM_PATH):
@@ -132,6 +133,7 @@ def in_system_cmd(
         "run",
         "--rm",
         "--privileged",
+        "--pull=never",
         "--security-opt=label=disable",
         *[f"--volume={x}" for x in volume_args],
         f"--entrypoint={entrypoint}",
@@ -239,25 +241,53 @@ def image_name_parts(name: str) -> tuple[str | None, str, str | None, str | None
         name, ref = name.split("@", 1)
         assert ref.startswith("sha256:")
 
-    elif ":" in name:
+    if ":" in name:
         name, tag = name.split(":", 1)
 
     return registry, name, tag, ref
 
 
-def image_qualified_name(image: str) -> str:
-    registry, repo, tag, digest = image_name_parts(image)
-    if tag and (not registry or registry == REGISTRY) and repo == IMAGE:
-        registry = REGISTRY
-
+def image_name_from_parts(
+    registry: str | None,
+    repo: str,
+    tag: str | None,
+    digest: str | None,
+) -> str:
     suffix = ""
     if tag is not None:
         suffix = f":{tag}"
 
-    elif digest is not None:
-        suffix = f"@{digest}"
+    if digest is not None:
+        suffix = f"{suffix}@{digest}"
 
-    return f"{registry or 'docker.io'}/{repo}{suffix}"
+    prefix = ""
+    if registry is None:
+        match repo:
+            case "system":
+                registry = "localhost"
+
+            case "scratch":
+                pass
+
+            case _:
+                if repo != IMAGE:
+                    registry = "docker.io"
+
+    if registry is not None:
+        prefix = f"{registry}/"
+
+    return f"{prefix}{repo}{suffix}"
+
+
+def image_qualified_name(image: str) -> str:
+    registry, repo, tag, digest = image_name_parts(image)
+    if (registry or REGISTRY) == REGISTRY and repo == IMAGE:
+        registry = REGISTRY
+
+    if tag and digest:
+        tag = None
+
+    return image_name_from_parts(registry, repo, tag, digest)
 
 
 def _image_digest_remote(image: str) -> str:
@@ -354,6 +384,12 @@ def build(
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
+    from .system import baseImage
+
+    base_image = baseImage(systemfile)
+    if not image_exists(base_image, remote=False):
+        pull(base_image)
+
     cache = "/var/cache/pacman"
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
@@ -613,10 +649,14 @@ LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k
 def apply_delta(
     image: str,
     delta_image: str,
+    new_image: str,
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     image = image_qualified_name(image)
+    if not image_exists(image, remote=False):
+        raise ValueError(f"{image} is missing")
+
     delta_image = image_qualified_name(delta_image)
     if not image_exists(delta_image, False):
         podman("pull", delta_image, onstdout=onstdout, onstderr=onstderr)
@@ -625,9 +665,13 @@ def apply_delta(
     if labels.get("atomic.patch.format", "") != "xdelta3+zstd":
         raise ValueError("Incompatible patch format")
 
-    digest = image_digest(image, True)
+    digest = image_digest(image, remote=False)
     if labels.get("atomic.patch.prev", "") != digest:
         raise ValueError("Patch does not apply to this image")
+
+    new_digest = image_digest(new_image, remote=True)
+    if labels.get("atomic.patch.ref", "") != new_digest:
+        raise ValueError("Patch does not result in the correct image")
 
     if not image_exists(image, False) or image_digest(image, False) != digest:
         podman("pull", image, onstdout=onstdout, onstderr=onstderr)
@@ -651,20 +695,26 @@ def apply_delta(
             stdout=subprocess.PIPE,
         )
         assert podman_run_proc.stdout is not None
+        new_oci_path = os.path.join(tmpdir, "new.oci")
         xdelta3_proc = subprocess.Popen(
-            ["xdelta3", "-d", "-s", old_oci_path, "-", "-"],
-            stdout=subprocess.PIPE,
+            ["xdelta3", "-d", "-s", old_oci_path, "-", new_oci_path],
             stdin=podman_run_proc.stdout,
         )
         podman_run_proc.stdout.close()
-        assert xdelta3_proc.stdout is not None
-        podman_load_proc = subprocess.Popen(
-            podman_cmd("load"),
-            stdin=xdelta3_proc.stdout,
+        _ = xdelta3_proc.communicate()
+        _wait_for_processes(xdelta3_proc, podman_run_proc)
+        os.unlink(old_oci_path)
+        _ = subprocess.check_call(
+            [
+                "skopeo",
+                "copy",
+                "--preserve-digests",
+                f"oci-archive:{new_oci_path}",
+                f"containers-storage:{new_image}",
+            ]
         )
-        xdelta3_proc.stdout.close()
-        _ = podman_load_proc.communicate()
-        _wait_for_processes(podman_load_proc, xdelta3_proc, podman_run_proc)
+        if image_digest(new_image, remote=False) != new_digest:
+            raise RuntimeError("Resulting image has the wrong digest")
 
 
 def pull(
@@ -737,8 +787,14 @@ def pull(
             )
         )
         try:
-            apply_delta(local_image, delta_image, onstdout=onstdout, onstderr=onstderr)
-            podman("tag", remote_digest, image, onstdout=onstdout, onstderr=onstderr)
+            apply_delta(
+                local_image,
+                delta_image,
+                image,
+                onstdout=onstdout,
+                onstderr=onstderr,
+            )
+
             return
 
         except Exception as e:
@@ -751,3 +807,54 @@ def pull(
 
     onstderr(b"Falling back to full pull...\n")
     podman("pull", f"{base_image}:{target_tag}", onstdout=onstdout, onstderr=onstderr)
+
+
+def parse_containerfile(
+    containerfile: str | IO[str],
+    build_args: dict[str, str] | None = None,
+    pretty: bool = False,
+) -> list[dict[str, Any]]:  # pyright: ignore[reportExplicitAny]
+    is_path = isinstance(containerfile, str)
+    if is_path:
+        containerfile = open(containerfile, "r")
+
+    try:
+        argv = ["-p"] if pretty else []
+        if build_args is not None:
+            argv += [x for k, v in build_args.items() for x in ["-b", f"{k}={v}"]]
+
+        data = json.loads(  # pyright: ignore[reportAny]
+            subprocess.check_output(
+                ["dockerfile2llbjson", *argv],
+                stdin=containerfile,
+            ).decode("utf-8")
+        )
+        assert isinstance(data, list)
+
+    finally:
+        if is_path:
+            containerfile.close()
+
+    return cast(list[dict[str, Any]], data)  # pyright: ignore[reportExplicitAny]
+
+
+def base_images(
+    containerfile: str, build_args: dict[str, str] | None = None
+) -> Iterable[str]:
+    for base_image in [
+        b
+        for x in parse_containerfile(containerfile, build_args, False)
+        for f in [
+            cast(dict[str, dict[str, str]], x.get("Op", {}))
+            .get("source", {})
+            .get("identifier", "")
+        ]
+        for b in [f[15:]]
+        if f.startswith("docker-image://")
+        if b != "scratch"
+    ]:
+        registry, name, tag, ref = image_name_parts(base_image)
+        if tag and ref:
+            ref = None
+
+        yield image_name_from_parts(registry, name, tag, ref)

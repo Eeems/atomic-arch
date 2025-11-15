@@ -3,6 +3,8 @@ description: Import a container from a build artifact
 inputs:
   artifact:
     description: Artifact to import
+  image:
+    description: Image to import
   prune:
     description: If podman system prune should happen first
     default: "true"
@@ -28,5 +30,13 @@ runs:
         run: |
           set -e
           cd "${{ steps.download.outputs.download-path }}"
-          zstdcat "${{ inputs.artifact }}.tar.zstd" | podman load
-          rm "${{ inputs.artifact }}.tar.zstd"
+          zstd --rm -do "$tar" "$zstd"
+          skopeo copy \
+            --preserve-digests \
+            docker-archive:"$tar" \
+            containers-storage:${{ inputs.image }}
+          rm "$tar"
+          podman image ls
+      env:
+        zstd: ${{ inputs.artifact }}.tar.zstd
+        tar: ${{ inputs.artifact }}.tar

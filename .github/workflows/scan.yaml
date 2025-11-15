@@ -74,6 +74,7 @@ jobs:
         uses: ./.github/actions/import-container
         with:
           artifact: ${{ inputs.artifact }}
+          image: ghcr.io/eeems/atomic-arch:${{ inputs.artifact }}
 
       - name: Get manifest cache
         if: inputs.artifact != ''
@@ -84,16 +85,9 @@ jobs:
 
       - name: Force digest
         if: inputs.digest != '' && inputs.artifact != ''
-        run: |
-          python <<'EOF'
-          import os, make
-          if not os.path.exists(make.DIGEST_CACHE_PATH):
-            print('No cache found, creating new cache')
-
-          make._image_digests_write_cache(os.environ["image"], os.environ["digest"])
-          EOF
-        env:
-          image: ${{ inputs.artifact }}
+        uses: ./.github/actions/force-image-digest
+        with:
+          tag: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
 
       - name: Build
@@ -101,8 +95,6 @@ jobs:
         uses: ./.github/actions/run-with-podman-service
         with:
           run: ./make.py pull ${{ inputs.variant }}
-        env:
-          TMPDIR: ${{ runner.temp }}
 
       - name: Fix git permissions
         run: git config --global --add safe.directory "$(realpath .)"

@@ -3,7 +3,7 @@
 # x-templates=nvidia,system76
 ARG HASH
 
-FROM eeems/atomic-arch:atomic
+FROM ghcr.io/eeems/atomic-arch:atomic
 
 ARG \
   VARIANT="Eeems" \

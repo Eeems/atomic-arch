@@ -70,6 +70,7 @@ jobs:
         uses: ./.github/actions/import-container
         with:
           artifact: ${{ inputs.variant }}
+          image: ghcr.io/eeems/atomic-arch:${{ inputs.variant }}
 
       - name: Get manifest cache
         if: ${{ !inputs.pull }}
@@ -87,8 +88,6 @@ jobs:
               args="$args --no-local-image"
             fi
             ./make.py iso $args ${{ inputs.variant }}
-        env:
-          TMPDIR: ${{ runner.temp }}
 
       - name: Upload iso
         uses: actions/upload-artifact@v4
