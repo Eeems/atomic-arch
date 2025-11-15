@@ -818,19 +818,22 @@ def parse_containerfile(
     if is_path:
         containerfile = open(containerfile, "r")
 
-    argv = ["-p"] if pretty else []
-    if build_args is not None:
-        argv += [x for k, v in build_args.items() for x in ["-b", f"{k}={v}"]]
+    try:
+        argv = ["-p"] if pretty else []
+        if build_args is not None:
+            argv += [x for k, v in build_args.items() for x in ["-b", f"{k}={v}"]]
 
-    data = json.loads(  # pyright: ignore[reportAny]
-        subprocess.check_output(
-            ["dockerfile2llbjson", *argv],
-            stdin=containerfile,
-        ).decode("utf-8")
-    )
-    assert isinstance(data, list)
-    if is_path:
-        containerfile.close()
+        data = json.loads(  # pyright: ignore[reportAny]
+            subprocess.check_output(
+                ["dockerfile2llbjson", *argv],
+                stdin=containerfile,
+            ).decode("utf-8")
+        )
+        assert isinstance(data, list)
+
+    finally:
+        if is_path:
+            containerfile.close()
 
     return cast(list[dict[str, Any]], data)  # pyright: ignore[reportExplicitAny]
 
