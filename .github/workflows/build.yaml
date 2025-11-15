@@ -104,7 +104,7 @@ jobs:
 
   manifest:
     name: Generate manifest
-    if: always()
+    if: "!cancelled()"
     needs:
       - delta_atomic
       - delta_atomic-nvidia
