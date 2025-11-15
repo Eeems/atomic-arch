@@ -11,6 +11,10 @@ inputs:
     description: Action to take if no files are found
     default: error
     required: false
+outputs:
+  digest:
+    description: Digest of exported image
+    value: ${{ steps.export.digest }}
 runs:
   using: "composite"
   steps:
@@ -22,12 +26,22 @@ runs:
           podman image ls
           skopeo copy \
             --preserve-digests \
-            docker://${{ inputs.image }} \
-            oci-archive:${{ inputs.name }}.tar:${{ inputs.name }}
-          zstd --rm -o ${{ inputs.name }}.tar.zstd ${{ inputs.name }}.tar
-          echo \
-            "outputs={\"path\":\"${{ inputs.name }}.tar.zstd\"}" \
-          >> $GITHUB_OUTPUT
+            docker://$image \
+            oci-archive:$tar:$name
+          digest=$(skopeo inspect --format='{{.Digest}}' oci-image:$image)
+          zstd --rm -o $zstd $tar
+          echo "Digest: $digest"
+          echo "outputs<<EOF" >> $GITHUB_OUTPUT
+          echo "{" >> $GITHUB_OUTPUT
+          echo "\"path\":\"$zstd\"" >> $GITHUB_OUTPUT
+          echo ",\"digest\":\"$digest\"" >> $GITHUB_OUTPUT
+          echo "}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      env:
+        image: ${{ inputs.image }}
+        name: ${{ inputs.name }}
+        tar: ${{ inputs.name }}.tar
+        zstd: ${{ inputs.name }}.tar.zstd
 
     - name: Upload image
       uses: actions/upload-artifact@v4

@@ -654,6 +654,9 @@ def apply_delta(
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     image = image_qualified_name(image)
+    if not image_exists(image, remote=False):
+        raise ValueError(f"{image} is missing")
+
     delta_image = image_qualified_name(delta_image)
     if not image_exists(delta_image, False):
         podman("pull", delta_image, onstdout=onstdout, onstderr=onstderr)
@@ -710,7 +713,7 @@ def apply_delta(
                 f"containers-storage:{new_image}",
             ]
         )
-        if image_digest(image, remote=False) != new_digest:
+        if image_digest(new_image, remote=False) != new_digest:
             raise RuntimeError("Resulting image has the wrong digest")
 
 
