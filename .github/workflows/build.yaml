@@ -56,7 +56,7 @@ jobs:
       actions: read
     steps:
       - name: Wait
-        uses: NathanFirmo/wait-for-other-action@v1.0.4
+        uses: NathanFirmo/wait-for-other-action@8241e29ea2e9661a8af6d319b1d074825a299730
         with:
           token: ${{ github.token }}
           workflow: 'tool-builder.yaml'
