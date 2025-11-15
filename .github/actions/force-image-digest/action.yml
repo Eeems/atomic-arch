@@ -9,24 +9,25 @@ runs:
   using: "composite"
   steps:
     - name: Force digest
-      shell: bash
-      run: |
-        python <<'EOF'
-        import os
-        from make import DIGEST_CACHE_PATH
-        from make import _image_digests_write_cache
-        from _os import REPO
-        from _os import IMAGE
-        from _os.podman import podman
-        if not os.path.exists(DIGEST_CACHE_PATH):
-          print(f'No cache found at {DIGEST_CACHE_PATH}, creating new cache')
+      uses: ./.github/actions/run-with-podman-service
+      with:
+        run: |
+          python <<'EOF'
+          import os
+          from make import DIGEST_CACHE_PATH
+          from make import _image_digests_write_cache
+          from _os import REPO
+          from _os import IMAGE
+          from _os.podman import podman
+          if not os.path.exists(DIGEST_CACHE_PATH):
+            print(f'No cache found at {DIGEST_CACHE_PATH}, creating new cache')
 
-        tag = os.environ["tag"]
-        digest = os.environ["digest"]
-        image = f"{REPO}:{tag}"
-        _image_digests_write_cache(image, digest)
-        podman("tag", digest, image)
-        EOF
+          tag = os.environ["tag"]
+          digest = os.environ["digest"]
+          image = f"{REPO}:{tag}"
+          _image_digests_write_cache(image, digest)
+          podman("tag", digest, image)
+          EOF
       env:
         tag: ${{ inputs.tag }}
         digest: ${{ inputs.digest }}
