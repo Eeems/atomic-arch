@@ -27,6 +27,7 @@ runs:
           podman image ls
           skopeo copy \
             --preserve-digests \
+            --format=oci \
             docker://$image \
             oci-archive:$tar:$name
           digest=$(skopeo inspect --format='{{.Digest}}' oci-archive:$tar:$name)
