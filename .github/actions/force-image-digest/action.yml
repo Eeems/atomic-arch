@@ -24,7 +24,9 @@ runs:
           tag = os.environ["tag"]
           digest = os.environ["digest"]
           image = f"{REPO}:{tag}"
-          assert digest == image_digest(image), f"{image} is not {digest}"
+          if digest != image_digest(image, remote=False):
+            raise RuntimeError(f"{image} is not {digest}")
+
           _image_digests_write_cache(image, digest)
           EOF
       env:

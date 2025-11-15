@@ -14,7 +14,7 @@ inputs:
 outputs:
   digest:
     description: Digest of exported image
-    value: ${{ steps.export.digest }}
+    value: ${{ fromJson(steps.export.outputs.outputs).digest }}
 runs:
   using: "composite"
   steps:
@@ -23,12 +23,13 @@ runs:
       uses: ./.github/actions/run-with-podman-service
       with:
         run: |
+          set -e
           podman image ls
           skopeo copy \
             --preserve-digests \
             docker://$image \
             oci-archive:$tar:$name
-          digest=$(skopeo inspect --format='{{.Digest}}' oci-image:$image)
+          digest=$(skopeo inspect --format='{{.Digest}}' oci-archive:$image)
           zstd --rm -o $zstd $tar
           echo "Digest: $digest"
           echo "outputs<<EOF" >> $GITHUB_OUTPUT
