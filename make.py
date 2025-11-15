@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+from io import TextIOWrapper
 import itertools
 import signal
 import sys
@@ -20,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from glob import iglob
 from hashlib import sha256
 from time import sleep, time
-from typing import TextIO, cast
+from typing import IO, Any, TextIO, cast
 from datetime import datetime
 from datetime import UTC
 from collections.abc import Iterable
@@ -65,9 +66,21 @@ hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:
 pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 escape_label = cast(Callable[[str], str], _os.podman.escape_label)  # pyright: ignore[reportUnknownMemberType]
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
+base_images = cast(
+    Callable[[str, dict[str, str] | None], list[str]],
+    _os.podman.base_images,  # pyright:ignore [reportUnknownMemberType]
+)
 image_name_parts = cast(
     Callable[[str], tuple[str | None, str, str | None, str | None]],
     _os.podman.image_name_parts,  # pyright:ignore [reportUnknownMemberType]
+)
+image_name_from_parts = cast(
+    Callable[[str | None, str, str | None, str | None], str],
+    _os.podman.image_name_from_parts,  # pyright:ignore [reportUnknownMemberType]
+)
+parse_containerfile = cast(
+    Callable[[str | IO[str], dict[str, str] | None, bool], list[dict[str, Any]]],  # pyright: ignore[reportExplicitAny]
+    _os.podman.parse_containerfile,  # pyright: ignore[reportUnknownMemberType]
 )
 
 IMAGE = cast(str, _os.IMAGE)
@@ -130,36 +143,10 @@ def build(target: str):
         if not image_exists(f"{REPO}:{base_variant}", False):
             pull(f"{REPO}:{base_variant}")
 
-    with open(containerfile, "r") as f:
-        pattern = re.compile(r"\$\{([^}:]+)(?::-(.+?))?\}")
-        # TODO handle line continuations
-        lines = [
-            x
-            for x in f.read().splitlines()
-            if x.startswith("FROM ") or x.startswith("ARG ")
-        ]
-        for base_image in [x[5:].strip() for x in lines if x.startswith("FROM ")]:
-            if " AS " in base_image.upper():
-                base_image = re.split(
-                    " AS ", base_image, maxsplit=1, flags=re.IGNORECASE
-                )[0]
-
-            # TODO handle multiple args in a single ARG statement
-            # TODO only use ARG statements from before this FROM
-            args = {
-                k: v
-                for x in lines
-                for y in [x[4:].strip()]
-                for k, v in [y.split("=", 1) if "=" in y else (y, None)]
-                if x.startswith("ARG ")
-            }
-            args.update(build_args)
-            base_image = pattern.sub(
-                lambda m: cast(str, args.get(m.group(1), m.group(2) or "")),
-                base_image,
-            )
-            if base_image != "scratch" and not image_exists(base_image, False):
-                pull(base_image)
+    for base_image in base_images(containerfile, build_args):
+        print(f"Base image {base_image}")
+        if not image_exists(base_image, False):
+            pull(base_image)
 
     podman(
         "build",
@@ -575,6 +562,29 @@ def do_check(args: argparse.Namespace):
             ]
         )
         res = _execute(cmd)
+        if res:
+            print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
+            failed = True
+
+    if shutil.which("gofmt") is not None:
+        print("[check] Checking go formatting", file=sys.stderr)
+        cmd = shlex.join(
+            ["gofmt", "-e"]
+            + (["-w", "-l"] if fix else ["-d"])
+            + ["tools/dockerfile2llbjson"]
+        )
+        res = _execute(cmd)
+        if res:
+            print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
+            failed = True
+
+    if shutil.which("go") is not None:
+        cwd = os.getcwd()
+        print("[check] Analyzing go code", file=sys.stderr)
+        cmd = shlex.join(["go", "vet"])
+        os.chdir("tools/dockerfile2llbjson")
+        res = _execute(cmd)
+        os.chdir(cwd)
         if res:
             print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
             failed = True
@@ -1459,6 +1469,23 @@ def do_config(_: argparse.Namespace):
     print(json.dumps(parse_all_config()))
 
 
+def do_parse_containerfile(args: argparse.Namespace):
+    print(
+        json.dumps(
+            parse_containerfile(
+                cast(TextIOWrapper, args.file),
+                {
+                    k: v
+                    for x in cast(list[str], args.build_arg or [])
+                    for k, v in [x.split("=", 1)]
+                },
+                cast(bool, args.pretty),
+            ),
+            indent=2 if cast(bool, args.pretty) else None,
+        )
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers()
@@ -1551,6 +1578,12 @@ if __name__ == "__main__":
 
     subparser = subparsers.add_parser("config")
     subparser.set_defaults(func=do_config)
+
+    subparser = subparsers.add_parser("parse-containerfile")
+    _ = subparser.add_argument("--pretty", action="store_true")
+    _ = subparser.add_argument("--build_arg", action="extend", nargs="*", type=str)
+    _ = subparser.add_argument("file", type=argparse.FileType("r"))
+    subparser.set_defaults(func=do_parse_containerfile)
 
     args = parser.parse_args()
     if not hasattr(args, "func"):

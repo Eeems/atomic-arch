@@ -1,5 +1,16 @@
 # syntax = docker/dockerfile:1.7
+
+FROM golang:1.25.4-alpine as dockerfile2llbjson
+
+WORKDIR /app
+COPY tools/dockerfile2llbjson/go.mod tools/dockerfile2llbjson/go.sum ./
+RUN go mod download
+COPY tools/dockerfile2llbjson/main.go ./
+RUN CGO_ENABLED=0 go build -o /app/dockerfile2llbjson .
+
 FROM ubuntu:24.04
+
+COPY --from=dockerfile2llbjson /app/dockerfile2llbjson /usr/bin/dockerfile2llbjson
 
 # Avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -11,74 +22,75 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # Install core tools + build deps for pyenv + your system deps
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        ca-certificates \
-        gnupg \
-        ostree \
-        podman \
-        sudo \
-        jq \
-        gh \
-        meson \
-        uidmap \
-        netavark \
-        skopeo \
-        xdelta3 \
-        zstd \
-        fuse-overlayfs \
-        containernetworking-plugins \
-        ninja-build \
-        build-essential \
-        pkg-config \
-        python3-dev \
-        libpython3-dev \
-        libdbus-1-dev \
-        libglib2.0-dev \
-        libcairo2-dev \
-        libgirepository-2.0-dev \
-        # Pyenv extra dependencies
-        libssl-dev \
-        zlib1g-dev \
-        libbz2-dev \
-        libreadline-dev \
-        libsqlite3-dev \
-        curl \
-        git \
-        libncursesw5-dev \
-        xz-utils \
-        tk-dev \
-        libxml2-dev \
-        libxmlsec1-dev \
-        libffi-dev \
-        liblzma-dev \
+    ca-certificates \
+    gnupg \
+    ostree \
+    podman \
+    sudo \
+    jq \
+    gh \
+    go \
+    meson \
+    uidmap \
+    netavark \
+    skopeo \
+    xdelta3 \
+    zstd \
+    fuse-overlayfs \
+    containernetworking-plugins \
+    ninja-build \
+    build-essential \
+    pkg-config \
+    python3-dev \
+    libpython3-dev \
+    libdbus-1-dev \
+    libglib2.0-dev \
+    libcairo2-dev \
+    libgirepository-2.0-dev \
+    # Pyenv extra dependencies
+    libssl-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    curl \
+    git \
+    libncursesw5-dev \
+    xz-utils \
+    tk-dev \
+    libxml2-dev \
+    libxmlsec1-dev \
+    libffi-dev \
+    liblzma-dev \
     # Install docker-ce
     && install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null \
     && chmod a+r /etc/apt/keyrings/docker.asc \
     && echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-      tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+    tee /etc/apt/sources.list.d/docker.list > /dev/null \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-        docker-ce-cli \
+    docker-ce-cli \
     # Install python 3.13
     && curl https://pyenv.run | bash \
     && pyenv install 3.13 \
     && pyenv global 3.13 \
     && pyenv exec python -m pip install --root-user-action ignore --upgrade \
-        pip \
-        setuptools \
-        requests \
-        wheel \
-        dbus-python \
+    pip \
+    setuptools \
+    requests \
+    wheel \
+    dbus-python \
     # Cleanup
     && pip cache purge \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf \
-        /var/lib/apt/lists/* \
-        /tmp/* \
-        /var/tmp/*
+    /var/lib/apt/lists/* \
+    /tmp/* \
+    /var/tmp/*
 
 RUN mkdir /github \
     && usermod --login runner "$(id -nu 1000)" \
@@ -86,14 +98,14 @@ RUN mkdir /github \
     && usermod -aG sudo runner \
     && printf 'runner ALL=(ALL) NOPASSWD: ALL\nDefaults:runner env_keep += "PATH PYENV_ROOT", secure_path = "%s"\n' "$PATH" > /etc/sudoers.d/runner \
     && mkdir -p \
-        /github/{workspace,workflow,home} \
-        /etc/containers \
-        /tmp/podman-run \
-        /var/lib/containers/storage \
-        /var/cache/podman \
-        /var/cache/pacman \
-        /var/lib/pacman \
-        /etc/pacman.d/gnupg \
+    /github/{workspace,workflow,home} \
+    /etc/containers \
+    /tmp/podman-run \
+    /var/lib/containers/storage \
+    /var/cache/podman \
+    /var/cache/pacman \
+    /var/lib/pacman \
+    /etc/pacman.d/gnupg \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
 
 RUN <<EOF cat > /etc/containers/registries.conf.d/10-docker.conf

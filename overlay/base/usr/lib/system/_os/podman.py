@@ -12,9 +12,9 @@ from tempfile import TemporaryDirectory
 from time import time
 from hashlib import sha256
 from glob import iglob
-from typing import cast
+from typing import IO, Any, cast
 from typing import Callable
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 
 from . import SYSTEM_PATH
@@ -239,10 +239,33 @@ def image_name_parts(name: str) -> tuple[str | None, str, str | None, str | None
         name, ref = name.split("@", 1)
         assert ref.startswith("sha256:")
 
-    elif ":" in name:
+    if ":" in name:
         name, tag = name.split(":", 1)
 
     return registry, name, tag, ref
+
+
+def image_name_from_parts(
+    registry: str | None,
+    repo: str,
+    tag: str | None,
+    digest: str | None,
+) -> str:
+    suffix = ""
+    if tag is not None:
+        suffix = f":{tag}"
+
+    if digest is not None:
+        suffix = f"{suffix}@{digest}"
+
+    prefix = ""
+    if repo != "scratch" and registry is None:
+        registry = "docker.io"
+
+    if registry is not None:
+        prefix = f"{registry}/"
+
+    return f"{prefix}{repo}{suffix}"
 
 
 def image_qualified_name(image: str) -> str:
@@ -250,14 +273,10 @@ def image_qualified_name(image: str) -> str:
     if tag and (not registry or registry == REGISTRY) and repo == IMAGE:
         registry = REGISTRY
 
-    suffix = ""
-    if tag is not None:
-        suffix = f":{tag}"
+    if tag and digest:
+        tag = None
 
-    elif digest is not None:
-        suffix = f"@{digest}"
-
-    return f"{registry or 'docker.io'}/{repo}{suffix}"
+    return image_name_from_parts(registry, repo, tag, digest)
 
 
 def _image_digest_remote(image: str) -> str:
@@ -354,6 +373,12 @@ def build(
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
+    from .system import baseImage
+
+    base_image = baseImage(systemfile)
+    if not image_exists(base_image, remote=False):
+        pull(base_image)
+
     cache = "/var/cache/pacman"
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
@@ -751,3 +776,51 @@ def pull(
 
     onstderr(b"Falling back to full pull...\n")
     podman("pull", f"{base_image}:{target_tag}", onstdout=onstdout, onstderr=onstderr)
+
+
+def parse_containerfile(
+    containerfile: str | IO[str],
+    build_args: dict[str, str] | None = None,
+    pretty: bool = False,
+) -> list[dict[str, Any]]:  # pyright: ignore[reportExplicitAny]
+    is_path = isinstance(containerfile, str)
+    if is_path:
+        containerfile = open(containerfile, "r")
+
+    argv = ["-p"] if pretty else []
+    if build_args is not None:
+        argv += [x for k, v in build_args.items() for x in ["-b", f"{k}={v}"]]
+
+    data = json.loads(  # pyright: ignore[reportAny]
+        subprocess.check_output(
+            ["dockerfile2llbjson", *argv],
+            stdin=containerfile,
+        ).decode("utf-8")
+    )
+    assert isinstance(data, list)
+    if is_path:
+        containerfile.close()
+
+    return cast(list[dict[str, Any]], data)  # pyright: ignore[reportExplicitAny]
+
+
+def base_images(
+    containerfile: str, build_args: dict[str, str] | None = None
+) -> Iterable[str]:
+    for base_image in [
+        b
+        for x in parse_containerfile(containerfile, build_args, False)
+        for f in [
+            cast(dict[str, dict[str, str]], x.get("Op", {}))
+            .get("source", {})
+            .get("identifier", "")
+        ]
+        for b in [f[15:]]
+        if f.startswith("docker-image://")
+        if b != "scratch"
+    ]:
+        registry, name, tag, ref = image_name_parts(base_image)
+        if tag and ref:
+            ref = None
+
+        yield image_name_from_parts(registry, name, tag, ref)
