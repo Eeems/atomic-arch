@@ -86,11 +86,18 @@ jobs:
         if: inputs.digest != '' && inputs.artifact != ''
         run: |
           python <<'EOF'
-          import os, make
-          if not os.path.exists(make.DIGEST_CACHE_PATH):
-            print('No cache found, creating new cache')
+          import os
+          from make import DIGEST_CACHE_PATH
+          from make import _image_digests_write_cache
+          from _os import REPO
+          from _os import IMAGE
+          if not os.path.exists(DIGEST_CACHE_PATH):
+            print(f'No cache found at {DIGEST_CACHE_PATH}, creating new cache')
 
-          make._image_digests_write_cache(os.environ["image"], os.environ["digest"])
+          tag = os.environ["image"]
+          digest = os.environ["digest"]
+          _image_digests_write_cache(f"{REPO}:tag", digest)
+          _image_digests_write_cache(f"{IMAGE}:tag", digest)
           EOF
         env:
           image: ${{ inputs.artifact }}
