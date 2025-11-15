@@ -1215,7 +1215,7 @@ def do_workflow(_: argparse.Namespace):
         return graph, indegree
 
     def topological_sort(graph: Graph, indegree: Indegree) -> list[str]:
-        queue = deque([job for job, deg in indegree.items() if deg == 0])
+        queue = deque(sorted([job for job, deg in indegree.items() if deg == 0]))
         order: list[str] = []
         while queue:
             job = queue.popleft()
@@ -1381,9 +1381,23 @@ def do_workflow(_: argparse.Namespace):
                 "      with:",
                 "        pat: ${{ secrets.NOTIFICATION_PAT }}",
                 "",
+                "wait:",
+                "  name: Wait for builder to finish",
+                "  runs-on: ubuntu-latest",
+                "  permissions:",
+                "    contents: read",
+                "    actions: read",
+                "  steps:",
+                "    - name: Wait",
+                "      uses: NathanFirmo/wait-for-other-action@v1.0.4",
+                "      with:",
+                "        token: ${{ github.token }}",
+                "        workflow: 'tool-builder.yaml'",
+                "",
                 "check:",
                 "  name: Ensure config is valid",
                 "  runs-on: ubuntu-latest",
+                "  needs: wait",
                 "  permissions:",
                 "    contents: read",
                 "    packages: read",
