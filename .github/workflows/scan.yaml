@@ -97,7 +97,6 @@ jobs:
           tag = os.environ["image"]
           digest = os.environ["digest"]
           _image_digests_write_cache(f"{REPO}:{tag}", digest)
-          _image_digests_write_cache(f"{IMAGE}:{tag}", digest)
           EOF
         env:
           image: ${{ inputs.artifact }}

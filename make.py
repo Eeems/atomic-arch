@@ -66,6 +66,7 @@ hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:
 pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 escape_label = cast(Callable[[str], str], _os.podman.escape_label)  # pyright: ignore[reportUnknownMemberType]
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
+image_qualified_name = cast(Callable[[str], str], _os.podman.image_qualified_name)  # pyright:ignore [reportUnknownMemberType]
 base_images = cast(
     Callable[[str, dict[str, str] | None], Iterable[str]],
     _os.podman.base_images,  # pyright:ignore [reportUnknownMemberType]
@@ -892,6 +893,7 @@ def _remote_image_digest(image: str) -> str:
 
 def _image_digest_cached(image: str) -> Future[str] | str:
     global _image_digests
+    image = image_qualified_name(image)
     future = _image_digests.get(image, None)
     if future is None:
         with _image_digests_lock:
@@ -907,12 +909,9 @@ def _image_digest_cached(image: str) -> Future[str] | str:
 def _image_digests_write_cache(image: str, digest: str):
     global _image_digests
     with _image_digests_write_lock:
+        image = image_qualified_name(image)
         if isinstance(_image_digests.get(image), str):
             return
-
-        registry, repo, tag, _ = image_name_parts(image)
-        if registry and registry == REGISTRY and repo == IMAGE:
-            _image_digests[f"{IMAGE}:{tag}"] = digest
 
         _image_digests[image] = digest
         with open(DIGEST_CACHE_PATH, "w+") as f:
