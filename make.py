@@ -479,7 +479,7 @@ def do_checkupdates(args: argparse.Namespace):
         sys.exit(1)
 
     target = cast(str, args.target)
-    image = f"{REPO}:{target}"
+    image = image_qualified_name(f"{REPO}:{target}")
     exists = image_exists(image, True)
     if exists:
         mirror = [
@@ -553,6 +553,49 @@ def do_checkupdates(args: argparse.Namespace):
 def do_check(args: argparse.Namespace):
     failed = False
     fix = cast(bool, args.fix)
+
+    def _assert_name(name: str, expected: str) -> bool:
+        image = image_qualified_name(name)
+        if image == expected:
+            return True
+
+        print(f" Failed: image_qualified_name({json.dumps(name)})")
+        print(f"  Expected: {json.dumps(expected)}")
+        print(f"  Actual: {json.dumps(image)}")
+        return False
+
+    print("[check] Running tests")
+    failed = failed or not _assert_name(
+        "hello-world:latest@sha256:123",
+        "docker.io/hello-world@sha256:123",
+    )
+    failed = failed or not _assert_name(
+        "hello-world@sha256:123",
+        "docker.io/hello-world@sha256:123",
+    )
+    failed = failed or not _assert_name(
+        "hello-world:latest",
+        "docker.io/hello-world:latest",
+    )
+    failed = failed or not _assert_name(
+        "hello-world:latest",
+        "docker.io/hello-world:latest",
+    )
+    failed = failed or not _assert_name("hello-world", "docker.io/hello-world")
+    failed = failed or not _assert_name("system:latest", "localhost/system:latest")
+    failed = failed or not _assert_name(
+        f"{REPO}:latest@sha256:123",
+        f"{REPO}@sha256:123",
+    )
+    failed = failed or not _assert_name(f"{REPO}:latest", f"{REPO}:latest")
+    failed = failed or not _assert_name(f"{REPO}@sha256:123", f"{REPO}@sha256:123")
+    failed = failed or not _assert_name(REPO, REPO)
+    failed = failed or not _assert_name(
+        f"{IMAGE}:latest@sha256:123",
+        f"{REPO}@sha256:123",
+    )
+    failed = failed or not _assert_name(f"{IMAGE}:latest", f"{REPO}:latest")
+    failed = failed or not _assert_name(IMAGE, REPO)
     if shutil.which("niri") is not None:
         print("[check] Checking niri config", file=sys.stderr)
         cmd = shlex.join(

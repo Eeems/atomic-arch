@@ -93,6 +93,7 @@ def in_system_cmd(
     entrypoint: str = "/usr/bin/os",
     volumes: list[str] | None = None,
 ) -> list[str]:
+    target = image_qualified_name(target)
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
         _ostree = "/ostree"
         if not os.path.exists(SYSTEM_PATH):
@@ -132,6 +133,7 @@ def in_system_cmd(
         "run",
         "--rm",
         "--privileged",
+        "--pull=never",
         "--security-opt=label=disable",
         *[f"--volume={x}" for x in volume_args],
         f"--entrypoint={entrypoint}",
@@ -259,8 +261,17 @@ def image_name_from_parts(
         suffix = f"{suffix}@{digest}"
 
     prefix = ""
-    if repo != "scratch" and registry is None:
-        registry = "docker.io"
+    if registry is None:
+        match repo:
+            case "system":
+                registry = "localhost"
+
+            case "scratch":
+                pass
+
+            case _:
+                if repo != IMAGE:
+                    registry = "docker.io"
 
     if registry is not None:
         prefix = f"{registry}/"
@@ -270,7 +281,7 @@ def image_name_from_parts(
 
 def image_qualified_name(image: str) -> str:
     registry, repo, tag, digest = image_name_parts(image)
-    if tag and (not registry or registry == REGISTRY) and repo == IMAGE:
+    if (registry or REGISTRY) == REGISTRY and repo == IMAGE:
         registry = REGISTRY
 
     if tag and digest:
