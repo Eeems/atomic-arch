@@ -16,7 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type buildArgSlice []map[string]string
+type buildArgSlice map[string]string
 
 func (s *buildArgSlice) String() string {
 	return fmt.Sprintf("%v", *s)
@@ -27,19 +27,13 @@ func (s *buildArgSlice) Set(value string) error {
 	if len(parts) != 2 {
 		return fmt.Errorf("expected key=value, got %s", value)
 	}
-	m := map[string]string{parts[0]: parts[1]}
-	*s = append(*s, m)
+	if *s == nil {
+		*s = make(map[string]string)
+	}
+	(*s)[parts[0]] = parts[1]
 	return nil
 }
-func (b buildArgSlice) ToMap() map[string]string {
-	m := make(map[string]string)
-	for _, kv := range b {
-		for k, v := range kv {
-			m[k] = v
-		}
-	}
-	return m
-}
+func (b buildArgSlice) ToMap() map[string]string { return b }
 
 func main() {
 	logrus.SetLevel(logrus.WarnLevel)
@@ -81,21 +75,12 @@ func main() {
 		}
 		ops = append(ops, &op)
 	}
+	var b []byte
 	if *pretty {
-		b, err := json.MarshalIndent(ops, "", "  ")
-		if err != nil {
-			panic(err)
-		}
-		write(output, b)
+		b, err = json.MarshalIndent(ops, "", "  ")
 	} else {
-		b, err := json.Marshal(ops)
-		if err != nil {
-			panic(err)
-		}
-		write(output, b)
+		b, err = json.Marshal(ops)
 	}
-}
-func write(output *string, b []byte) {
 	if *output != "" {
 		err := os.WriteFile(*output, b, 0644)
 		if err != nil {
@@ -103,7 +88,7 @@ func write(output *string, b []byte) {
 		}
 		return
 	}
-	_, err := os.Stdout.Write(b)
+	_, err = os.Stdout.Write(b)
 	if err != nil {
 		panic(err)
 	}
