@@ -136,7 +136,7 @@ jobs:
       cache: false
 
   sync:
-    if: always()
+    if: "!cancelled() && github.event_name != 'pull_request'"
     name: Sync repositories
     needs: manifest
     uses: ./.github/workflows/sync.yaml
@@ -506,8 +506,11 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
+      artifact: atomic
+      digest: ${{ needs['atomic'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic'].outputs.updates) }}
       offline: false
+      push: ${{ github.event_name != 'pull_request' }}
 
   offline_iso_atomic:
     name: Generate iso for atomic
@@ -517,8 +520,11 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
+      artifact: atomic
+      digest: ${{ needs['atomic'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic'].outputs.updates) }}
       offline: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   online_iso_atomic-nvidia:
     name: Generate iso for atomic-nvidia
@@ -528,8 +534,11 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
+      artifact: atomic-nvidia
+      digest: ${{ needs['atomic-nvidia'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-nvidia'].outputs.updates) }}
       offline: false
+      push: ${{ github.event_name != 'pull_request' }}
 
   offline_iso_atomic-nvidia:
     name: Generate iso for atomic-nvidia
@@ -539,8 +548,11 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
+      artifact: atomic-nvidia
+      digest: ${{ needs['atomic-nvidia'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['atomic-nvidia'].outputs.updates) }}
       offline: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   online_iso_base:
     name: Generate iso for base
@@ -550,8 +562,11 @@ jobs:
     permissions: *permissions
     with:
       variant: base
+      artifact: base
+      digest: ${{ needs['base'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base'].outputs.updates) }}
       offline: false
+      push: ${{ github.event_name != 'pull_request' }}
 
   offline_iso_base:
     name: Generate iso for base
@@ -561,8 +576,11 @@ jobs:
     permissions: *permissions
     with:
       variant: base
+      artifact: base
+      digest: ${{ needs['base'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base'].outputs.updates) }}
       offline: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   online_iso_base-slim:
     name: Generate iso for base-slim
@@ -572,8 +590,11 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
+      artifact: base-slim
+      digest: ${{ needs['base-slim'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base-slim'].outputs.updates) }}
       offline: false
+      push: ${{ github.event_name != 'pull_request' }}
 
   offline_iso_base-slim:
     name: Generate iso for base-slim
@@ -583,8 +604,11 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
+      artifact: base-slim
+      digest: ${{ needs['base-slim'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['base-slim'].outputs.updates) }}
       offline: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   online_iso_eeems:
     name: Generate iso for eeems
@@ -594,8 +618,11 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
+      artifact: eeems
+      digest: ${{ needs['eeems'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems'].outputs.updates) }}
       offline: false
+      push: ${{ github.event_name != 'pull_request' }}
 
   offline_iso_eeems:
     name: Generate iso for eeems
@@ -605,8 +632,11 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
+      artifact: eeems
+      digest: ${{ needs['eeems'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems'].outputs.updates) }}
       offline: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   online_iso_eeems-nvidia:
     name: Generate iso for eeems-nvidia
@@ -616,8 +646,11 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
+      artifact: eeems-nvidia
+      digest: ${{ needs['eeems-nvidia'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-nvidia'].outputs.updates) }}
       offline: false
+      push: ${{ github.event_name != 'pull_request' }}
 
   offline_iso_eeems-nvidia:
     name: Generate iso for eeems-nvidia
@@ -627,8 +660,11 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
+      artifact: eeems-nvidia
+      digest: ${{ needs['eeems-nvidia'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-nvidia'].outputs.updates) }}
       offline: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   online_iso_eeems-system76:
     name: Generate iso for eeems-system76
@@ -638,8 +674,11 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
+      artifact: eeems-system76
+      digest: ${{ needs['eeems-system76'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-system76'].outputs.updates) }}
       offline: false
+      push: ${{ github.event_name != 'pull_request' }}
 
   offline_iso_eeems-system76:
     name: Generate iso for eeems-system76
@@ -649,8 +688,11 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
+      artifact: eeems-system76
+      digest: ${{ needs['eeems-system76'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['eeems-system76'].outputs.updates) }}
       offline: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   online_iso_gnome:
     name: Generate iso for gnome
@@ -660,8 +702,11 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
+      artifact: gnome
+      digest: ${{ needs['gnome'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome'].outputs.updates) }}
       offline: false
+      push: ${{ github.event_name != 'pull_request' }}
 
   offline_iso_gnome:
     name: Generate iso for gnome
@@ -671,5 +716,8 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
+      artifact: gnome
+      digest: ${{ needs['gnome'].outputs.digest }}
       pull: ${{ github.event_name != 'pull_request' && fromJson(needs['gnome'].outputs.updates) }}
       offline: true
+      push: ${{ github.event_name != 'pull_request' }}

@@ -57,6 +57,7 @@ RUN /usr/lib/system/initialize_pacman \
   libwireplumber-4.0-compat \
   pwvucontrol \
   wego \
+  prelockd \
   && /usr/lib/system/remove_pacman_files
 
 RUN systemctl enable \
@@ -64,7 +65,9 @@ RUN systemctl enable \
   udisks2
 
 COPY overlay/atomic /
-RUN systemctl enable dconf
+RUN systemctl enable \
+  dconf.service \
+  prelockd.service
 
 ARG VERSION_ID HASH
 
