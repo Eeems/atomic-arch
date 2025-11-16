@@ -1375,8 +1375,11 @@ def do_workflow(_: argparse.Namespace):
                 "  permissions: *permissions",
                 "  with:",
                 f"    variant: {job_id}",
+                f"    artifact: {job_id}",
+                f"    digest: ${{{{ needs['{job_id}'].outputs.digest }}}}",
                 f"    pull: ${{{{ github.event_name != 'pull_request' && fromJson(needs['{job_id}'].outputs.updates) }}}}",
                 f"    offline: {json.dumps(offline)}",
+                "    push: ${{ github.event_name != 'pull_request' }}",
             ]
 
         return indent(__(False) + [""] + __(True))

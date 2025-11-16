@@ -17,6 +17,22 @@ on:
         type: boolean
         default: true
         required: false
+      artifact:
+        description: Artifact to load base image from
+        type: string
+        required: false
+        default: ""
+      digest:
+        description: Digest to expect base image to be
+        type: string
+        required: false
+        default: ""
+      push:
+        # TODO implement this
+        description: Push the generated iso
+        type: boolean
+        default: false
+        required: false
   workflow_dispatch:
     inputs: *inputs
 
@@ -65,19 +81,26 @@ jobs:
         with:
           root: /run/host
 
-      - name: Import ${{ inputs.variant }} image
-        if: ${{ !inputs.pull }}
+      - name: Import image
+        if: inputs.artifact != ''
         uses: ./.github/actions/import-container
         with:
-          artifact: ${{ inputs.variant }}
-          image: ghcr.io/eeems/atomic-arch:${{ inputs.variant }}
+          artifact: ${{ inputs.artifact }}
+          image: ghcr.io/eeems/atomic-arch:${{ inputs.artifact }}
 
       - name: Get manifest cache
-        if: ${{ !inputs.pull }}
+        if: inputs.artifact != ''
         uses: ./.github/actions/manifest-cache-restore
         with:
-          key: manifest_${{ inputs.variant }}
+          key: manifest_${{ inputs.artifact }}
           artifact: true
+
+      - name: Force digest
+        if: inputs.digest != '' && inputs.artifact != ''
+        uses: ./.github/actions/force-image-digest
+        with:
+          tag: ${{ inputs.artifact }}
+          digest: ${{ inputs.digest }}
 
       - name: Build
         uses: ./.github/actions/run-with-podman-service
