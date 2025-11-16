@@ -1520,7 +1520,7 @@ def do_workflow(_: argparse.Namespace):
                 "    cache: false",
                 "",
                 "sync:",
-                "  if: always()",
+                "  if: \"!cancelled() && github.event_name != 'pull_request'\"",
                 "  name: Sync repositories",
                 "  needs: manifest",
                 "  uses: ./.github/workflows/sync.yaml",
