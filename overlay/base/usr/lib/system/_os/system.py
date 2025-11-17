@@ -244,6 +244,11 @@ def checkupdates(image: str | None = None) -> list[str]:
 
 
 def in_nspawn_system(*args: str, check: bool = False):
+    from .ostree import deployments
+
+    if not is_root():
+        raise RuntimeError("in_nspawn_system can only be called as root")
+
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
         _ostree = "/ostree"
         if not os.path.exists(SYSTEM_PATH):
@@ -266,11 +271,7 @@ def in_nspawn_system(*args: str, check: bool = False):
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
-    checksum = (
-        subprocess.check_output(["bash", "-c", "ostree admin status | grep *"])
-        .decode("utf-8")
-        .split(" ")[3]
-    )
+    checksum = [x for _, x, t in deployments() if t == "current"][0]
     os.environ["SYSTEMD_NSPAWN_LOCK"] = "0"
     # TODO overlay /usr/lib/pacman somehow
     cmd = [
@@ -280,7 +281,9 @@ def in_nspawn_system(*args: str, check: bool = False):
         "--directory=/sysroot",
         f"--bind={SYSTEM_PATH}:{SYSTEM_PATH}",
         "--bind=/boot:/boot",
+        "--bind=/run/podman/podman.sock:/run/podman/podman.sock",
         f"--bind={cache}:{cache}",
+        f"--bind=+/sysroot/ostree/deploy/{OS_NAME}/var:/var",
         f"--pivot-root={_ostree}/deploy/{OS_NAME}/deploy/{checksum}:/sysroot",
         *args,
     ]
