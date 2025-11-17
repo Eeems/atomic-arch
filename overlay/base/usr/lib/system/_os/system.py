@@ -5,6 +5,7 @@ import subprocess
 import shlex
 import shutil
 
+from datetime import datetime
 from typing import TextIO
 from typing import BinaryIO
 from typing import Callable
@@ -14,7 +15,6 @@ from select import select
 from tempfile import NamedTemporaryFile
 
 from . import SYSTEM_PATH
-from . import ROOTFS_PATH
 from . import OS_NAME
 from .console import bytes_to_stdout
 from .console import bytes_to_stderr
@@ -299,11 +299,12 @@ def upgrade(
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
-    from .podman import export
+    from .podman import export_stream
     from .podman import build
-    from .ostree import commit
+
     from .ostree import prune
     from .ostree import deploy
+    from .ostree import ostree_cmd
 
     if not os.path.exists("/ostree"):
         print("OSTree repo missing")
@@ -312,25 +313,45 @@ def upgrade(
     if not os.path.exists(SYSTEM_PATH):
         os.makedirs(SYSTEM_PATH, exist_ok=True)
 
-    if os.path.exists(ROOTFS_PATH):
-        shutil.rmtree(ROOTFS_PATH)
-
     build(
         buildArgs=[f"KARGS={system_kernelCommandLine()}"],
         onstdout=onstdout,
         onstderr=onstderr,
     )
-    with export(workingDir=SYSTEM_PATH, onstdout=onstdout, onstderr=onstderr) as t:
-        if not os.path.exists(ROOTFS_PATH):
-            os.makedirs(ROOTFS_PATH, exist_ok=True)
+    with export_stream(
+        setup="""
+        rm -f /etc
+        rm -rf /var/*
+        """,
+        workingDir=SYSTEM_PATH,
+        onstdout=onstdout,
+        onstderr=onstderr,
+    ) as stdout:
+        cmd = ostree_cmd(
+            "commit",
+            "--generate-composefs-metadata",
+            "--generate-sizes",
+            f"--branch={OS_NAME}/{branch}",
+            f"--subject={datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
+            "--tree=tar=-",
+            "--tar-pathname-filter=^,./",
+            "--tar-autocreate-parents",
+        )
+        ostree_proc = subprocess.Popen(cmd, stdin=stdout)
+        ostree_out, ostree_err = ostree_proc.communicate()
+        if ostree_out is not None:  # pyright: ignore[reportUnnecessaryComparison]
+            onstdout(ostree_out)
 
-        t.extractall(ROOTFS_PATH, numeric_owner=True, filter="fully_trusted")
+        if ostree_err is not None:  # pyright: ignore[reportUnnecessaryComparison]
+            onstderr(ostree_err)
 
-    commit(branch, ROOTFS_PATH, onstdout=onstdout, onstderr=onstderr)
+        if ostree_proc.returncode:
+            raise subprocess.CalledProcessError(
+                ostree_proc.returncode, cmd, ostree_out, ostree_err
+            )
+
     prune(branch, onstdout=onstdout, onstderr=onstderr)
     deploy(branch, "/", onstdout=onstdout, onstderr=onstderr)
-    _ = shutil.rmtree(ROOTFS_PATH)
-
     cmd = shlex.join(
         [
             "/usr/bin/grub-mkconfig",

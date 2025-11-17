@@ -432,13 +432,13 @@ def build(
 
 
 @contextmanager
-def export(
+def export_stream(
     tag: str = "latest",
     setup: str = "",
     workingDir: str | None = None,
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
-) -> Generator[tarfile.TarFile, None, None]:
+) -> Generator[IO[bytes], None, None]:
     if workingDir is None:
         workingDir = SYSTEM_PATH
 
@@ -464,7 +464,7 @@ def export(
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     assert process.stdout is not None
     try:
-        yield tarfile.open(fileobj=process.stdout, mode="r|*")
+        yield process.stdout
 
     finally:
         process.stdout.close()
@@ -475,6 +475,18 @@ def export(
         atexit.unregister(exitFunc1)
         podman("rm", name, onstdout=onstdout, onstderr=onstderr)
         os.chdir(cwd)
+
+
+@contextmanager
+def export(
+    tag: str = "latest",
+    setup: str = "",
+    workingDir: str | None = None,
+    onstdout: Callable[[bytes], None] = bytes_to_stdout,
+    onstderr: Callable[[bytes], None] = bytes_to_stderr,
+) -> Generator[tarfile.TarFile, None, None]:
+    with export_stream(tag, setup, workingDir, onstdout, onstderr) as stdout:
+        yield tarfile.open(fileobj=stdout, mode="r|*")
 
 
 def hex_to_base62(hex_digest: str) -> str:

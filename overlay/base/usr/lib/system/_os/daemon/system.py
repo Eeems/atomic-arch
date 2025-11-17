@@ -3,6 +3,7 @@ import dbus.service  # pyright:ignore [reportMissingTypeStubs]
 import os
 import subprocess
 import threading
+import traceback
 
 from typing import Callable
 from typing import cast
@@ -95,7 +96,7 @@ class Object(dbus.service.Object):
             success()
 
         except BaseException as e:
-            error(e)
+            error(f"Exception: {e}\n{traceback.format_exc()}")
 
     def _upgrade(self):
         self.notify_all("Starting system upgrade", "upgrade")
@@ -105,7 +106,9 @@ class Object(dbus.service.Object):
             self.notify_all("System upgrade complete, reboot required", "upgrade")
 
         except BaseException as e:
-            self.upgrade_stderr(str(e).encode("utf-8"))
+            self.upgrade_stderr(
+                f"Exception: {e}\n{traceback.format_exc()}".encode("utf-8")
+            )
             self.upgrade_status("error")
             self.notify_all("System upgrade failed", "upgrade")
 
@@ -173,7 +176,7 @@ class Object(dbus.service.Object):
             success()
 
         except BaseException as e:
-            error(e)
+            error(f"Exception: {e}\n{traceback.format_exc()}")
 
     def _checkupdates(self):
         try:
@@ -190,7 +193,9 @@ class Object(dbus.service.Object):
                 )
 
         except BaseException as e:
-            self.checkupdates_stderr(str(e).encode("utf-8"))
+            self.checkupdates_stderr(
+                f"Exception: {e}\n{traceback.format_exc()}".encode("utf-8")
+            )
             self.checkupdates_status("error")
             self.notify_all("Failed to checkupdates base image", "checkupdates")
             raise
@@ -253,7 +258,7 @@ class Object(dbus.service.Object):
             success()
 
         except BaseException as e:
-            error(e)
+            error(f"Exception: {e}\n{traceback.format_exc()}")
 
     def _pull(self):
         self.notify_all("Pulling base image", "pull")
@@ -268,7 +273,9 @@ class Object(dbus.service.Object):
             self.notify_all("Base image pulled", "pull")
 
         except BaseException as e:
-            self.pull_stderr(str(e).encode("utf-8"))
+            self.pull_stderr(
+                f"Exception: {e}\n{traceback.format_exc()}".encode("utf-8")
+            )
             self.pull_status("error")
             self.notify_all("Failed to pull base image", "pull")
             raise
