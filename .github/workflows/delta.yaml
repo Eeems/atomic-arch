@@ -128,6 +128,7 @@ jobs:
           root: /run/host
 
       - name: Get manifest cache
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: ./.github/actions/manifest-cache-restore
         with:
           key: manifest_${{ inputs.variant }}
