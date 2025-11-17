@@ -124,7 +124,12 @@ def hash(target: str) -> str:
 def build(target: str):
     now = datetime.now(UTC)
     uuid = f"{now.strftime('%H%M%S')}{int(now.microsecond / 10000)}"
-    build_args: dict[str, str] = {"VERSION_ID": uuid, "HASH": hash(target)}
+    build_args: dict[str, str] = {
+        "VERSION_ID": uuid,
+        "HASH": hash(target),
+        "TAR_SORT": "1",
+        "TAR_DETERMINISTIC": "1",
+    }
     containerfile = f"variants/{target}.Containerfile"
     if "-" in target and not os.path.exists(containerfile):
         base_variant, template = target.rsplit("-", 1)
@@ -156,9 +161,11 @@ def build(target: str):
         *[f"--build-arg={k}={v}" for k, v in build_args.items()],
         "--force-rm",
         "--pull=never",
+        "--jobs=1",
         "--volume=/var/cache/pacman:/var/cache/pacman",
         f"--file={containerfile}",
-        "--format=docker",
+        "--format=oci",
+        "--timestamp=946684800",
         ".",
     )
 

@@ -41,7 +41,7 @@ WORKDIR /app
 COPY tools/dockerfile2llbjson/go.mod tools/dockerfile2llbjson/go.sum ./
 RUN go mod download
 COPY tools/dockerfile2llbjson/main.go ./
-RUN CGO_ENABLED=0 go build -o /app/dockerfile2llbjson .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /app/dockerfile2llbjson .
 
 FROM scratch AS rootfs
 
