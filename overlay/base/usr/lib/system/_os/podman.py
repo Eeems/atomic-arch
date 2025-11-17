@@ -399,31 +399,36 @@ def build(
         _ = shutil.rmtree(context)
 
     containerfile = os.path.join(context, "Containerfile")
-    _ = shutil.copytree("/etc/system", context)
+    try:
+        _ = shutil.copytree("/etc/system", context)
 
-    extra: bytes = "\n".join((buildArgs or []) + (extraSteps or [])).encode("utf-8")
-    _buildArgs = [f"VERSION_ID={context_hash(extra)}"]
-    if buildArgs is not None:
-        _buildArgs += buildArgs
+        extra: bytes = "\n".join((buildArgs or []) + (extraSteps or [])).encode("utf-8")
+        _buildArgs = [f"VERSION_ID={context_hash(extra)}"]
+        if buildArgs is not None:
+            _buildArgs += buildArgs
 
-    with open(containerfile, "w") as f, open(systemfile, "r") as i:
-        _ = f.write(i.read())
-        _ = f.write("\n".join((extraSteps or []) + [CONTAINER_POST_STEPS.strip()]))
+        with open(containerfile, "w") as f, open(systemfile, "r") as i:
+            _ = f.write(i.read())
+            _ = f.write("\n".join((extraSteps or []) + [CONTAINER_POST_STEPS.strip()]))
 
-    podman(
-        "build",
-        "--force-rm",
-        "--no-hosts",
-        "--no-hostname",
-        "--dns=none",
-        "--tag=system:latest",
-        "--pull=never",
-        *[f"--build-arg={x}" for x in _buildArgs],
-        f"--volume={cache}:{cache}",
-        f"--file={containerfile}",
-        onstdout=onstdout,
-        onstderr=onstderr,
-    )
+        podman(
+            "build",
+            "--force-rm",
+            "--no-hosts",
+            "--no-hostname",
+            "--dns=none",
+            "--tag=system:latest",
+            "--pull=never",
+            *[f"--build-arg={x}" for x in _buildArgs],
+            f"--volume={cache}:{cache}",
+            f"--file={containerfile}",
+            onstdout=onstdout,
+            onstderr=onstderr,
+        )
+
+    finally:
+        if os.path.exists(context):
+            shutil.rmtree(context)
 
 
 @contextmanager

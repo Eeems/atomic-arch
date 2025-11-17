@@ -14,6 +14,7 @@ REGISTRY = "ghcr.io"
 IMAGE = f"eeems/{OS_NAME}"
 REPO = f"{REGISTRY}/{IMAGE}"
 SYSTEM_PATH = "/var/lib/system"
+ROOTFS_PATH = os.path.join(SYSTEM_PATH, "rootfs")
 
 
 def cli(argv: list[str]):

@@ -14,6 +14,7 @@ from select import select
 from tempfile import NamedTemporaryFile
 
 from . import SYSTEM_PATH
+from . import ROOTFS_PATH
 from . import OS_NAME
 from .console import bytes_to_stdout
 from .console import bytes_to_stderr
@@ -308,9 +309,8 @@ def upgrade(
     if not os.path.exists(SYSTEM_PATH):
         os.makedirs(SYSTEM_PATH, exist_ok=True)
 
-    rootfs = os.path.join(SYSTEM_PATH, "rootfs")
-    if os.path.exists(rootfs):
-        shutil.rmtree(rootfs)
+    if os.path.exists(ROOTFS_PATH):
+        shutil.rmtree(ROOTFS_PATH)
 
     build(
         buildArgs=[f"KARGS={system_kernelCommandLine()}"],
@@ -318,15 +318,15 @@ def upgrade(
         onstderr=onstderr,
     )
     with export(workingDir=SYSTEM_PATH, onstdout=onstdout, onstderr=onstderr) as t:
-        if not os.path.exists(rootfs):
-            os.makedirs(rootfs, exist_ok=True)
+        if not os.path.exists(ROOTFS_PATH):
+            os.makedirs(ROOTFS_PATH, exist_ok=True)
 
-        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
+        t.extractall(ROOTFS_PATH, numeric_owner=True, filter="fully_trusted")
 
-    commit(branch, rootfs, onstdout=onstdout, onstderr=onstderr)
+    commit(branch, ROOTFS_PATH, onstdout=onstdout, onstderr=onstderr)
     prune(branch, onstdout=onstdout, onstderr=onstderr)
     deploy(branch, "/", onstdout=onstdout, onstderr=onstderr)
-    _ = shutil.rmtree(rootfs)
+    _ = shutil.rmtree(ROOTFS_PATH)
 
     cmd = shlex.join(
         [

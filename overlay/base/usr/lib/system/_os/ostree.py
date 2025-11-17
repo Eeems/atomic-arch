@@ -8,6 +8,7 @@ from typing import Callable
 from collections.abc import Generator
 
 from . import SYSTEM_PATH
+from . import ROOTFS_PATH
 from . import OS_NAME
 
 from .system import execute
@@ -41,7 +42,7 @@ def commit(
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
     if rootfs is None:
-        rootfs = os.path.join(SYSTEM_PATH, "rootfs")
+        rootfs = ROOTFS_PATH
 
     if skipList is None:
         skipList = []

@@ -8,6 +8,7 @@ from argparse import Namespace
 
 from ..podman import export
 from .. import SYSTEM_PATH
+from .. import ROOTFS_PATH
 from ..system import is_root
 
 kwds = {"help": "Export your current system image to a folder"}
@@ -18,7 +19,9 @@ def register(parser: ArgumentParser):
         "--tag", default="latest", help="System image version to export"
     )
     _ = parser.add_argument(
-        "--rootfs", default=SYSTEM_PATH, help="Directory to export to"
+        "--rootfs",
+        default=ROOTFS_PATH,
+        help="Directory to export to",
     )
     _ = parser.add_argument(
         "--workingDir",
@@ -37,12 +40,15 @@ def command(args: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
+    rootfs = os.path.abspath(cast(str, args.rootfs))
+    workingDir = os.path.abspath(cast(str, args.workingDir))
+    assert rootfs != workingDir
+    assert not workingDir.startswith(rootfs)
     with export(
         cast(str, args.tag),
         cast(str, args.setup),
-        cast(str, args.workingDir),
+        workingDir,
     ) as t:
-        rootfs = cast(str, args.rootfs)
         if not os.path.exists(rootfs):
             os.makedirs(rootfs, exist_ok=True)
 

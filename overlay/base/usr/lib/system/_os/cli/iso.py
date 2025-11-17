@@ -11,6 +11,7 @@ from typing import cast
 
 from .. import OS_NAME
 from .. import SYSTEM_PATH
+from .. import ROOTFS_PATH
 
 from ..system import is_root
 from ..system import baseImage
@@ -63,24 +64,23 @@ def iso(local_image: bool):
     )
     os.chdir(SYSTEM_PATH)
     exitFunc1 = atexit.register(podman, "rmi", f"system:iso-{uuid}")
-    rootfs = os.path.join(SYSTEM_PATH, "rootfs")
-    if os.path.exists(rootfs):
-        shutil.rmtree(rootfs)
+    if os.path.exists(ROOTFS_PATH):
+        shutil.rmtree(ROOTFS_PATH)
 
     with export(
         f"iso-{uuid}",
         f"podman --remote save {buildImage} | podman load" if local_image else "",
         workingDir=SYSTEM_PATH,
     ) as t:
-        if not os.path.exists(rootfs):
-            os.makedirs(rootfs, exist_ok=True)
+        if not os.path.exists(ROOTFS_PATH):
+            os.makedirs(ROOTFS_PATH, exist_ok=True)
 
-        t.extractall(rootfs, numeric_owner=True, filter="fully_trusted")
+        t.extractall(ROOTFS_PATH, numeric_owner=True, filter="fully_trusted")
 
     atexit.unregister(exitFunc1)
     podman("rmi", f"system:iso-{uuid}")
 
-    _ = shutil.copytree("rootfs/etc/system/archiso", "archiso")
+    _ = shutil.copytree(os.path.join(ROOTFS_PATH, "etc/system/archiso"), "archiso")
     for path in [
         "loader/entries/01-archiso-x86_64-linux.conf",
         "grub/grub.cfg",
@@ -92,9 +92,9 @@ def iso(local_image: bool):
             _ = f.truncate()
             _ = f.write(content.replace("%UUID%", uuid))
 
-    execute("mksquashfs", "rootfs", "archiso/atomic/x86_64/airootfs.sfs")
-    _ = shutil.copy2("rootfs/etc/system/efiboot.img", "efiboot.img")
-    shutil.rmtree("rootfs")
+    execute("mksquashfs", ROOTFS_PATH, "archiso/atomic/x86_64/airootfs.sfs")
+    _ = shutil.copy2(os.path.join(ROOTFS_PATH, "etc/system/efiboot.img"), "efiboot.img")
+    shutil.rmtree(ROOTFS_PATH)
 
     parts = buildImage.split(":")
     variant = parts[-1] if len(parts) == 2 else "latest"
