@@ -66,6 +66,7 @@ jobs:
           auth_file_path: /run/containers/0/auth.json
 
       - name: Get manifest cache
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: ./.github/actions/manifest-cache-restore
         with:
           key: manifest_${{ inputs.variant }}
