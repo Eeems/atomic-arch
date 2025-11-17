@@ -621,19 +621,21 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
         print(f"Size of delta: {bytes_to_iec(sizeD)}")
         print(f"Threshhold size: {bytes_to_iec(maxSize)}")
         success = sizeD < maxSize
+        patch_format = "xdelta3+zstd" if success else "pull"
         with open(containerfile, "w") as f:
             _ = f.write(f"""\
 FROM scratch
 LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k, v in labels.items()])}
   atomic.patch.prev="{digestA}" \\
   atomic.patch.ref="{digestB}" \\
-  atomic.patch.format="xdelta3+zstd"
+  atomic.patch.format="{patch_format}"
 """)
-            if success:
-                print("Delta is too large, creating empty delta instead")
+            match patch_format:
+                case "pull":
+                    print("Delta is too large, creating empty delta instead")
 
-            else:
-                _ = f.write("COPY diff.xd3.zstd /diff.xd3.zstd\n")
+                case "xdelta3+zstd":
+                    _ = f.write("COPY diff.xd3.zstd /diff.xd3.zstd\n")
 
         podman(
             "build",
