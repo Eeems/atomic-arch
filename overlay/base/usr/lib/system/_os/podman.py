@@ -876,4 +876,7 @@ def base_images(
         if tag and ref:
             ref = None
 
+        if registry == "docker.io" and name == IMAGE:
+            registry = REGISTRY
+
         yield image_name_from_parts(registry, name, tag, ref)
