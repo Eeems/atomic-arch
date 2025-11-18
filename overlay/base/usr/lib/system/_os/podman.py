@@ -614,30 +614,52 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
     digestB = image_digest(imageB, remote=False)
     with TemporaryDirectory() as tmpdir:
         old_oci_path = os.path.join(tmpdir, "old.oci")
-        _save_image_to_file(imageA, old_oci_path)
-        tar_proc, tardir = _save_image(imageB)
-        assert tar_proc.stdout is not None
-        xdelta_proc = subprocess.Popen(
-            ["xdelta3", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
-            stdin=tar_proc.stdout,
-            stdout=subprocess.PIPE,
-        )
-        tar_proc.stdout.close()
-        assert xdelta_proc.stdout is not None
-        diff_path = os.path.join(tmpdir, "diff.xd3.zstd")
-        zstd_proc = subprocess.Popen(
-            ["zstd", "-19", "-T0", "-o", diff_path],
-            stdin=xdelta_proc.stdout,
-            stdout=subprocess.PIPE,
-        )
-        xdelta_proc.stdout.close()
-        _ = zstd_proc.communicate()
-        _wait_for_processes(
-            zstd_proc,
-            xdelta_proc,
-            tar_proc,
-            cleanup=tardir.cleanup,
-        )
+        try:
+            _save_image_to_file(imageA, old_oci_path)
+            tar_proc, tardir = _save_image(imageB)
+            assert tar_proc.stdout is not None
+            xdelta_proc = subprocess.Popen(
+                ["xdelta3", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
+                stdin=tar_proc.stdout,
+                stdout=subprocess.PIPE,
+            )
+            tar_proc.stdout.close()
+            assert xdelta_proc.stdout is not None
+            diff_path = os.path.join(tmpdir, "diff.xd3.zstd")
+            zstd_proc = subprocess.Popen(
+                ["zstd", "-19", "-T0", "-o", diff_path],
+                stdin=xdelta_proc.stdout,
+                stdout=subprocess.PIPE,
+            )
+            xdelta_proc.stdout.close()
+            _ = zstd_proc.communicate()
+            _wait_for_processes(
+                zstd_proc,
+                xdelta_proc,
+                tar_proc,
+                cleanup=tardir.cleanup,
+            )
+            sizeA = os.path.getsize(old_oci_path)
+            sizeB = image_size(imageB)
+            sizeD = os.path.getsize(diff_path)
+            maxSize = int(sizeB * 0.6)
+            print(f"Size of {imageA}: {bytes_to_iec(sizeA)}")
+            print(f"Size of {imageB}: {bytes_to_iec(sizeB)}")
+            print(f"Size of delta: {bytes_to_iec(sizeD)}")
+            print(f"Threshhold size: {bytes_to_iec(maxSize)}")
+            success = sizeD < maxSize
+
+        except ExceptionGroup as eg:  # noqa: F821
+            if not [
+                e
+                for e in eg.exceptions
+                if "Copying this image would require changing layer representation, which we cannot do"
+                in cast(subprocess.CalledProcessError, e).output  # pyright: ignore[reportAny]
+            ]:
+                raise
+
+            success = False
+
         labels: dict[str, str] = {
             "description": f"Delta between {imageA} and {imageB}",
             "ref.name": imageD,
@@ -661,16 +683,6 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
                 labels[label] = src_labels[full_label]
 
         containerfile = os.path.join(tmpdir, "Containerfile")
-        sizeA = os.path.getsize(old_oci_path)
-        sizeB = image_size(imageB)
-        sizeD = os.path.getsize(diff_path)
-        maxSize = int(sizeB * 0.6)
-
-        print(f"Size of {imageA}: {bytes_to_iec(sizeA)}")
-        print(f"Size of {imageB}: {bytes_to_iec(sizeB)}")
-        print(f"Size of delta: {bytes_to_iec(sizeD)}")
-        print(f"Threshhold size: {bytes_to_iec(maxSize)}")
-        success = sizeD < maxSize
         patch_format = "xdelta3+zstd" if success else "pull"
         with open(containerfile, "w") as f:
             _ = f.write(f"""\
