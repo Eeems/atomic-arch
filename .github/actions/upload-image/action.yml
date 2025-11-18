@@ -21,11 +21,17 @@ runs:
         run: |
           set -e
           podman image ls
-          skopeo copy \
-            --preserve-digests \
-            --remove-signatures \
-            containers-storage:$image \
-            oci-archive:$tar:$name
+          if ! skopeo copy \
+              --preserve-digests \
+              --remove-signatures \
+              containers-storage:$image \
+              oci-archive:$tar:$name
+          then
+            skopeo copy \
+              --remove-signatures \
+              containers-storage:$image \
+              oci-archive:$tar:$name
+          fi
           digest=$(skopeo inspect --format='{{.Digest}}' oci-archive:$tar:$name)
           zstd --rm -o $zstd $tar
           echo "outputs<<EOF" >> $GITHUB_OUTPUT

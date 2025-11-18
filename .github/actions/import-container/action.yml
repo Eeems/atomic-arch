@@ -31,11 +31,17 @@ runs:
           set -e
           cd "${{ steps.download.outputs.download-path }}"
           zstd --rm -do "$tar" "$zstd"
-          skopeo copy \
-            --preserve-digests \
-            --remove-signatures \
-            oci-archive:"$tar" \
-            containers-storage:${{ inputs.image }}
+          if ! skopeo copy \
+              --preserve-digests \
+              --remove-signatures \
+              oci-archive:"$tar" \
+              containers-storage:${{ inputs.image }}
+          then
+            skopeo copy \
+              --remove-signatures \
+              oci-archive:"$tar" \
+              containers-storage:${{ inputs.image }}
+          fi
           rm "$tar"
           podman image ls
       env:
