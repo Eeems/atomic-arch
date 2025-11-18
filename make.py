@@ -843,7 +843,7 @@ def progress_bar[T](
 
 def _classify_tag(tag: str) -> tuple[str, str | None, str | None]:
     if tag == "_manifest":
-        return "other", None, None
+        return "manifest", None, None
 
     if tag.startswith("_diff-"):
         if len(tag) == 49 or tag[48] != "-":
@@ -881,7 +881,7 @@ def _classify_tag(tag: str) -> tuple[str, str | None, str | None]:
                 return "build", variant, full_version
 
     if rest and all(c.isalnum() or c in ".-" for c in rest):
-        return "versioned", variant, rest
+        return "version", variant, rest
 
     return "other", None, None
 
@@ -1019,30 +1019,47 @@ def shortest_path(
 
 
 def do_manifest(args: argparse.Namespace):
+    config = parse_all_config()
     print("Getting all tags...")
     all_tags = image_tags(REPO)
     assert all_tags, "No tags found"
     digest_info: dict[str, tuple[list[str], str]] = {}
     graph: defaultdict[str, dict[str, tuple[str, int]]] = defaultdict(dict)
-    to_classify: list[tuple[str, str]] = []
+    digest_worker_queue: list[tuple[str, str]] = []
     for tag in progress_bar(
         all_tags,
         prefix="Classifying tags:" + " " * 9,
     ):
         kind, a, b = _classify_tag(tag)
-        if kind == "other":
+        if kind in ("other", "manifest"):
             continue
 
-        if kind != "diff":
-            to_classify.append((kind, tag))
+        if kind == "diff":
+            if a and b:
+                graph[a][b] = (tag, -1)
+
             continue
 
-        if a and b:
-            graph[a][b] = (tag, -1)
+        if kind not in ("build", "version", "variant"):
+            digest_worker_queue.append((kind, tag))
+            continue
 
-    assert to_classify, "No tags found"
+        assert a
+        parts = a.split("-", 1)
+        variant = parts[0]
+        if variant not in config["variants"].keys():
+            continue
 
-    # TODO filter out tags that aren't part of the config
+        if "-" in a and parts[1] not in [
+            y
+            for x in config["variants"].values()
+            for y in cast(list[str], x.get("templates", []))
+        ]:
+            continue
+
+        digest_worker_queue.append((kind, tag))
+
+    assert digest_worker_queue, "No tags found"
 
     def _digest_worker(data: tuple[str, str]) -> tuple[str, str, Future[str] | str]:
         image = f"{REPO}:{data[1]}"
@@ -1056,9 +1073,9 @@ def do_manifest(args: argparse.Namespace):
 
     with ThreadPoolExecutor(max_workers=50) as exc:
         for future in progress_bar(
-            as_completed([exc.submit(_digest_worker, x) for x in to_classify]),
-            count=len(to_classify),
-            prefix="Processing tags:" + " " * 10,
+            as_completed([exc.submit(_digest_worker, x) for x in digest_worker_queue]),
+            count=len(digest_worker_queue),
+            prefix="Getting tag digests:" + " " * 6,
         ):
             kind, tag, digest = future.result()
             if isinstance(digest, Future):
@@ -1069,6 +1086,8 @@ def do_manifest(args: argparse.Namespace):
                 digest_info[b62] = ([], digest)
 
             digest_info[b62] = (digest_info[b62][0] + [tag], digest)
+
+    # TODO remove all delta tags that are not used
 
     def flatten(
         d: dict[str, dict[str, tuple[str, int]]],
