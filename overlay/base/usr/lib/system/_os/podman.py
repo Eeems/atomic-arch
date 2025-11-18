@@ -521,6 +521,7 @@ def _save_image(image: str) -> tuple[subprocess.Popen[bytes], TemporaryDirectory
                 "skopeo",
                 "copy",
                 "--preserve-digests",
+                "--remove-signatures",
                 f"containers-storage:{image}",
                 f"oci-archive:{fifo}",
             ]
@@ -552,11 +553,39 @@ def _save_image(image: str) -> tuple[subprocess.Popen[bytes], TemporaryDirectory
 def _wait_for_processes(
     *processes: subprocess.Popen[bytes],
     cleanup: Callable[[], None] | None = None,
+    fast_fail: bool = True,
 ):
     errors: list[subprocess.CalledProcessError] = []
-    for proc in processes:
-        if proc.wait() != 0:
+    queue = list(processes)
+    while queue:
+        for proc in queue:
+            try:
+                _ = proc.wait(1)
+
+            except subprocess.TimeoutExpired:
+                continue
+
+            if proc.returncode is None:
+                continue
+
+            queue.remove(proc)
+            if not proc.returncode:
+                continue
+
             errors.append(subprocess.CalledProcessError(proc.returncode, proc.args))
+            if not fast_fail:
+                continue
+
+            for proc in queue:
+                proc.terminate()
+
+            for proc in queue:
+                if proc.wait():
+                    errors.append(
+                        subprocess.CalledProcessError(proc.returncode, proc.args)
+                    )
+
+                queue.remove(proc)
 
     if cleanup is not None:
         cleanup()
