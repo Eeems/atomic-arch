@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/tool-builder.yaml
       - tools/builder/**
+      - tools/dockerfile2llbjson/**
   push: *on-filter
   workflow_dispatch:
   schedule:
