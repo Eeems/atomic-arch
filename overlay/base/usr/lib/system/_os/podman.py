@@ -648,16 +648,11 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
             print(f"Size of delta: {bytes_to_iec(sizeD)}")
             print(f"Threshhold size: {bytes_to_iec(maxSize)}")
             success = sizeD < maxSize
+            if not success:
+                print("Delta too large to use")
 
-        except ExceptionGroup as eg:  # noqa: F821
-            if not [
-                e
-                for e in eg.exceptions
-                if "Copying this image would require changing layer representation, which we cannot do"
-                in cast(subprocess.CalledProcessError, e).output  # pyright: ignore[reportAny]
-            ]:
-                raise
-
+        except ExceptionGroup:  # noqa: F821
+            print("Failed to genrate delta")
             success = False
 
         labels: dict[str, str] = {
@@ -694,7 +689,7 @@ LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k
 """)
             match patch_format:
                 case "pull":
-                    print("Delta is too large, creating empty delta instead")
+                    print("Creating empty delta instead")
 
                 case "xdelta3+zstd":
                     _ = f.write("COPY diff.xd3.zstd /diff.xd3.zstd\n")
