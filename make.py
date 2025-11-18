@@ -1621,7 +1621,7 @@ def do_parse_containerfile(args: argparse.Namespace):
 
 
 def do_builder(_: argparse.Namespace):
-    podman("build", f"--tag={IMAGE}-builder", "--file=tools/builder/Containerfile", ".")
+    podman("build", f"--tag={REPO}-builder", "--file=tools/builder/Containerfile", ".")
 
 
 if __name__ == "__main__":
