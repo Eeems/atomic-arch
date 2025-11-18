@@ -27,10 +27,10 @@ permissions:
 
 jobs:
   matrix:
-    name: arches:${{ inputs.variant }} deltas
+    name: arkes:${{ inputs.variant }} deltas
     runs-on: ubuntu-latest
     container: &container
-      image: ghcr.io/eeems/arches-builder:latest
+      image: ghcr.io/eeems/arkes-builder:latest
       options: >-
         --privileged
         --security-opt seccomp=unconfined

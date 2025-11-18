@@ -834,7 +834,7 @@ def pull(
             continue
 
         if delta_labels.get("arkes.patch.format", "none") == "none":
-            onstderr(b"Empty patch, likely paching will be too large\n")
+            onstderr(b"Empty patch, likely patching will be too large\n")
             continue
 
         delta_size = image_size(delta_image)

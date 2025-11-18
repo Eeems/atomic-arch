@@ -1620,6 +1620,10 @@ def do_parse_containerfile(args: argparse.Namespace):
     )
 
 
+def do_builder(_: argparse.Namespace):
+    podman("build", f"--tag={IMAGE}-builder", "--file=tools/builder/Containerfile", ".")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
     subparsers = parser.add_subparsers()
@@ -1712,6 +1716,9 @@ if __name__ == "__main__":
 
     subparser = subparsers.add_parser("config")
     subparser.set_defaults(func=do_config)
+
+    subparser = subparsers.add_parser("builder")
+    subparser.set_defaults(func=do_builder)
 
     subparser = subparsers.add_parser("parse-containerfile")
     _ = subparser.add_argument("--pretty", action="store_true")
