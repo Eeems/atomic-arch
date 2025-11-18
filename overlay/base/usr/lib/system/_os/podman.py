@@ -213,6 +213,15 @@ def image_exists(image: str, remote: bool = True) -> bool:
 def image_tags(image: str) -> list[str]:
     image = image_qualified_name(image)
     registry, image, _, _ = image_name_parts(image)
+    if registry == REGISTRY and image == IMAGE and _latest_manifest():
+        tags = [
+            x[19:]
+            for x in image_labels(f"{REPO}:_manifest", False).keys()
+            if x.startswith("arkes.manifest.tag.")
+        ]
+        if tags:
+            return tags
+
     data: dict[str, str | list[str]] = json.loads(  # pyright:ignore [reportAny]
         subprocess.check_output(
             [
