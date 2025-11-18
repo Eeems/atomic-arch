@@ -402,7 +402,11 @@ def build(
         _ = shutil.copytree("/etc/system", context)
 
         extra: bytes = "\n".join((buildArgs or []) + (extraSteps or [])).encode("utf-8")
-        _buildArgs = [f"VERSION_ID={context_hash(extra)}"]
+        _buildArgs = [
+            f"VERSION_ID={context_hash(extra)}",
+            "TAR_SORT=1",
+            "TAR_DETERMINISTIC=1",
+        ]
         if buildArgs is not None:
             _buildArgs += buildArgs
 
@@ -421,6 +425,7 @@ def build(
             *[f"--build-arg={x}" for x in _buildArgs],
             f"--volume={cache}:{cache}",
             f"--file={containerfile}",
+            "--format=oci",
             onstdout=onstdout,
             onstderr=onstderr,
         )
