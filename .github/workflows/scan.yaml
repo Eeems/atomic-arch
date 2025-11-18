@@ -34,9 +34,6 @@ jobs:
   run:
     name: arkes:${{ inputs.variant }} image
     runs-on: ubuntu-latest
-    outputs:
-      updates: ${{ steps.build.outputs.updates }}
-      digest: ${{ steps.image.outputs.digest }}
     container:
       image: ghcr.io/eeems/arkes-builder:latest
       options: >-
@@ -95,8 +92,8 @@ jobs:
           tag: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
 
-      - name: Build
-        id: build
+      - name: Pull
+        if: inputs.artifact == ''
         uses: ./.github/actions/run-with-podman-service
         with:
           run: ./make.py pull ${{ inputs.variant }}
