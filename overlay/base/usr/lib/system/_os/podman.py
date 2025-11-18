@@ -838,7 +838,7 @@ def pull(
         )
         delta_image = f"{base_image}:{delta_tag}"
         onstderr(f"Looking for potential delta {delta_tag}\n".encode("utf-8"))
-        if not image_exists(delta_image, remote=True):
+        if not image_exists(delta_image, remote=True, skip_manifest=True):
             onstderr(b"Not found\n")
             continue
 
