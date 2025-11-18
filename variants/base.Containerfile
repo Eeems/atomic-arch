@@ -3,7 +3,7 @@
 # x-templates=slim
 ARG HASH
 
-FROM ghcr.io/eeems/atomic-arch:rootfs
+FROM arkes:rootfs
 
 ARG \
   VARIANT="Base" \

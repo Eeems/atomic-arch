@@ -1188,9 +1188,9 @@ def do_manifest(args: argparse.Namespace):
             for k, v in progress_bar(
                 labels.items(), prefix="Generating Containerfile: "
             ):
-                _ = f.write(f'\n  atomic.manifest.{k}="{escape_label(v)}" \\')
+                _ = f.write(f'\n  arkes.manifest.{k}="{escape_label(v)}" \\')
 
-            _ = f.write('\n  atomic.manifest.version="1"\n')
+            _ = f.write('\n  arkes.manifest.version="1"\n')
 
         image = f"{REPO}:_manifest"
         print(f"Building {image}...")
@@ -1355,7 +1355,7 @@ def do_workflow(_: argparse.Namespace):
         depends = d["depends"]
         lines = [
             f"{job_id}:",
-            f"  name: Build atomic-arch:{job_id} image",
+            f"  name: Build {IMAGE}:{job_id} image",
             f"  needs: {depends}",
             "  uses: ./.github/workflows/build-variant.yaml",
             "  secrets: inherit",
@@ -1512,7 +1512,7 @@ def do_workflow(_: argparse.Namespace):
                 "    contents: read",
                 "    packages: read",
                 "  container:",
-                "    image: ghcr.io/eeems/atomic-arch-builder:latest",
+                f"    image: {REPO}-builder:latest",
                 "    options: >-",
                 "      --privileged",
                 "      --security-opt seccomp=unconfined",

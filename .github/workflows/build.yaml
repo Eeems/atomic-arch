@@ -70,7 +70,7 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/eeems/atomic-arch-builder:latest
+      image: ghcr.io/eeems/arkes-builder:latest
       options: >-
         --privileged
         --security-opt seccomp=unconfined
@@ -149,7 +149,7 @@ jobs:
   ######################################
 
   atomic:
-    name: Build atomic-arch:atomic image
+    name: Build eeems/arkes:atomic image
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
@@ -162,7 +162,7 @@ jobs:
       digest: ${{ needs['base'].outputs.digest }}
 
   atomic-nvidia:
-    name: Build atomic-arch:atomic-nvidia image
+    name: Build eeems/arkes:atomic-nvidia image
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
@@ -175,7 +175,7 @@ jobs:
       digest: ${{ needs['atomic'].outputs.digest }}
 
   base:
-    name: Build atomic-arch:base image
+    name: Build eeems/arkes:base image
     needs: rootfs
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
@@ -188,7 +188,7 @@ jobs:
       digest: ${{ needs['rootfs'].outputs.digest }}
 
   base-slim:
-    name: Build atomic-arch:base-slim image
+    name: Build eeems/arkes:base-slim image
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
@@ -201,7 +201,7 @@ jobs:
       digest: ${{ needs['base'].outputs.digest }}
 
   eeems:
-    name: Build atomic-arch:eeems image
+    name: Build eeems/arkes:eeems image
     needs: atomic
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
@@ -214,7 +214,7 @@ jobs:
       digest: ${{ needs['atomic'].outputs.digest }}
 
   eeems-nvidia:
-    name: Build atomic-arch:eeems-nvidia image
+    name: Build eeems/arkes:eeems-nvidia image
     needs: eeems
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
@@ -227,7 +227,7 @@ jobs:
       digest: ${{ needs['eeems'].outputs.digest }}
 
   eeems-system76:
-    name: Build atomic-arch:eeems-system76 image
+    name: Build eeems/arkes:eeems-system76 image
     needs: eeems
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
@@ -240,7 +240,7 @@ jobs:
       digest: ${{ needs['eeems'].outputs.digest }}
 
   gnome:
-    name: Build atomic-arch:gnome image
+    name: Build eeems/arkes:gnome image
     needs: base
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit
@@ -253,7 +253,7 @@ jobs:
       digest: ${{ needs['base'].outputs.digest }}
 
   rootfs:
-    name: Build atomic-arch:rootfs image
+    name: Build eeems/arkes:rootfs image
     needs: check
     uses: ./.github/workflows/build-variant.yaml
     secrets: inherit

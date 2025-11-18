@@ -61,13 +61,13 @@ chronic grub-mkimage \
   zstd \
   search
 
-mkdir -p /etc/system/archiso/{boot/grub,atomic/x86_64}
+mkdir -p /etc/system/archiso/{boot/grub,arkes/x86_64}
 
 cat /usr/lib/grub/i386-pc/cdboot.img core.img >/etc/system/archiso/boot/grub/eltorito.img
 
 rm core.img
 
-cp -a /usr/lib/modules/*/vmlinuz /etc/system/archiso/atomic/x86_64
-cp -a /usr/lib/modules/*/initramfs.img /etc/system/archiso/atomic/x86_64
+cp -a /usr/lib/modules/*/vmlinuz /etc/system/archiso/arkes/x86_64
+cp -a /usr/lib/modules/*/initramfs.img /etc/system/archiso/arkes/x86_64
 cp -a /usr/share/edk2-shell/x64/Shell.efi /etc/system/archiso/shellx64.efi
 cp -ar /boot/memtest86+ /etc/system/archiso

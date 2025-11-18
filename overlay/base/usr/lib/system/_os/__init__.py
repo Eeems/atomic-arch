@@ -9,7 +9,7 @@ from typing import Callable
 from typing import cast
 
 
-OS_NAME = "atomic-arch"
+OS_NAME = "arkes"
 REGISTRY = "ghcr.io"
 IMAGE = f"eeems/{OS_NAME}"
 REPO = f"{REGISTRY}/{IMAGE}"

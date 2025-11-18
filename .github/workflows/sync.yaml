@@ -149,10 +149,10 @@ jobs:
         env:
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
-          image: eeems/atomic-arch
+          image: eeems/arkes
 
   sync-explicit:
-    name: Sync eeems/atomic-arch:${{ matrix.tag }}
+    name: Sync eeems/arkes:${{ matrix.tag }}
     runs-on: ubuntu-latest
     if: ${{ needs.matrix.outputs.explicit-items > 0 }}
     needs: matrix
@@ -191,11 +191,11 @@ jobs:
         env:
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
-          image: eeems/atomic-arch
+          image: eeems/arkes
           tag: ${{ matrix.tag }}
 
   sync-variants:
-    name: Sync eeems/atomic-arch:${{ matrix.tag }}
+    name: Sync eeems/arkes:${{ matrix.tag }}
     runs-on: ubuntu-latest
     if: ${{ needs.matrix.outputs.variant-items > 0 }}
     needs: matrix
@@ -238,11 +238,11 @@ jobs:
         env:
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
-          image: eeems/atomic-arch
+          image: eeems/arkes
           tag: ${{ matrix.tag }}
 
   sync-diffs:
-    name: Sync eeems/atomic-arch:${{ matrix.tag }}
+    name: Sync eeems/arkes:${{ matrix.tag }}
     runs-on: ubuntu-latest
     if: ${{ needs.matrix.outputs.diff-items > 0 }}
     needs: matrix
@@ -281,5 +281,5 @@ jobs:
         env:
           from: ${{ inputs.from }}
           to: ${{ inputs.to }}
-          image: eeems/atomic-arch
+          image: eeems/arkes
           tag: ${{ matrix.tag }}

@@ -330,7 +330,7 @@ def image_digest(image: str, remote: bool = True) -> str:
     registry, repo, tag, _ = image_name_parts(image)
     if tag and registry == REGISTRY and repo == IMAGE and _latest_manifest():
         return image_labels(f"{REPO}:_manifest", False).get(
-            f"atomic.manifest.tag.{tag}",
+            f"arkes.manifest.tag.{tag}",
             _image_digest_remote(image),
         )
 
@@ -683,9 +683,9 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
             _ = f.write(f"""\
 FROM scratch
 LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k, v in labels.items()])}
-  atomic.patch.prev="{digestA}" \\
-  atomic.patch.ref="{digestB}" \\
-  atomic.patch.format="{patch_format}"
+  arkes.patch.prev="{digestA}" \\
+  arkes.patch.ref="{digestB}" \\
+  arkes.patch.format="{patch_format}"
 """)
             match patch_format:
                 case "pull":
@@ -721,15 +721,15 @@ def apply_delta(
         podman("pull", delta_image, onstdout=onstdout, onstderr=onstderr)
 
     labels = image_labels(delta_image, False)
-    if labels.get("atomic.patch.format", "") != "xdelta3+zstd":
+    if labels.get("arkes.patch.format", "") != "xdelta3+zstd":
         raise ValueError("Incompatible patch format")
 
     digest = image_digest(image, remote=False)
-    if labels.get("atomic.patch.prev", "") != digest:
+    if labels.get("arkes.patch.prev", "") != digest:
         raise ValueError("Patch does not apply to this image")
 
     new_digest = image_digest(new_image, remote=True)
-    if labels.get("atomic.patch.ref", "") != new_digest:
+    if labels.get("arkes.patch.ref", "") != new_digest:
         raise ValueError("Patch does not result in the correct image")
 
     if not image_exists(image, False) or image_digest(image, False) != digest:
@@ -824,11 +824,11 @@ def pull(
             continue
 
         delta_labels = image_labels(delta_image, remote=True)
-        if delta_labels.get("atomic.patch.prev") != local_digest:
+        if delta_labels.get("arkes.patch.prev") != local_digest:
             onstderr(b"Wrong digest\n")
             continue
 
-        if delta_labels.get("atomic.patch.format", "none") == "none":
+        if delta_labels.get("arkes.patch.format", "none") == "none":
             onstderr(b"Empty patch, likely paching will be too large\n")
             continue
 

@@ -27,10 +27,10 @@ permissions:
 
 jobs:
   matrix:
-    name: atomic-arch:${{ inputs.variant }} deltas
+    name: arches:${{ inputs.variant }} deltas
     runs-on: ubuntu-latest
     container: &container
-      image: ghcr.io/eeems/atomic-arch-builder:latest
+      image: ghcr.io/eeems/arches-builder:latest
       options: >-
         --privileged
         --security-opt seccomp=unconfined

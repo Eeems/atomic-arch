@@ -42,10 +42,10 @@ permissions:
 
 jobs:
   run:
-    name: atomic-arch:${{ inputs.variant }} iso${{ inputs.offline && ' (offline)' || ''}}
+    name: arkes:${{ inputs.variant }} iso${{ inputs.offline && ' (offline)' || ''}}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/eeems/atomic-arch-builder:latest
+      image: ghcr.io/eeems/arkes-builder:latest
       options: >-
         --privileged
         --security-opt seccomp=unconfined
@@ -86,7 +86,7 @@ jobs:
         uses: ./.github/actions/import-container
         with:
           artifact: ${{ inputs.artifact }}
-          image: ghcr.io/eeems/atomic-arch:${{ inputs.artifact }}
+          image: ghcr.io/eeems/arkes:${{ inputs.artifact }}
 
       - name: Get manifest cache
         if: inputs.artifact != ''
@@ -115,5 +115,5 @@ jobs:
       - name: Upload iso
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.offline && 'offline' || 'online' }}_atomic-arch-${{ inputs.variant }}.iso
-          path: /var/lib/system/atomic-arch-${{ inputs.variant }}-*.iso
+          name: ${{ inputs.offline && 'offline' || 'online' }}_arkes-${{ inputs.variant }}.iso
+          path: /var/lib/system/arkes-${{ inputs.variant }}-*.iso
