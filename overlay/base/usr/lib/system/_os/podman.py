@@ -193,7 +193,7 @@ def image_hash(image: str, remote: bool = True) -> str:
     return image_labels(image, remote=remote).get("hash", "0")
 
 
-def image_exists(image: str, remote: bool = True) -> bool:
+def image_exists(image: str, remote: bool = True, skip_manifest: bool = False) -> bool:
     image_exists = not _execute(shlex.join(podman_cmd("image", "exists", image)))
     if image_exists or not remote:
         return image_exists
@@ -203,24 +203,29 @@ def image_exists(image: str, remote: bool = True) -> bool:
     if ref is not None:
         raise NotImplementedError()
 
-    tags = image_tags(f"{registry}/{image}")
+    tags = image_tags(f"{registry}/{image}", skip_manifest=skip_manifest)
     if not tag:
         return bool(tags)
 
     return tag in tags
 
 
-def image_tags(image: str) -> list[str]:
+def image_tags(image: str, skip_manifest: bool = False) -> list[str]:
     image = image_qualified_name(image)
     registry, image, _, _ = image_name_parts(image)
-    if registry == REGISTRY and image == IMAGE and _latest_manifest():
+    if (
+        not skip_manifest
+        and registry == REGISTRY
+        and image == IMAGE
+        and _latest_manifest()
+    ):
         tags = [
             x[19:]
             for x in image_labels(f"{REPO}:_manifest", False).keys()
             if x.startswith("arkes.manifest.tag.")
         ]
         if tags:
-            return tags
+            return tags + ["_manifest"]
 
     data: dict[str, str | list[str]] = json.loads(  # pyright:ignore [reportAny]
         subprocess.check_output(
