@@ -17,6 +17,7 @@ from typing import Callable
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 
+from . import OS_NAME
 from . import SYSTEM_PATH
 from . import REGISTRY
 from . import IMAGE
@@ -281,8 +282,12 @@ def image_name_from_parts(
 
 def image_qualified_name(image: str) -> str:
     registry, repo, tag, digest = image_name_parts(image)
-    if (registry or REGISTRY) == REGISTRY and repo == IMAGE:
+    if ((registry or REGISTRY) == REGISTRY) and repo == IMAGE:
         registry = REGISTRY
+
+    if registry == "docker.io" and repo == f"library/{OS_NAME}":
+        registry = REGISTRY
+        repo = IMAGE
 
     if tag and digest:
         tag = None
@@ -919,4 +924,4 @@ def base_images(
         if registry == "docker.io" and name == IMAGE:
             registry = REGISTRY
 
-        yield image_name_from_parts(registry, name, tag, ref)
+        yield image_qualified_name(image_name_from_parts(registry, name, tag, ref))
