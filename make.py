@@ -1050,7 +1050,7 @@ def do_manifest(args: argparse.Namespace):
     digest_info: dict[str, tuple[list[str], str]] = {}
     graph: defaultdict[str, dict[str, tuple[str, int]]] = defaultdict(dict)
     digest_worker_queue: list[tuple[str, str]] = []
-    valid_variants = ["rootfs"] + list(config["variants"].keys())
+    valid_variants = ["rootfs", *config["variants"].keys()]
     for tag in progress_bar(
         all_tags,
         prefix="Classifying tags:" + " " * 9,

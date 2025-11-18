@@ -225,7 +225,7 @@ def image_tags(image: str, skip_manifest: bool = False) -> list[str]:
             if x.startswith("arkes.manifest.tag.")
         ]
         if tags:
-            return tags + ["_manifest"]
+            return ["_manifest", *tags]
 
     data: dict[str, str | list[str]] = json.loads(  # pyright:ignore [reportAny]
         subprocess.check_output(
