@@ -291,7 +291,6 @@ def image_qualified_name(image: str) -> str:
 
 
 def _image_digest_remote(image: str) -> str:
-    image = image_qualified_name(image)
     return (
         subprocess.check_output(
             [
@@ -517,7 +516,7 @@ def _save_image(image: str) -> tuple[subprocess.Popen[bytes], TemporaryDirectory
                 "skopeo",
                 "copy",
                 "--preserve-digests",
-                f"docker://{image}",
+                f"containers-storage:{image}",
                 f"oci-archive:{fifo}",
             ]
         ),
@@ -577,8 +576,8 @@ def escape_label(value: str) -> str:
 
 
 def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bool:
-    digestA = image_digest(imageA)
-    digestB = image_digest(imageB)
+    digestA = image_digest(imageA, remote=False)
+    digestB = image_digest(imageB, remote=False)
     with TemporaryDirectory() as tmpdir:
         old_oci_path = os.path.join(tmpdir, "old.oci")
         _save_image_to_file(imageA, old_oci_path)
