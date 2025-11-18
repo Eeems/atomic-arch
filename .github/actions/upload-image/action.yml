@@ -23,7 +23,8 @@ runs:
           podman image ls
           skopeo copy \
             --preserve-digests \
-            docker://$image \
+            --remove-signatures \
+            containers-storage:$image \
             oci-archive:$tar:$name
           digest=$(skopeo inspect --format='{{.Digest}}' oci-archive:$tar:$name)
           zstd --rm -o $zstd $tar
@@ -34,7 +35,7 @@ runs:
           echo "}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           echo "::group::outputs"
-          echo $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
           echo "::endgroup::"
       env:
         image: ${{ inputs.image }}

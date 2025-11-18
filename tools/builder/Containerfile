@@ -118,6 +118,7 @@ unqualified-search-registries = ["docker.io"]
 [engine]
 runroot = "/tmp/podman-run"
 storageroot = "/var/lib/containers/storage"
+compression_format = "gzip"
 
 [aliases]
 "eeems/atomic-arch"="ghcr.io/eeems/atomic-arch"
