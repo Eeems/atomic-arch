@@ -40,8 +40,7 @@ func (b buildArgSlice) ToMap() map[string]string { return b }
 
 type OfflineResolver struct{}
 
-
-func (r *OfflineResolver) ResolveImageConfig(ctx context.Context, ref string, opt sourceresolver.Opt) (string, digest.Digest, []byte, error){
+func (r *OfflineResolver) ResolveImageConfig(ctx context.Context, ref string, opt sourceresolver.Opt) (string, digest.Digest, []byte, error) {
 	img := &specs.Image{
 		Platform: specs.Platform{
 			Architecture: "amd64",
@@ -53,7 +52,7 @@ func (r *OfflineResolver) ResolveImageConfig(ctx context.Context, ref string, op
 			WorkingDir: "/",
 		},
 		RootFS: specs.RootFS{
-			Type:    "layers",
+			Type: "layers",
 			DiffIDs: []digest.Digest{
 				digest.Digest("sha256:0000000000000000000000000000000000000000000000000000000000000000"),
 			},

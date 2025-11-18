@@ -53,6 +53,7 @@ podman = cast(Callable[..., None], _os.podman.podman)  # pyright:ignore [reportU
 podman_cmd = cast(Callable[..., list[str]], _os.podman.podman_cmd)  # pyright:ignore [reportUnknownMemberType]
 _execute = cast(Callable[..., int], _os.system._execute)  # pyright:ignore [reportUnknownMemberType]
 execute = cast(Callable[..., None], _os.system.execute)  # pyright:ignore [reportUnknownMemberType]
+execute_pipe = cast(Callable[..., None], _os.system.execute_pipe)  # pyright:ignore [reportUnknownMemberType]
 chronic = cast(Callable[..., None], _os.system.chronic)  # pyright:ignore [reportUnknownMemberType]
 in_system = cast(Callable[..., int], _os.podman.in_system)  # pyright:ignore [reportUnknownMemberType]
 in_system_output = cast(Callable[..., bytes], _os.podman.in_system_output)  # pyright:ignore [reportUnknownMemberType]
@@ -83,6 +84,14 @@ image_name_from_parts = cast(
 parse_containerfile = cast(
     Callable[[str | IO[str], dict[str, str] | None, bool], list[dict[str, Any]]],  # pyright: ignore[reportExplicitAny]
     _os.podman.parse_containerfile,  # pyright: ignore[reportUnknownMemberType]
+)
+bytes_to_stdout = cast(
+    Callable[[bytes], None],
+    _os.console.bytes_to_stdout,  # pyright: ignore[reportUnknownMemberType]
+)
+bytes_to_stderr = cast(
+    Callable[[bytes], None],
+    _os.console.bytes_to_stderr,  # pyright: ignore[reportUnknownMemberType]
 )
 
 IMAGE = cast(str, _os.IMAGE)
@@ -630,14 +639,29 @@ def do_check(args: argparse.Namespace):
 
     if shutil.which("gofmt") is not None:
         print("[check] Checking go formatting", file=sys.stderr)
-        cmd = shlex.join(
+        cmd = (
             ["gofmt", "-e"]
             + (["-w", "-l"] if fix else ["-d"])
             + ["tools/dockerfile2llbjson"]
         )
-        res = _execute(cmd)
-        if res:
-            print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
+        gofmt_failed = False
+
+        def _onstderr(data: bytes):
+            nonlocal gofmt_failed
+            gofmt_failed = True
+            bytes_to_stderr(data)
+
+        def _onstdout(data: bytes):
+            nonlocal gofmt_failed
+            gofmt_failed = True
+            bytes_to_stdout(data)
+
+        res = execute_pipe(*cmd, onstderr=_onstderr, onstdout=_onstdout)
+        if res or gofmt_failed:
+            print(
+                f"[check] Failed: {shlex.join(cmd)}\nStatus code: {res}",
+                file=sys.stderr,
+            )
             failed = True
 
     if shutil.which("go") is not None:
