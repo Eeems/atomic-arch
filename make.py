@@ -1435,6 +1435,7 @@ def do_workflow(_: argparse.Namespace):
             "      - .github/workflows/manifest.yaml",
             "      - .github/workflows/sync.yaml",
             '      - ".github/actions/**"',
+            '      - "tools/dockerfile2llbjson/**"',
             "      - make.py",
             "      - seccomp.json",
             "      - .containerignore",
