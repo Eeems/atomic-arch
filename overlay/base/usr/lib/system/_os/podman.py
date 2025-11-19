@@ -855,7 +855,7 @@ def pull(
 
         delta_size = image_size(delta_image)
         target_size = image_size(image)
-        if delta_size >= target_size * 0.6:
+        if delta_size >= target_size * MAX_SIZE_RATIO:
             onstderr(b"Delta is too large\n")
             continue
 
