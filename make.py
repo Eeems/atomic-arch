@@ -61,8 +61,8 @@ is_root = cast(Callable[[], bool], _os.system.is_root)  # pyright:ignore [report
 image_hash = cast(Callable[[str], str], _os.podman.image_hash)  # pyright:ignore [reportUnknownMemberType]
 image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_info)  # pyright:ignore [reportUnknownMemberType]
 image_labels = cast(Callable[[str, bool], dict[str, str]], _os.podman.image_labels)  # pyright:ignore [reportUnknownMemberType]
-image_exists = cast(Callable[[str, bool], bool], _os.podman.image_exists)  # pyright:ignore [reportUnknownMemberType]
-image_tags = cast(Callable[[str], list[str]], _os.podman.image_tags)  # pyright:ignore [reportUnknownMemberType]
+image_exists = cast(Callable[[str, bool, bool], bool], _os.podman.image_exists)  # pyright:ignore [reportUnknownMemberType]
+image_tags = cast(Callable[[str, bool], list[str]], _os.podman.image_tags)  # pyright:ignore [reportUnknownMemberType]
 create_delta = cast(Callable[[str, str, str, bool], bool], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
 hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:ignore [reportUnknownMemberType]
 pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
@@ -113,7 +113,7 @@ def hash(target: str) -> str:
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
         image = f"{REPO}:{base_variant}"
-        labels = image_labels(image, not image_exists(image, False))
+        labels = image_labels(image, not image_exists(image, False, False))
         m.update(labels["hash"].encode("utf-8"))
 
     with open(containerfile, "rb") as f:
@@ -144,7 +144,7 @@ def build(target: str):
         base_variant, template = target.rsplit("-", 1)
         containerfile = f"templates/{template}.Containerfile"
         image = f"{REPO}:{base_variant}"
-        labels = image_labels(image, not image_exists(image, False))
+        labels = image_labels(image, not image_exists(image, False, False))
         build_args["BASE_VARIANT_ID"] = f"{base_variant}"
         build_args["VARIANT"] = f"{labels['os-release.VARIANT']} ({template})"
         build_args["VARIANT_ID"] = f"{labels['os-release.VARIANT_ID']}-{template}"
@@ -156,12 +156,12 @@ def build(target: str):
         build_args["ID"] = f"{labels['os-release.ID']}"
         build_args["HOME_URL"] = f"{labels['os-release.HOME_URL']}"
         build_args["BUG_REPORT_URL"] = f"{labels['os-release.BUG_REPORT_URL']}"
-        if not image_exists(f"{REPO}:{base_variant}", False):
+        if not image_exists(f"{REPO}:{base_variant}", False, False):
             pull(f"{REPO}:{base_variant}")
 
     for base_image in base_images(containerfile, build_args):
         print(f"Base image {base_image}")
-        if not image_exists(base_image, False):
+        if not image_exists(base_image, False, False):
             pull(base_image)
 
     podman(
@@ -223,7 +223,7 @@ def base62_to_hex(base62_str: str) -> str:
 def get_deltas(
     target: str, missing_only: bool = False
 ) -> Iterable[tuple[str, str, str]]:
-    tags = image_tags(REPO)
+    tags = image_tags(REPO, True)
     target_tags = [
         x
         for x in tags
@@ -497,8 +497,8 @@ def do_checkupdates(args: argparse.Namespace):
 
     target = cast(str, args.target)
     image = image_qualified_name(f"{REPO}:{target}")
-    exists = image_exists(image, True)
-    if exists and not image_exists(image, False):
+    exists = image_exists(image, True, False)
+    if exists and not image_exists(image, False, False):
         try:
             pull(image)
 
@@ -544,7 +544,7 @@ def do_checkupdates(args: argparse.Namespace):
         print(f"context {current_hash[:9] or '(none)'} -> {new_hash[:9]}")
         has_updates = True
 
-    if not image_exists(image, False):
+    if not image_exists(image, False, False):
         if has_updates:
             sys.exit(2)
 
@@ -961,22 +961,29 @@ if os.path.exists(DIGEST_CACHE_PATH):
             os.unlink(DIGEST_CACHE_PATH)
 
 
-def _remote_image_digest(image: str) -> str:
+def _remote_image_digest(image: str, skip_manifest: bool = False) -> str:
     e: Exception | None = None
     for attempt in range(10):
+        assert image_exists(image, True, skip_manifest), (
+            f"{image} does not exist on remote server"
+        )
         try:
             digest = image_digest(image, True)
             return digest
 
         except Exception as ex:
             e = ex
+            if isinstance(e, subprocess.CalledProcessError) and e.returncode == 2:
+                # Exit early, image cannot be found
+                break
+
             sleep(1.0 * (2**attempt))  # pyright: ignore[reportAny]
 
     assert e is not None
     raise e
 
 
-def _image_digest_cached(image: str) -> Future[str] | str:
+def _image_digest_cached(image: str, skip_manifest: bool = False) -> Future[str] | str:
     global _image_digests
     image = image_qualified_name(image)
     future = _image_digests.get(image, None)
@@ -985,7 +992,7 @@ def _image_digest_cached(image: str) -> Future[str] | str:
             # In case it was added after we locked
             future = _image_digests.get(image, None)
             if future is None:
-                future = _executor.submit(_remote_image_digest, image)
+                future = _executor.submit(_remote_image_digest, image, skip_manifest)
                 _image_digests[image] = future
 
     return future
@@ -1009,9 +1016,9 @@ def _image_digests_write_cache(image: str, digest: str):
             _ = f.flush()
 
 
-def image_digest_cached(image: str) -> str:
+def image_digest_cached(image: str, skip_manifest: bool = False) -> str:
     global _image_digests
-    future = _image_digest_cached(image)
+    future = _image_digest_cached(image, skip_manifest=skip_manifest)
     if not isinstance(future, Future):
         return future
 
@@ -1045,7 +1052,7 @@ def shortest_path(
 def do_manifest(args: argparse.Namespace):
     config = parse_all_config()
     print("Getting all tags...")
-    all_tags = image_tags(REPO)
+    all_tags = image_tags(REPO, True)
     assert all_tags, "No tags found"
     digest_info: dict[str, tuple[list[str], str]] = {}
     graph: defaultdict[str, dict[str, tuple[str, int]]] = defaultdict(dict)
@@ -1088,7 +1095,7 @@ def do_manifest(args: argparse.Namespace):
 
     def _digest_worker(data: tuple[str, str]) -> tuple[str, str, Future[str] | str]:
         image = f"{REPO}:{data[1]}"
-        future = _image_digest_cached(image)
+        future = _image_digest_cached(image, skip_manifest=True)
         if isinstance(future, Future):
             future.add_done_callback(
                 lambda x: _image_digests_write_cache(image, x.result())
