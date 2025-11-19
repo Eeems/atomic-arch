@@ -136,14 +136,6 @@ jobs:
     with:
       cache: false
 
-  sync:
-    if: "!cancelled() && github.event_name != 'pull_request'"
-    name: Sync repositories
-    needs: manifest
-    uses: ./.github/workflows/sync.yaml
-    secrets: inherit
-    permissions: *permissions
-
   ######################################
   #             BUILD              #
   ######################################
