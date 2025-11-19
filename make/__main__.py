@@ -1,35 +1,26 @@
-#!/usr/bin/python
-import argparse
-import importlib
 import os
 import sys
+import argparse
+import importlib
 
 from glob import iglob
-from typing import Callable
 from typing import cast
-
-
-OS_NAME = "arkes"
-REGISTRY = "ghcr.io"
-IMAGE = f"eeems/{OS_NAME}"
-REPO = f"{REGISTRY}/{IMAGE}"
-SYSTEM_PATH = "/var/lib/system"
-ROOTFS_PATH = os.path.join(SYSTEM_PATH, "rootfs")
+from typing import Callable
 
 
 def cli(argv: list[str]):
     parser = argparse.ArgumentParser(
-        prog="os", description="Manage your operating system", add_help=True
+        prog="make", description="Manage your operating system", add_help=True
     )
+    subparsers = parser.add_subparsers(help="Action to run")
     __dirname__ = os.path.dirname(__file__)
     modulename = os.path.basename(__dirname__)
-    subparsers = parser.add_subparsers(help="Action to run")
-    for file in iglob(os.path.join(__dirname__, "cli", "*.py")):
-        if file.endswith("__.py"):
+    for file in iglob(os.path.join(__dirname__, "*.py")):
+        if os.path.basename(file).startswith("__") or file.endswith("__.py"):
             continue
 
         name = os.path.splitext(os.path.basename(file))[0]
-        module = importlib.import_module(f"{modulename}.cli.{name}", modulename)
+        module = importlib.import_module(f"{modulename}.{name}", modulename)
         subparser = subparsers.add_parser(
             name,
             **getattr(module, "kwds", {}),  # pyright:ignore [reportAny]
@@ -43,3 +34,7 @@ def cli(argv: list[str]):
         sys.exit(1)
 
     cast(Callable[[argparse.Namespace], None], args.func)(args)
+
+
+if __name__ == "__main__":
+    cli(sys.argv[1:])

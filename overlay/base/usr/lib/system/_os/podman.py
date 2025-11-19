@@ -30,6 +30,8 @@ from .ostree import ostree
 from .console import bytes_to_iec, bytes_to_stdout
 from .console import bytes_to_stderr
 
+MAX_SIZE_RATIO = 0.6
+
 
 def podman_cmd(*args: str) -> list[str]:
     if _execute("systemd-detect-virt --quiet --container") == 0:
@@ -661,7 +663,7 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
             sizeA = os.path.getsize(old_oci_path)
             sizeB = image_size(imageB)
             sizeD = os.path.getsize(diff_path)
-            maxSize = int(sizeB * 0.6)
+            maxSize = int(sizeB * MAX_SIZE_RATIO)
             print(f"Size of {imageA}: {bytes_to_iec(sizeA)}")
             print(f"Size of {imageB}: {bytes_to_iec(sizeB)}")
             print(f"Size of delta: {bytes_to_iec(sizeD)}")
