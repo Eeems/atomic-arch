@@ -54,7 +54,7 @@ def push(target: str):
         tags.append(tag)
         podman("tag", image, tag)
 
-    for tag in tags + [image]:
+    for tag in [*tags, image]:
         podman("push", tag)
         print(f"Pushed {tag}")
         _image_digests_write_cache(tag, image_digest(tag, False))

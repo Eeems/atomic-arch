@@ -188,7 +188,7 @@ def command(_: Namespace):
                 "    push: ${{ github.event_name != 'pull_request' }}",
             ]
 
-        return indent(__(False) + [""] + __(True))
+        return indent([*__(False), "", *__(True)])
 
     build_order = topological_sort(graph, indegree)
 
