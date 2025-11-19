@@ -89,6 +89,8 @@ BUILDER = f"{REPO}-builder"
 
 
 def ci_log(*args: str):
+    import os
+
     if "CI" not in os.environ:
         return
 
@@ -117,6 +119,8 @@ def progress_bar[T](
     out: TextIO = sys.stdout,
     interval: int = 1,
 ):
+    import os
+
     if count is None:
         count = len(iterable)  # pyright: ignore[reportArgumentType]
 
