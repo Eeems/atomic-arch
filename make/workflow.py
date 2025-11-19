@@ -1,8 +1,8 @@
 import json
+import heapq
 
 from argparse import ArgumentParser
 from argparse import Namespace
-from collections import deque
 from typing import Any, cast
 
 
@@ -70,10 +70,14 @@ def command(_: Namespace):
         return graph, indegree
 
     def topological_sort(graph: Graph, indegree: Indegree) -> list[str]:
-        queue = deque(sorted([job for job, deg in indegree.items() if deg == 0]))
+        heap: list[str] = []
+        for job, deg in indegree.items():
+            if deg == 0:
+                heapq.heappush(heap, job)
+
         order: list[str] = []
-        while queue:
-            job = queue.popleft()
+        while heap:
+            job = heapq.heappop(heap)
             order.append(job)
             for dep_job, data in graph.items():
                 if data["depends"] != job:
@@ -81,7 +85,7 @@ def command(_: Namespace):
 
                 indegree[dep_job] -= 1
                 if indegree[dep_job] == 0:
-                    queue.append(dep_job)
+                    heapq.heappush(heap, dep_job)
 
         if len(order) != len(graph):
             raise RuntimeError("Cycle detected in job dependencies")
@@ -187,9 +191,6 @@ def command(_: Namespace):
         return indent(__(False) + [""] + __(True))
 
     build_order = topological_sort(graph, indegree)
-    # TODO make topological_sort determenistic
-    #      and don't sort anymore
-    build_order.sort()
 
     sections = [
         [
