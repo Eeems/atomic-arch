@@ -69,6 +69,11 @@ jobs:
       - name: Mask registry passwords
         uses: ./.github/actions/mask-registry-passwords
 
+      - name: Free up space
+        uses: ./.github/actions/cleanup
+        with:
+          root: /run/host
+
       - name: Import ${{ inputs.artifact != '' && inputs.artifact || '' }} image
         if: inputs.artifact != ''
         uses: ./.github/actions/import-container
