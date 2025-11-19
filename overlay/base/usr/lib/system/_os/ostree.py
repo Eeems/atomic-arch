@@ -66,6 +66,7 @@ def commit(
         onstdout=onstdout,
         onstderr=onstderr,
     )
+    os.unlink(_skipList)
 
 
 def deploy(
