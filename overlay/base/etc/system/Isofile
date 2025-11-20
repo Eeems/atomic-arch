@@ -35,9 +35,19 @@ RUN sed -i '/11-dm-initramfs.rules/d' /usr/lib/initcpio/install/archiso \
   && /usr/lib/system/build_kernel \
   && /usr/lib/system/create_live_bootloader \
   && systemctl disable atomic-state-overlay.service \
-  && echo "#!/bin/bash\nmount -o remount,size=\$(awk '/^MemTotal:/{print int(\$2*0.7)}' /proc/meminfo)K /run/archiso/cowspace" > /bin/resize-cowspace \
+  && printf '%s\n' \
+  "#!/bin/bash" \
+  "mount -o remount,size=\$(awk '/^MemTotal:/{print int(\$2*0.7)}' /proc/meminfo)K /run/archiso/cowspace" \
+  > /bin/resize-cowspace \
   && chmod +x /bin/resize-cowspace \
-  && echo \
-  "[Unit]\nAfter=local-fs.target\n[Service]\nExecStart=/bin/resize-cowspace\nRemainAfterExit=true\nType=oneshot\n[Install]\nWantedBy=multi-user.target" \
+  && printf '%s\n' \
+  "[Unit]" \
+  "After=local-fs.target" \
+  "[Service]" \
+  "ExecStart=/bin/resize-cowspace" \
+  "RemainAfterExit=true" \
+  "Type=oneshot" \
+  "[Install]" \
+  "WantedBy=multi-user.target" \
   > /etc/systemd/system/resize-cowspace.service \
   && systemctl enable resize-cowspace.service
