@@ -271,7 +271,7 @@ def in_nspawn_system(*args: str, check: bool = False):
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
-    checksum = [x for _, x, t in deployments() if t == "current"][0]
+    checksum = [x for _, x, t, _, _ in deployments() if t == "current"][0]
     os.environ["SYSTEMD_NSPAWN_LOCK"] = "0"
     # TODO overlay /usr/lib/pacman somehow
     cmd = [

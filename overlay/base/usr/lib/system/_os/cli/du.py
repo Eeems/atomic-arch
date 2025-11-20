@@ -22,6 +22,7 @@ def command(_: Namespace):
         print("Must be run as root")
         sys.exit(1)
 
+    _deployments = list(deployments())
     sizes = list(
         reversed(
             subprocess.check_output(
@@ -30,7 +31,7 @@ def command(_: Namespace):
                     "-hs",
                     *[
                         f"/ostree/deploy/{OS_NAME}/deploy/{c}"
-                        for _, c, _ in reversed(list(deployments()))
+                        for _, c, _, _, _ in reversed(_deployments)
                     ],
                 ]
             )
@@ -39,7 +40,7 @@ def command(_: Namespace):
             .split("\n")
         )
     )
-    for index, checksum, type in deployments():
+    for index, checksum, type, _pinned, _stateroot in _deployments:
         diffsize = sizes[index].split()[0]
         size = (
             subprocess.check_output(

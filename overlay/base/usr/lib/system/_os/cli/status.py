@@ -12,8 +12,8 @@ def register(_: ArgumentParser):
     pass
 
 
-def get_status(data: tuple[int, str, str]) -> str:
-    index, checksum, type = data
+def get_status(data: tuple[int, str, str, bool, str]) -> str:
+    index, checksum, type, pinned, stateroot = data
     with open(
         f"/ostree/deploy/{OS_NAME}/deploy/{checksum}/usr/lib/os-release", "r"
     ) as f:
@@ -36,8 +36,12 @@ def get_status(data: tuple[int, str, str]) -> str:
     if type:
         status += f" ({type})"
 
+    if pinned:
+        status += " (pinned)"
+
     status += f"\n  Version: {version}.{version_id}"
     status += f"\n  Build:   {build_id}"
+    status += f"\n  Stateroot: {stateroot}"
     return status
 
 
