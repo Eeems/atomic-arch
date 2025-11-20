@@ -171,11 +171,7 @@ def command(args: Namespace):
                 for x in [_image_size_cached(f"{REPO}:{t}")]
             ]
             b_direct: int = min(
-                [x for x in sizes if not isinstance(x, Future)]
-                + cast(
-                    list[int],
-                    list(as_completed([x for x in sizes if isinstance(x, Future)])),
-                ),
+                [x.result() if isinstance(x, Future) else x for x in sizes]
             )
             if cost >= b_direct * MAX_SIZE_RATIO:
                 continue
