@@ -244,7 +244,7 @@ def checkupdates(image: str | None = None) -> list[str]:
 
 
 def in_nspawn_system(*args: str, check: bool = False):
-    from .ostree import deployments
+    from .ostree import current_deployment
 
     if not is_root():
         raise RuntimeError("in_nspawn_system can only be called as root")
@@ -271,7 +271,7 @@ def in_nspawn_system(*args: str, check: bool = False):
     if not os.path.exists(cache):
         os.makedirs(cache, exist_ok=True)
 
-    checksum = [x for _, x, t, _, _ in deployments() if t == "current"][0]
+    _, checksum, _, stateroot = current_deployment()
     os.environ["SYSTEMD_NSPAWN_LOCK"] = "0"
     # TODO overlay /usr/lib/pacman somehow
     cmd = [
@@ -283,8 +283,8 @@ def in_nspawn_system(*args: str, check: bool = False):
         "--bind=/boot:/boot",
         "--bind=/run/podman/podman.sock:/run/podman/podman.sock",
         f"--bind={cache}:{cache}",
-        f"--bind=+/sysroot/ostree/deploy/{OS_NAME}/var:/var",
-        f"--pivot-root={_ostree}/deploy/{OS_NAME}/deploy/{checksum}:/sysroot",
+        f"--bind=+/sysroot/ostree/deploy/{stateroot}/var:/var",
+        f"--pivot-root={_ostree}/deploy/{stateroot}/deploy/{checksum}:/sysroot",
         *args,
     ]
     ret = _execute(shlex.join(cmd))

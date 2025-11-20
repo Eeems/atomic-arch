@@ -8,7 +8,6 @@ from typing import Any
 
 from ..system import is_root
 from ..ostree import deployments
-from .. import OS_NAME
 
 kwds = {"help": "Output size of current deployments"}
 
@@ -30,8 +29,8 @@ def command(_: Namespace):
                     "du",
                     "-hs",
                     *[
-                        f"/ostree/deploy/{OS_NAME}/deploy/{c}"
-                        for _, c, _, _, _ in reversed(_deployments)
+                        f"/ostree/deploy/{s}/deploy/{c}"
+                        for _, c, _, _, s in reversed(_deployments)
                     ],
                 ]
             )
@@ -40,11 +39,11 @@ def command(_: Namespace):
             .split("\n")
         )
     )
-    for index, checksum, type, _pinned, _stateroot in _deployments:
+    for index, checksum, type, _pinned, stateroot in _deployments:
         diffsize = sizes[index].split()[0]
         size = (
             subprocess.check_output(
-                ["du", "-hs", f"/ostree/deploy/{OS_NAME}/deploy/{checksum}"]
+                ["du", "-hs", f"/ostree/deploy/{stateroot}/deploy/{checksum}"]
             )
             .strip()
             .decode("utf-8")
@@ -57,7 +56,13 @@ def command(_: Namespace):
         print()
 
     size = size = (
-        subprocess.check_output(["du", "-hs", f"/ostree/deploy/{OS_NAME}/deploy"])
+        subprocess.check_output(
+            [
+                "du",
+                "-hs",
+                *set([f"/ostree/deploy/{s}/deploy" for _, _, _, _, s in deployments()]),
+            ]
+        )
         .strip()
         .decode("utf-8")
         .split()[0]

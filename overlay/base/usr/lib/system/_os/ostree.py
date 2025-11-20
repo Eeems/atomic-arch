@@ -94,7 +94,7 @@ def deploy(
 
     stateroot = OS_NAME
     if not os.path.exists(os.path.join(sysroot, "ostree/deploy", OS_NAME)):
-        stateroot = [s for _, _, t, _, s in deployments() if t == "current"][0]
+        _, _, _, stateroot = current_deployment()
 
     cmd = shlex.join(
         [
@@ -161,7 +161,6 @@ def deployments() -> Generator[tuple[int, str, str, bool, str], None, None]:
     )
     index = 0
     for deployment in deployments:
-        checksum = cast(str, deployment["checksum"])
         type = ""
         if cast(bool, deployment["booted"]):
             type = "current"
@@ -174,9 +173,18 @@ def deployments() -> Generator[tuple[int, str, str, bool, str], None, None]:
 
         yield (
             index,
-            checksum,
+            f"{deployment['checksum']}.{deployment['serial']}",
             type,
             cast(bool, deployment["pinned"]),
             cast(str, deployment["stateroot"]),
         )
         index += 1
+
+
+def current_deployment() -> tuple[int, str, bool, str]:
+    candidates = [x for x in deployments() if x[2] == "current"]
+    assert len(candidates) == 1, (
+        f"There should be one current deployment, not {len(candidates)}"
+    )
+    index, checksum, _, pinned, stateroot = candidates[0]
+    return index, checksum, pinned, stateroot
