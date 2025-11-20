@@ -60,7 +60,7 @@ def command(_: Namespace):
             [
                 "du",
                 "-hs",
-                *set([f"/ostree/deploy/{s}/deploy" for _, _, _, _, s in deployments()]),
+                *set([f"/ostree/deploy/{s}/deploy" for _, _, _, _, s in _deployments]),
             ]
         )
         .strip()
