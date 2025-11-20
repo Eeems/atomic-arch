@@ -64,7 +64,8 @@ def get_deltas(
     ]
     target_tags.sort()
     digest_cache = {
-        tag: hex_to_base62(image_digest_cached(f"{REPO}:{tag}")) for tag in target_tags
+        tag: hex_to_base62(image_digest_cached(f"{REPO}:{tag}", skip_manifest=True))
+        for tag in target_tags
     }
     diff_tags = (
         [
