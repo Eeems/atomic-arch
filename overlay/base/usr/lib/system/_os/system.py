@@ -375,3 +375,56 @@ def delete(glob: str):
 
 def is_root() -> bool:
     return os.geteuid() == 0
+
+
+def wait_for_processes(
+    *processes: subprocess.Popen[bytes],
+    cleanup: Callable[[], None] | None = None,
+    fast_fail: bool = True,
+):
+    errors: list[subprocess.CalledProcessError] = []
+    queue = list(processes)
+    while queue:
+        for proc in list(queue):
+            try:
+                _ = proc.wait(1)
+
+            except subprocess.TimeoutExpired:
+                continue
+
+            if proc.returncode is None:
+                continue
+
+            queue.remove(proc)
+            if not proc.returncode:
+                continue
+
+            errors.append(subprocess.CalledProcessError(proc.returncode, proc.args))
+            if not fast_fail:
+                continue
+
+            for proc in queue:
+                proc.terminate()
+
+            for proc in queue:
+                try:
+                    if proc.returncode is None:
+                        _ = proc.wait(timeout=5)
+
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+
+            for proc in queue:
+                if proc.wait():
+                    errors.append(
+                        subprocess.CalledProcessError(proc.returncode, proc.args)
+                    )
+
+            queue = []
+            break
+
+    if cleanup is not None:
+        cleanup()
+
+    if errors:
+        raise ExceptionGroup("CalledProcessError", errors)  # noqa: F821

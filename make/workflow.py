@@ -135,23 +135,6 @@ def command(_: Namespace):
 
         return indent(lines)
 
-    def render_delta(job_id: str) -> list[str]:
-        return indent(
-            [
-                f"delta_{job_id}:",
-                f"  name: Generate deltas for {job_id}",
-                "  if: github.event_name != 'pull_request'",
-                f"  needs: {job_id}",
-                "  uses: ./.github/workflows/delta.yaml",
-                "  secrets: inherit",
-                "  permissions: *permissions",
-                "  with:",
-                f"    variant: {job_id}",
-                "    push: ${{ github.event_name != 'pull_request' }}",
-                "    recreate: false",
-            ]
-        )
-
     def render_scan(job_id: str) -> list[str]:
         return indent(
             [
@@ -207,15 +190,12 @@ def command(_: Namespace):
             "    paths:",
             "      - .github/workflows/build.yaml",
             "      - .github/workflows/build-variant.yaml",
-            "      - .github/workflows/delta.yaml",
             "      - .github/workflows/iso.yaml",
             "      - .github/workflows/manifest.yaml",
             '      - ".github/actions/**"',
             '      - "tools/dockerfile2llbjson/**"',
             '      - "make/__main__.py"',
             '      - "make/__init__.py"',
-            '      - "make/get-deltas.py"',
-            '      - "make/delta.py"',
             '      - "make/iso.py"',
             '      - "make/scan.py"',
             '      - "make/build.py"',
@@ -321,7 +301,6 @@ def command(_: Namespace):
                 "  name: Generate manifest",
                 '  if: "!cancelled()"',
                 "  needs:",
-                *[f"    - delta_{j}" for j in sorted(build_order)],
                 "  uses: ./.github/workflows/manifest.yaml",
                 "  secrets: inherit",
                 "  permissions: &permissions",
@@ -337,8 +316,6 @@ def command(_: Namespace):
         *[render_build(j) for j in build_order],
         comment("SCAN"),
         *[render_scan(j) for j in build_order],
-        comment("DELTA"),
-        *[render_delta(j) for j in build_order],
         comment("ISO"),
         *[render_iso(j) for j in build_order if j != "rootfs"],
     ]

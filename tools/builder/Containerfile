@@ -135,4 +135,10 @@ compression_format = "gzip"
 "system"="localhost/system"
 EOF
 
+RUN printf "%s\n" \
+    "[storage.options.pull_options]" \
+    'enable_partial_images = "true"' \
+    'use_hard_links = "true"' \
+    >> /etc/containers/storage.conf
+
 USER 0
