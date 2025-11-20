@@ -32,13 +32,10 @@ permissions:
 
 jobs:
   run:
-    name: atomic-arch:${{ inputs.variant }} image
+    name: arkes:${{ inputs.variant }} image
     runs-on: ubuntu-latest
-    outputs:
-      updates: ${{ steps.build.outputs.updates }}
-      digest: ${{ steps.image.outputs.digest }}
     container:
-      image: ghcr.io/eeems/atomic-arch-builder:latest
+      image: ghcr.io/eeems/arkes-builder:latest
       options: >-
         --privileged
         --security-opt seccomp=unconfined
@@ -79,7 +76,7 @@ jobs:
         uses: ./.github/actions/import-container
         with:
           artifact: ${{ inputs.artifact }}
-          image: ghcr.io/eeems/atomic-arch:${{ inputs.artifact }}
+          image: ghcr.io/eeems/arkes:${{ inputs.artifact }}
 
       - name: Get manifest cache
         if: inputs.artifact != ''
@@ -95,8 +92,8 @@ jobs:
           tag: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
 
-      - name: Build
-        id: build
+      - name: Pull
+        if: inputs.artifact == ''
         uses: ./.github/actions/run-with-podman-service
         with:
           run: ./make.py pull ${{ inputs.variant }}

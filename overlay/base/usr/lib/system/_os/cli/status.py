@@ -2,8 +2,6 @@ from argparse import ArgumentParser
 from argparse import Namespace
 from concurrent.futures import ThreadPoolExecutor
 
-from .. import OS_NAME
-
 from ..system import baseImage
 from ..ostree import deployments
 
@@ -12,10 +10,10 @@ def register(_: ArgumentParser):
     pass
 
 
-def get_status(data: tuple[int, str, str]) -> str:
-    index, checksum, type = data
+def get_status(data: tuple[int, str, str, bool, str]) -> str:
+    index, checksum, type, pinned, stateroot = data
     with open(
-        f"/ostree/deploy/{OS_NAME}/deploy/{checksum}/usr/lib/os-release", "r"
+        f"/ostree/deploy/{stateroot}/deploy/{checksum}/usr/lib/os-release", "r"
     ) as f:
         osInfo = {
             x[0]: x[1]
@@ -28,7 +26,9 @@ def get_status(data: tuple[int, str, str]) -> str:
             ]
         }
 
-    ref = baseImage(f"/ostree/deploy/{OS_NAME}/deploy/{checksum}/etc/system/Systemfile")
+    ref = baseImage(
+        f"/ostree/deploy/{stateroot}/deploy/{checksum}/etc/system/Systemfile"
+    )
     version = osInfo.get("VERSION", "0")
     version_id = osInfo.get("VERSION_ID", "0")
     build_id = osInfo.get("BUILD_ID", "0")
@@ -36,8 +36,12 @@ def get_status(data: tuple[int, str, str]) -> str:
     if type:
         status += f" ({type})"
 
+    if pinned:
+        status += " (pinned)"
+
     status += f"\n  Version: {version}.{version_id}"
     status += f"\n  Build:   {build_id}"
+    status += f"\n  Stateroot: {stateroot}"
     return status
 
 

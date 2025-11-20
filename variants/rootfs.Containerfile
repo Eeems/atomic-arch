@@ -53,15 +53,15 @@ ARG \
   HASH
 
 LABEL \
-  os-release.NAME="Atomic Arch" \
-  os-release.PRETTY_NAME="Atomic Arch Linux" \
-  os-release.ID="atomic-arch" \
-  os-release.HOME_URL="https://github.com/Eeems/atomic-arch" \
-  os-release.BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues" \
+  os-release.NAME="Arkēs" \
+  os-release.PRETTY_NAME="Arkēs Arch Linux" \
+  os-release.ID="arkes" \
+  os-release.HOME_URL="https://github.com/Eeems/arkes" \
+  os-release.BUG_REPORT_URL="https://github.com/Eeems/arkes/issues" \
   os-release.VERSION="${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" \
   os-release.VERSION_ID="${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" \
   org.opencontainers.image.authors="eeems@eeems.email" \
-  org.opencontainers.image.source="https://github.com/Eeems/atomic-arch" \
+  org.opencontainers.image.source="https://github.com/Eeems/arkes" \
   org.opencontainers.image.ref.name="rootfs" \
   org.opencontainers.image.description="Atomic and immutable Linux distribution as a container." \
   hash="${HASH}" \
@@ -77,12 +77,12 @@ COPY --from=pacstrap /rootfs /
 COPY overlay/rootfs /
 COPY --from=dockerfile2llbjson /app/dockerfile2llbjson /usr/bin/dockerfile2llbjson
 
-RUN  echo 'NAME="Atomic Arch"' > /usr/lib/os-release \
-  && echo 'PRETTY_NAME="Atomic Arch Linux"' >> /usr/lib/os-release \
-  && echo 'ID=atomic-arch' >> /usr/lib/os-release \
-  && echo 'HOME_URL="https://github.com/Eeems/atomic-arch"' >> /usr/lib/os-release \
-  && echo 'SUPPORT_URL="https://github.com/Eeems/atomic-arch/issues"' >> /usr/lib/os-release \
-  && echo 'BUG_REPORT_URL="https://github.com/Eeems/atomic-arch/issues"' >> /usr/lib/os-release \
+RUN  echo 'NAME="Arkēs"' > /usr/lib/os-release \
+  && echo 'PRETTY_NAME="Arkēs Arch Linux"' >> /usr/lib/os-release \
+  && echo 'ID=arkes' >> /usr/lib/os-release \
+  && echo 'HOME_URL="https://github.com/Eeems/arkes"' >> /usr/lib/os-release \
+  && echo 'SUPPORT_URL="https://github.com/Eeems/arkes/issues"' >> /usr/lib/os-release \
+  && echo 'BUG_REPORT_URL="https://github.com/Eeems/arkes/issues"' >> /usr/lib/os-release \
   && echo "VERSION=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" >> /usr/lib/os-release \
   && echo "VERSION_ID=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" >> /usr/lib/os-release \
   && echo "VARIANT=Base" >> /usr/lib/os-release \

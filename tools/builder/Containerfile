@@ -121,7 +121,9 @@ storageroot = "/var/lib/containers/storage"
 compression_format = "gzip"
 
 [aliases]
-"eeems/atomic-arch"="ghcr.io/eeems/atomic-arch"
+"eeems/atomic-arch"="ghcr.io/eeems/arkes"
+"eeems/arkes"="ghcr.io/eeems/arkes"
+"arkes"="ghcr.io/eeems/arkes"
 "system"="localhost/system"
 EOF
 

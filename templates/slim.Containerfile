@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.4
 ARG BASE_VARIANT_ID
 
-FROM ghcr.io/eeems/atomic-arch:${BASE_VARIANT_ID} AS build
+FROM arkes:${BASE_VARIANT_ID} AS build
 
 RUN /usr/lib/system/initialize_pacman \
   && echo "[system] Installing bleachbit" \
@@ -66,7 +66,7 @@ LABEL \
   os-release.VARIANT="${VARIANT}" \
   os-release.VARIANT_ID="${VARIANT_ID}" \
   org.opencontainers.image.authors="eeems@eeems.email" \
-  org.opencontainers.image.source="https://github.com/Eeems/atomic-arch" \
+  org.opencontainers.image.source="https://github.com/Eeems/arkes" \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}" \
   mirrorlist="${MIRRORLIST}"

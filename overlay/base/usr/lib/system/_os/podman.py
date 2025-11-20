@@ -17,6 +17,7 @@ from typing import Callable
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 
+from . import OS_NAME
 from . import SYSTEM_PATH
 from . import REGISTRY
 from . import IMAGE
@@ -28,6 +29,8 @@ from .ostree import ostree
 
 from .console import bytes_to_iec, bytes_to_stdout
 from .console import bytes_to_stderr
+
+MAX_SIZE_RATIO = 0.6
 
 
 def podman_cmd(*args: str) -> list[str]:
@@ -192,7 +195,7 @@ def image_hash(image: str, remote: bool = True) -> str:
     return image_labels(image, remote=remote).get("hash", "0")
 
 
-def image_exists(image: str, remote: bool = True) -> bool:
+def image_exists(image: str, remote: bool = True, skip_manifest: bool = False) -> bool:
     image_exists = not _execute(shlex.join(podman_cmd("image", "exists", image)))
     if image_exists or not remote:
         return image_exists
@@ -202,16 +205,30 @@ def image_exists(image: str, remote: bool = True) -> bool:
     if ref is not None:
         raise NotImplementedError()
 
-    tags = image_tags(f"{registry}/{image}")
+    tags = image_tags(f"{registry}/{image}", skip_manifest=skip_manifest)
     if not tag:
         return bool(tags)
 
     return tag in tags
 
 
-def image_tags(image: str) -> list[str]:
+def image_tags(image: str, skip_manifest: bool = False) -> list[str]:
     image = image_qualified_name(image)
     registry, image, _, _ = image_name_parts(image)
+    if (
+        not skip_manifest
+        and registry == REGISTRY
+        and image == IMAGE
+        and _latest_manifest()
+    ):
+        tags = [
+            x[19:]
+            for x in image_labels(f"{REPO}:_manifest", False).keys()
+            if x.startswith("arkes.manifest.tag.")
+        ]
+        if tags:
+            return ["_manifest", *tags]
+
     data: dict[str, str | list[str]] = json.loads(  # pyright:ignore [reportAny]
         subprocess.check_output(
             [
@@ -281,8 +298,12 @@ def image_name_from_parts(
 
 def image_qualified_name(image: str) -> str:
     registry, repo, tag, digest = image_name_parts(image)
-    if (registry or REGISTRY) == REGISTRY and repo == IMAGE:
+    if ((registry or REGISTRY) == REGISTRY) and repo == IMAGE:
         registry = REGISTRY
+
+    if registry == "docker.io" and repo == f"library/{OS_NAME}":
+        registry = REGISTRY
+        repo = IMAGE
 
     if tag and digest:
         tag = None
@@ -330,7 +351,7 @@ def image_digest(image: str, remote: bool = True) -> str:
     registry, repo, tag, _ = image_name_parts(image)
     if tag and registry == REGISTRY and repo == IMAGE and _latest_manifest():
         return image_labels(f"{REPO}:_manifest", False).get(
-            f"atomic.manifest.tag.{tag}",
+            f"arkes.manifest.tag.{tag}",
             _image_digest_remote(image),
         )
 
@@ -642,7 +663,7 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
             sizeA = os.path.getsize(old_oci_path)
             sizeB = image_size(imageB)
             sizeD = os.path.getsize(diff_path)
-            maxSize = int(sizeB * 0.6)
+            maxSize = int(sizeB * MAX_SIZE_RATIO)
             print(f"Size of {imageA}: {bytes_to_iec(sizeA)}")
             print(f"Size of {imageB}: {bytes_to_iec(sizeB)}")
             print(f"Size of delta: {bytes_to_iec(sizeD)}")
@@ -683,9 +704,9 @@ def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bo
             _ = f.write(f"""\
 FROM scratch
 LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k, v in labels.items()])}
-  atomic.patch.prev="{digestA}" \\
-  atomic.patch.ref="{digestB}" \\
-  atomic.patch.format="{patch_format}"
+  arkes.patch.prev="{digestA}" \\
+  arkes.patch.ref="{digestB}" \\
+  arkes.patch.format="{patch_format}"
 """)
             match patch_format:
                 case "pull":
@@ -721,15 +742,15 @@ def apply_delta(
         podman("pull", delta_image, onstdout=onstdout, onstderr=onstderr)
 
     labels = image_labels(delta_image, False)
-    if labels.get("atomic.patch.format", "") != "xdelta3+zstd":
+    if labels.get("arkes.patch.format", "") != "xdelta3+zstd":
         raise ValueError("Incompatible patch format")
 
     digest = image_digest(image, remote=False)
-    if labels.get("atomic.patch.prev", "") != digest:
+    if labels.get("arkes.patch.prev", "") != digest:
         raise ValueError("Patch does not apply to this image")
 
     new_digest = image_digest(new_image, remote=True)
-    if labels.get("atomic.patch.ref", "") != new_digest:
+    if labels.get("arkes.patch.ref", "") != new_digest:
         raise ValueError("Patch does not result in the correct image")
 
     if not image_exists(image, False) or image_digest(image, False) != digest:
@@ -819,22 +840,22 @@ def pull(
         )
         delta_image = f"{base_image}:{delta_tag}"
         onstderr(f"Looking for potential delta {delta_tag}\n".encode("utf-8"))
-        if not image_exists(delta_image, remote=True):
+        if not image_exists(delta_image, remote=True, skip_manifest=True):
             onstderr(b"Not found\n")
             continue
 
         delta_labels = image_labels(delta_image, remote=True)
-        if delta_labels.get("atomic.patch.prev") != local_digest:
+        if delta_labels.get("arkes.patch.prev") != local_digest:
             onstderr(b"Wrong digest\n")
             continue
 
-        if delta_labels.get("atomic.patch.format", "none") == "none":
-            onstderr(b"Empty patch, likely paching will be too large\n")
+        if delta_labels.get("arkes.patch.format", "none") == "none":
+            onstderr(b"Empty patch, likely patching will be too large\n")
             continue
 
         delta_size = image_size(delta_image)
         target_size = image_size(image)
-        if delta_size >= target_size * 0.6:
+        if delta_size >= target_size * MAX_SIZE_RATIO:
             onstderr(b"Delta is too large\n")
             continue
 
@@ -919,4 +940,4 @@ def base_images(
         if registry == "docker.io" and name == IMAGE:
             registry = REGISTRY
 
-        yield image_name_from_parts(registry, name, tag, ref)
+        yield image_qualified_name(image_name_from_parts(registry, name, tag, ref))

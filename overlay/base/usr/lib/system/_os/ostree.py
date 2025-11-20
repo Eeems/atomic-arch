@@ -2,9 +2,11 @@
 import os
 import shlex
 import subprocess
+import json
 
 from datetime import datetime
 from typing import Callable
+from typing import cast
 from collections.abc import Generator
 
 from . import SYSTEM_PATH
@@ -66,6 +68,7 @@ def commit(
         onstdout=onstdout,
         onstderr=onstderr,
     )
+    os.unlink(_skipList)
 
 
 def deploy(
@@ -89,6 +92,10 @@ def deploy(
         for karg in kernelCommandline.split():
             kargs.append(f"--karg={karg.strip()}")
 
+    stateroot = OS_NAME
+    if not os.path.exists(os.path.join(sysroot, "ostree/deploy", OS_NAME)):
+        _, _, _, stateroot = current_deployment()
+
     cmd = shlex.join(
         [
             "ostree",
@@ -97,6 +104,7 @@ def deploy(
             f"--sysroot={sysroot}",
             *kargs,
             f"--os={OS_NAME}",
+            f"--stateroot={stateroot}",
             "--retain",
             revision,
         ]
@@ -142,26 +150,41 @@ def undeploy(
     )
 
 
-def deployments() -> Generator[tuple[int, str, str], None, None]:
-    status = subprocess.check_output(["ostree", "admin", "status"])
-    deployments = [
-        x
-        for x in status.decode("utf-8").split("\n")
-        if not x.startswith("    origin refspec:") and f" {OS_NAME} " in x
-    ]
+def deployments() -> Generator[tuple[int, str, str, bool, str], None, None]:
+    status = json.loads(  # pyright: ignore[reportAny]
+        subprocess.check_output(["ostree", "admin", "status", "--json"])
+    )
+    assert isinstance(status, dict)
+    deployments = cast(
+        list[dict[str, str | int | bool]],
+        status.get("deployments", []),  # pyright: ignore[reportUnknownMemberType]
+    )
     index = 0
     for deployment in deployments:
-        parts = deployment.split()
-        if len(parts) == 2:
-            checksum = parts[1]
-            type = ""
-
-        elif parts[0] == "*":
-            checksum = parts[2]
+        type = ""
+        if cast(bool, deployment["booted"]):
             type = "current"
-        else:
-            checksum = parts[1]
-            type = parts[2].strip("()")
 
-        yield index, checksum, type
+        elif cast(bool, deployment["pending"]):
+            type = "pending"
+
+        elif cast(bool, deployment["rollback"]):
+            type = "rollback"
+
+        yield (
+            index,
+            f"{deployment['checksum']}.{deployment['serial']}",
+            type,
+            cast(bool, deployment["pinned"]),
+            cast(str, deployment["stateroot"]),
+        )
         index += 1
+
+
+def current_deployment() -> tuple[int, str, bool, str]:
+    candidates = [x for x in deployments() if x[2] == "current"]
+    assert len(candidates) == 1, (
+        f"There should be one current deployment, not {len(candidates)}"
+    )
+    index, checksum, _, pinned, stateroot = candidates[0]
+    return index, checksum, pinned, stateroot

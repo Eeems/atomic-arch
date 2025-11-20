@@ -17,7 +17,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: manifest
+  group: manifest-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
         run: |
           gh api \
             --paginate \
-            "/users/Eeems/packages/container/atomic-arch/versions" \
+            "/users/Eeems/packages/container/arkes/versions" \
           | jq -r '
             .[]
             | select(.metadata.container.tags == [])
@@ -53,7 +53,7 @@ jobs:
           | xargs -I {} \
             gh api \
               --method DELETE \
-              "/users/Eeems/packages/container/atomic-arch/versions/{}"
+              "/users/Eeems/packages/container/arkes/versions/{}"
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -61,7 +61,7 @@ jobs:
     name: Build manifest
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/eeems/atomic-arch-builder:latest
+      image: ghcr.io/eeems/arkes-builder:latest
       options: >-
         --privileged
         --security-opt seccomp=unconfined

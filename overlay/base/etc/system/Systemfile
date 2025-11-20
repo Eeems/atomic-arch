@@ -1,7 +1,7 @@
-FROM ghcr.io/eeems/atomic-arch:base
+FROM arkes:base
 
 RUN \
-  HOSTNAME=atomic \
+  HOSTNAME=arkes \
   TIMEZONE=Canada/Mountain \
   KEYMAP=us \
   FONT=ter-124n \
