@@ -10,7 +10,6 @@ from typing import cast
 from typing import Callable
 
 from . import ci_log
-from . import pull
 from . import hex_to_base62
 from . import image_digest
 from . import podman
@@ -18,6 +17,8 @@ from . import create_delta
 from . import _image_digests_write_cache  # pyright: ignore[reportPrivateUsage]
 from . import REPO
 from . import __name__ as modulename
+
+from .pull import pull
 
 get_deltas = cast(
     Callable[[str, bool], Iterable[tuple[str, str, str]]],
