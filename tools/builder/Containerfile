@@ -7,6 +7,14 @@ COPY tools/dockerfile2llbjson/go.mod tools/dockerfile2llbjson/go.sum ./
 RUN go mod download
 COPY tools/dockerfile2llbjson/main.go ./
 RUN CGO_ENABLED=0 go build -o /app/dockerfile2llbjson .
+RUN apk add jq
+ARG \
+    _IMAGE=alpine@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412 \
+    _LLB='[{"Op":{"source":{"identifier":"docker-image://docker.io/library/alpine@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412"}},"platform":{"Architecture":"amd64","OS":"linux"},"constraints":{}},{"inputs":[{"digest":"sha256:d7da300b78ded70bf3032141b65155e613989c41dae86af433196b6a8ab4c45b"}],"Op":{}}]'
+RUN data="$(echo "FROM ${_IMAGE}" | /app/dockerfile2llbjson)" \
+    && echo "$data" \
+    && diff -U3 <(echo "${_LLB}" | jq) <(echo "$data" | jq) \
+    && echo "Test passed"
 
 FROM ubuntu:24.04
 

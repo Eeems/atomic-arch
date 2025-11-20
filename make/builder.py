@@ -1,3 +1,7 @@
+import os
+import shutil
+import subprocess
+
 from argparse import ArgumentParser
 from argparse import Namespace
 from typing import Any
@@ -16,7 +20,20 @@ def register(_: ArgumentParser):
 
 
 def command(_: Namespace):
-    podman("build", f"--tag={BUILDER}", "--file=tools/builder/Containerfile", ".")
+    args = []
+    if shutil.which("niri") is not None:
+        gomodcache = subprocess.check_output(["go", "env", "GOMODCACHE"])
+        if gomodcache and os.path.exists(gomodcache):
+            args.append(f"--volume={gomodcache}:/go/pkg/mod")
+            print(f"Using GOMODCACHE: {gomodcache}")
+
+    podman(
+        "build",
+        f"--tag={BUILDER}",
+        *args,
+        "--file=tools/builder/Containerfile",
+        ".",
+    )
 
 
 if __name__ == "__main__":

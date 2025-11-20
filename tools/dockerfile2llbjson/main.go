@@ -41,6 +41,7 @@ func (b buildArgSlice) ToMap() map[string]string { return b }
 type OfflineResolver struct{}
 
 func (r *OfflineResolver) ResolveImageConfig(ctx context.Context, ref string, opt sourceresolver.Opt) (string, digest.Digest, []byte, error) {
+	emptydgst := digest.Digest("sha256:0000000000000000000000000000000000000000000000000000000000000000")
 	img := &specs.Image{
 		Platform: specs.Platform{
 			Architecture: "amd64",
@@ -54,7 +55,7 @@ func (r *OfflineResolver) ResolveImageConfig(ctx context.Context, ref string, op
 		RootFS: specs.RootFS{
 			Type: "layers",
 			DiffIDs: []digest.Digest{
-				digest.Digest("sha256:0000000000000000000000000000000000000000000000000000000000000000"),
+				emptydgst,
 			},
 		},
 	}
@@ -62,7 +63,13 @@ func (r *OfflineResolver) ResolveImageConfig(ctx context.Context, ref string, op
 	if err != nil {
 		return "", "", nil, err
 	}
-	dgst := digest.Canonical.FromBytes(configJSON)
+	var dgst digest.Digest
+	if strings.Contains(ref, "@sha256:") {
+		parts := strings.Split(ref, "@")
+		dgst = digest.Digest(parts[len(parts)-1])
+	} else {
+		dgst = emptydgst
+	}
 	return ref, dgst, configJSON, nil
 }
 
