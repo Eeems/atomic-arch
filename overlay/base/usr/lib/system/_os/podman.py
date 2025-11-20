@@ -541,7 +541,6 @@ def _save_image(image: str) -> tuple[subprocess.Popen[bytes], TemporaryDirectory
             [
                 "skopeo",
                 "copy",
-                "--preserve-digests",
                 "--remove-signatures",
                 f"containers-storage:{image}",
                 f"oci-archive:{fifo}",
