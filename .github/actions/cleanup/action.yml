@@ -41,6 +41,8 @@ runs:
       uses: ./.github/actions/run-with-podman-service
       with:
         run: |
+          df -h
           podman system prune --force
           podman rmi $(podman image ls -aq) || true
           podman system prune --force
+          df -h
