@@ -180,11 +180,6 @@ jobs:
               printf '%s %s\n' "$hash" "$(numfmt --to=iec $size)"
             done
             echo "::endgroup::"
-            if $push;then
-              echo "::group::push"
-              ./make.py push ${{ inputs.variant }}
-              echo "::endgroup::"
-            fi
             echo "updates=$updates" >> $GITHUB_OUTPUT
         env:
           updates: ${{ inputs.updates }}
