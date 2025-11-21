@@ -52,12 +52,10 @@ jobs:
         --security-opt apparmor=unconfined
         --cap-add=SYS_ADMIN
         --cap-add=NET_ADMIN
-        --cap-add=SYS_CHROOT
         --device /dev/fuse
         --tmpfs /tmp
         --tmpfs /run
         --userns=host
-        --network=host
         -v /:/run/host
     steps:
       - name: Checkout the repository
