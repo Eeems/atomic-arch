@@ -14,7 +14,8 @@ ARG \
   VARIANT="Base" \
   VARIANT_ID="base"
 
-RUN /usr/lib/system/package_layer \
+RUN mkdir /var/home \
+  && /usr/lib/system/package_layer \
   base \
   nano \
   micro \
@@ -60,6 +61,9 @@ RUN /usr/lib/system/package_layer \
   python-dbus \
   distrobox \
   xdelta3 \
+  --aur \
+  localepurge \
+  && rmdir /var/home \
   && rm /usr/bin/su \
   && ln -s /usr/bin/su{-rs,} \
   && ln -s /usr/bin/sudo{-rs,} \
@@ -67,29 +71,17 @@ RUN /usr/lib/system/package_layer \
   && chmod u+s /usr/bin/new{u,g}idmap \
   && /usr/lib/system/commit_layer /usr/bin
 
+COPY --from=overlay /overlay /
+
 RUN systemctl enable \
   NetworkManager \
   bluetooth \
   podman \
-  && /usr/lib/system/commit_layer
-
-RUN mkdir -p /var/lib/system \
-  && /usr/lib/system/commit_layer
-
-COPY --from=overlay /overlay /
-
-RUN mkdir /var/home \
-  && /usr/lib/system/package_layer \
-  --aur \
-  localepurge \
-  && rmdir /var/home
-
-RUN \
-  systemctl enable \
   atomic-state-overlay \
   os-daemon \
   os-checkupdates.timer \
   systemd-timesyncd \
+  && mkdir -p /var/lib/system \
   && chmod 400 /etc/sudoers \
   && chmod 644 /etc/pam.d/sudo{,-i} \
   && /usr/lib/system/commit_layer
