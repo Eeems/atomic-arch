@@ -433,6 +433,7 @@ def build(
             "--dns=none",
             "--tag=system:latest",
             "--pull=never",
+            "--cap-add=SYS_ADMIN",
             *[f"--build-arg={x}" for x in _buildArgs],
             f"--volume={cache}:{cache}",
             f"--file={containerfile}",

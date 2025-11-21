@@ -22,13 +22,21 @@ kwds: dict[str, str] = {
 def register(parser: ArgumentParser):
     _ = parser.add_argument(
         "--branch",
-        default="master",
-        help="Which branch of builder to use",
+        default=None,
+        help="Which branch of builder to use, defaults to the current checked out branch.",
     )
 
 
 def command(args: Namespace):
-    image = f"ghcr.io/eeems/arkes-builder:{cast(str, args.branch)}"
+    branch = cast(str | None, args.branch)
+    if branch is None:
+        branch = (
+            subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            .decode("utf-8")
+            .strip()
+        )
+
+    image = f"ghcr.io/eeems/arkes-builder:{branch}"
     if not image_exists(image, False, True):
         if not image_exists(image, True, True):
             print(f"{image} does not exist")
@@ -36,7 +44,6 @@ def command(args: Namespace):
 
         pull(image)
 
-    os.makedirs(".runner", exist_ok=True)
     master_fd, slave_fd = pty.openpty()
     with tempfile.TemporaryDirectory() as tmpdir:
         __e = os.path.join(tmpdir, "__e")
@@ -50,6 +57,8 @@ def command(args: Namespace):
         os.makedirs(_github_workflow)
         _actions = os.path.join(tmpdir, "_actions")
         os.makedirs(_actions)
+        __w = os.path.join(tmpdir, "__w")
+        os.makedirs(__w)
         proc = subprocess.Popen(
             [
                 "docker",
@@ -71,7 +80,7 @@ def command(args: Namespace):
                 "--env=GITHUB_ACTIONS=true",
                 "--env=CI=true",
                 "--volume=/var/run/docker.sock:/var/run/docker.sock",
-                f"--volume={os.path.realpath('.runner')}:/__w",
+                f"--volume={__w}:/__w",
                 f"--volume={os.path.realpath('.')}:/__w/arkes/arkes:O",
                 f"--volume={__e}:/__e:ro",
                 f"--volume={_temp}:/__w/temp",
@@ -85,7 +94,6 @@ def command(args: Namespace):
                 "-c",
                 "\n".join(
                     [
-                        # f"git --work-tree='/run/host{os.path.realpath('.')}' checkout HEAD -- .",
                         "cp /etc/resolv.conf /etc/hosts /etc/hostname /tmp/",
                         "mount --make-rprivate /",
                         "umount /etc/resolv.conf /etc/hosts /etc/hostname",

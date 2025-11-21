@@ -10,12 +10,12 @@ from typing import cast
 
 from . import is_root
 from . import image_exists
-from . import pull
 from . import base_images
 from . import image_labels
 from . import podman
 from . import REPO
 
+from .pull import pull
 from .push import push
 from .hash import hash
 
