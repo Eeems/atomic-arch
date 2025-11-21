@@ -45,7 +45,7 @@ jobs:
     name: arkes:${{ inputs.variant }} iso${{ inputs.offline && ' (offline)' || ''}}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/eeems/arkes-builder:${{ github.ref_name }}
+      image: ghcr.io/eeems/arkes-builder:${{ github.head_ref || github.ref_name }}
       options: >-
         --privileged
         --security-opt seccomp=unconfined
@@ -56,7 +56,6 @@ jobs:
         --tmpfs /tmp
         --tmpfs /run
         --userns=host
-        -v /var/lib/containers:/var/lib/containers
         -v /:/run/host
     steps:
       - name: Checkout the repository
