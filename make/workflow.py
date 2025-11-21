@@ -301,6 +301,7 @@ def command(_: Namespace):
                 "  name: Generate manifest",
                 '  if: "!cancelled()"',
                 "  needs:",
+                *[f"    - {j}" for j in sorted(build_order)],
                 "  uses: ./.github/workflows/manifest.yaml",
                 "  secrets: inherit",
                 "  permissions: &permissions",
