@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+path="$(realpath "${1:-/}")"
+timestamp=$(TZ=UTC date -d "@946684800" '+%Y%m%d%H%M.%S')
+
+echo "[system] Committing $path"
+
+timestamp=$timestamp \
+chronic find "$path" -xdev \
+  \( \
+    -path /dev -o \
+    -path /proc -o \
+    -path /sys -o \
+    -path /run -o \
+    -path /tmp \
+  \) -prune \
+  -exec sh -c '
+      for f; do
+          touch -h -t "$timestamp" "$f" 2>/dev/null ||:
+      done
+  ' sh {} +

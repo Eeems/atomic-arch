@@ -3,6 +3,11 @@
 # x-templates=nvidia
 ARG HASH
 
+FROM arkes:base as overlay
+
+COPY overlay/atomic /overlay
+RUN /usr/lib/system/commit_layer /overlay
+
 FROM arkes:base
 
 ARG \
@@ -58,16 +63,20 @@ RUN /usr/lib/system/initialize_pacman \
   pwvucontrol \
   wego \
   prelockd \
-  && /usr/lib/system/remove_pacman_files
+  && /usr/lib/system/remove_pacman_files \
+  && /usr/lib/system/commit_layer
 
 RUN systemctl enable \
   greetd \
-  udisks2
+  udisks2 \
+  && /usr/lib/system/commit_layer
 
-COPY overlay/atomic /
+COPY --from=overlay /overlay /
+
 RUN systemctl enable \
   dconf.service \
-  prelockd.service
+  prelockd.service \
+  && /usr/lib/system/commit_layer
 
 ARG VERSION_ID HASH
 
@@ -78,4 +87,5 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer

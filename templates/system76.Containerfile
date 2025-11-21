@@ -1,7 +1,11 @@
 # syntax=docker/dockerfile:1.4
 ARG HASH
-
 ARG BASE_VARIANT_ID
+
+FROM arkes:${BASE_VARIANT_ID} as overlay
+
+COPY overlay/system76 /overlay
+RUN /usr/lib/system/commit_layer /overlay
 
 FROM arkes:${BASE_VARIANT_ID}
 
@@ -10,7 +14,8 @@ RUN /usr/lib/system/add_pacman_repository \
   --server=https://repo.eeems.website/\$repo \
   --server=https://repo.eeems.codes/\$repo \
   eeems-system76 \
-  && /usr/lib/system/remove_pacman_files
+  && /usr/lib/system/remove_pacman_files \
+  && /usr/lib/system/commit_layer
 
 RUN /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_packages \
@@ -22,15 +27,17 @@ RUN /usr/lib/system/initialize_pacman \
   system76-scheduler \
   system76-keyboard-configurator \
   firmware-manager \
-  && /usr/lib/system/remove_pacman_files
+  && /usr/lib/system/remove_pacman_files \
+  && /usr/lib/system/commit_layer
 
 RUN systemctl enable \
   system76 \
   system76-firmware-daemon \
   com.system76.PowerDaemon \
-  com.system76.Scheduler
+  com.system76.Scheduler \
+  && /usr/lib/system/commit_layer
 
-COPY overlay/system76 /
+COPY --from=overlay /overlay /
 
 ARG \
   VARIANT \
@@ -45,4 +52,5 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer

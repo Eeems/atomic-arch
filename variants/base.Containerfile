@@ -3,6 +3,11 @@
 # x-templates=slim
 ARG HASH
 
+FROM arkes:rootfs as overlay
+
+COPY overlay/base /overlay
+RUN /usr/lib/system/commit_layer /overlay
+
 FROM arkes:rootfs
 
 ARG \
@@ -61,23 +66,27 @@ RUN /usr/lib/system/initialize_pacman \
   && ln -s /usr/bin/su{-rs,} \
   && ln -s /usr/bin/sudo{-rs,} \
   && ln -s /usr/bin/visudo{-rs,} \
-  && chmod u+s /usr/bin/new{u,g}idmap
+  && chmod u+s /usr/bin/new{u,g}idmap \
+  && /usr/lib/system/commit_layer
 
 RUN systemctl enable \
   NetworkManager \
   bluetooth \
-  podman
+  podman \
+  && /usr/lib/system/commit_layer
 
-RUN mkdir -p /var/lib/system
+RUN mkdir -p /var/lib/system \
+  && /usr/lib/system/commit_layer
 
-COPY overlay/base /
+COPY --from=overlay /overlay /
 
 RUN mkdir /var/home \
   && /usr/lib/system/initialize_pacman \
   && /usr/lib/system/install_aur_packages \
   localepurge \
   && /usr/lib/system/remove_pacman_files \
-  && rmdir /var/home
+  && rmdir /var/home \
+  && /usr/lib/system/commit_layer
 
 RUN \
   systemctl enable \
@@ -86,7 +95,8 @@ RUN \
   os-checkupdates.timer \
   systemd-timesyncd \
   && chmod 400 /etc/sudoers \
-  && chmod 644 /etc/pam.d/sudo{,-i}
+  && chmod 644 /etc/pam.d/sudo{,-i} \
+  && /usr/lib/system/commit_layer
 
 ARG VERSION_ID HASH
 
@@ -97,4 +107,5 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer

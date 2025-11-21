@@ -9,7 +9,8 @@ RUN /usr/lib/system/initialize_pacman \
   nvidia-container-toolkit \
   nvidia-utils \
   nvidia-settings \
-  && /usr/lib/system/remove_pacman_files
+  && /usr/lib/system/remove_pacman_files \
+  && /usr/lib/system/commit_layer
 
 ARG \
   VARIANT \
@@ -24,4 +25,5 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer
