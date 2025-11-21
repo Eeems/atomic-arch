@@ -53,7 +53,7 @@ jobs:
       updates: ${{ steps.build.outputs.updates }}
       digest: ${{ steps.image.outputs.digest }}
     container:
-      image: ghcr.io/eeems/arkes-builder:latest
+      image: ghcr.io/eeems/arkes-builder:${{ github.ref_name }}
       options: >-
         --privileged
         --security-opt seccomp=unconfined

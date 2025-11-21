@@ -254,7 +254,7 @@ def command(_: Namespace):
                 "    contents: read",
                 "    packages: read",
                 "  container:",
-                f"    image: {BUILDER}:latest",
+                f"    image: {BUILDER}:${{{{ github.ref_name }}}}",
                 "    options: >-",
                 "      --privileged",
                 "      --security-opt seccomp=unconfined",

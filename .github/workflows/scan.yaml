@@ -35,7 +35,7 @@ jobs:
     name: arkes:${{ inputs.variant }} image
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/eeems/arkes-builder:latest
+      image: ghcr.io/eeems/arkes-builder:${{ github.ref_name }}
       options: >-
         --privileged
         --security-opt seccomp=unconfined
