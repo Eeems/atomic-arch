@@ -79,12 +79,10 @@ RUN mkdir -p /var/lib/system \
 COPY --from=overlay /overlay /
 
 RUN mkdir /var/home \
-  && /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_aur_packages \
+  && /usr/lib/system/package_layer \
+  --aur \
   localepurge \
-  && /usr/lib/system/remove_pacman_files \
-  && rmdir /var/home \
-  && /usr/lib/system/commit_layer
+  && rmdir /var/home
 
 RUN \
   systemctl enable \
