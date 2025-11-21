@@ -118,14 +118,11 @@ def command(_: Namespace):
             "  permissions: *permissions",
             "  with:",
             f"    variant: {job_id}",
+            "    push: ${{ github.event_name != 'pull_request' }}",
         ]
-        if job_id == "rootfs":
-            lines.append("    push: true")
-
-        else:
+        if job_id != "rootfs":
             lines += [
                 f"    updates: ${{{{ fromJson(needs['{depends}'].outputs.updates) }}}}",
-                "    push: ${{ github.event_name != 'pull_request' }}",
                 f"    artifact: {depends}",
                 f"    digest: ${{{{ needs['{depends}'].outputs.digest }}}}",
             ]

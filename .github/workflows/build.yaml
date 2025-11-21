@@ -153,7 +153,7 @@ jobs:
     permissions: *permissions
     with:
       variant: rootfs
-      push: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   base:
     name: Build eeems/arkes:base image
@@ -163,8 +163,8 @@ jobs:
     permissions: *permissions
     with:
       variant: base
-      updates: ${{ fromJson(needs['rootfs'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['rootfs'].outputs.updates) }}
       artifact: rootfs
       digest: ${{ needs['rootfs'].outputs.digest }}
 
@@ -176,8 +176,8 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
-      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       artifact: base
       digest: ${{ needs['base'].outputs.digest }}
 
@@ -189,8 +189,8 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
-      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       artifact: atomic
       digest: ${{ needs['atomic'].outputs.digest }}
 
@@ -202,8 +202,8 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
-      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       artifact: base
       digest: ${{ needs['base'].outputs.digest }}
 
@@ -215,8 +215,8 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
-      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       artifact: atomic
       digest: ${{ needs['atomic'].outputs.digest }}
 
@@ -228,8 +228,8 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
-      updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       artifact: eeems
       digest: ${{ needs['eeems'].outputs.digest }}
 
@@ -241,8 +241,8 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
-      updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       artifact: eeems
       digest: ${{ needs['eeems'].outputs.digest }}
 
@@ -254,8 +254,8 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
-      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       artifact: base
       digest: ${{ needs['base'].outputs.digest }}
 

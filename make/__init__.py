@@ -223,6 +223,10 @@ if os.path.exists(DIGEST_CACHE_PATH):
             print(f"Failed to load digest cache: {e}", file=sys.stderr)
             os.unlink(DIGEST_CACHE_PATH)
 
+if not os.path.exists(DIGEST_CACHE_PATH):
+    with open(DIGEST_CACHE_PATH, "w") as f:
+        _ = f.write("{}")
+
 
 def _remote_image_digest(image: str, skip_manifest: bool = False) -> str:
     e: Exception | None = None

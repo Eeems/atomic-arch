@@ -116,9 +116,9 @@ jobs:
         with:
           run: |
             echo "::group::checkupdates"
-            push=false
+            args=""
             if [[ "${{ inputs.push }}" == "true" ]];then
-              push=true
+              args="$args --push"
             fi
             if [[ "$VARIANT" == "rootfs" ]];then
               set +e
@@ -130,9 +130,9 @@ jobs:
                 echo "::endgroup::"
                 echo "::group::build"
                 if [[ "$output" == *"mirrorlist "* ]]; then
-                  ./make.py rootfs
+                  ./make.py rootfs $args
                 else
-                  ./make.py build rootfs
+                  ./make.py build $args rootfs
                 fi
                 updates="true"
               elif [ $res -ne 0 ];then
@@ -154,7 +154,7 @@ jobs:
               if [ $res -eq 2 ];then
                 echo "::endgroup::"
                 echo "::group::build"
-                ./make.py build ${{ inputs.variant }}
+                ./make.py build $args ${{ inputs.variant }}
                 updates="true"
                 echo "::endgroup::"
               elif [ $res -ne 0 ];then
