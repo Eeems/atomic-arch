@@ -14,8 +14,7 @@ ARG \
   VARIANT="Base" \
   VARIANT_ID="base"
 
-RUN mkdir /var/home \
-  && /usr/lib/system/package_layer \
+RUN /usr/lib/system/package_layer \
   base \
   nano \
   micro \
@@ -61,9 +60,6 @@ RUN mkdir /var/home \
   python-dbus \
   distrobox \
   xdelta3 \
-  --aur \
-  localepurge \
-  && rmdir /var/home \
   && rm /usr/bin/su \
   && ln -s /usr/bin/su{-rs,} \
   && ln -s /usr/bin/sudo{-rs,} \
@@ -72,6 +68,13 @@ RUN mkdir /var/home \
   && /usr/lib/system/commit_layer /usr/bin
 
 COPY --from=overlay /overlay /
+
+# install_aur_packages is part of the overlay
+RUN mkdir /var/home \
+  && /usr/lib/system/package_layer \
+  --aur \
+  localepurge \
+  && rmdir /var/home
 
 RUN systemctl enable \
   NetworkManager \
