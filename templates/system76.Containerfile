@@ -17,8 +17,7 @@ RUN /usr/lib/system/add_pacman_repository \
   && /usr/lib/system/remove_pacman_files \
   && /usr/lib/system/commit_layer
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   system76-driver \
   system76-dkms \
   system76-acpi-dkms \
@@ -26,9 +25,7 @@ RUN /usr/lib/system/initialize_pacman \
   system76-power \
   system76-scheduler \
   system76-keyboard-configurator \
-  firmware-manager \
-  && /usr/lib/system/remove_pacman_files \
-  && /usr/lib/system/commit_layer
+  firmware-manager
 
 RUN systemctl enable \
   system76 \

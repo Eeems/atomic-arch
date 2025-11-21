@@ -14,8 +14,7 @@ ARG \
   VARIANT="Atomic" \
   VARIANT_ID="atomic"
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   ghostty \
   gnome-software \
   flatpak-xdg-utils \
@@ -51,7 +50,7 @@ RUN /usr/lib/system/initialize_pacman \
   bluez-utils \
   system-config-printer \
   dex \
-  && /usr/lib/system/install_aur_packages \
+  --aur \
   python-imageio-ffmpeg \
   python-screeninfo \
   waypaper \
@@ -62,9 +61,7 @@ RUN /usr/lib/system/initialize_pacman \
   libwireplumber-4.0-compat \
   pwvucontrol \
   wego \
-  prelockd \
-  && /usr/lib/system/remove_pacman_files \
-  && /usr/lib/system/commit_layer
+  prelockd
 
 RUN systemctl enable \
   greetd \

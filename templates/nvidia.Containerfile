@@ -3,14 +3,11 @@ ARG BASE_VARIANT_ID
 
 FROM arkes:${BASE_VARIANT_ID}
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   nvidia-open-dkms \
   nvidia-container-toolkit \
   nvidia-utils \
-  nvidia-settings \
-  && /usr/lib/system/remove_pacman_files \
-  && /usr/lib/system/commit_layer
+  nvidia-settings
 
 ARG \
   VARIANT \

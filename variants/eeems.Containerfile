@@ -28,8 +28,7 @@ RUN /usr/lib/system/add_pacman_repository \
   && /usr/lib/system/remove_pacman_files \
   && /usr/lib/system/commit_layer
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   sublime-text \
   zsh \
   man-pages \
@@ -43,10 +42,8 @@ RUN /usr/lib/system/initialize_pacman \
   spotify \
   podman-docker \
   podman-compose \
-  && /usr/lib/system/install_aur_packages \
-  wego \
-  && /usr/lib/system/remove_pacman_files \
-  && /usr/lib/system/commit_layer
+  --aur \
+  wego
 
 RUN systemctl enable zerotier-one \
   && /usr/lib/system/commit_layer

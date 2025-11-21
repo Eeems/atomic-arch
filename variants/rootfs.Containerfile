@@ -54,12 +54,12 @@ RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
   --numeric-owner \
   --pax-option=exthdr.name=%d/PaxHeaders/%p,delete=atime,delete=ctime \
   --mtime="@946684800" \
-  -C /rootfs \
-  -cf /rootfs.tar . \
-  && rm -rf /rootfs \
-  && mkdir /rootfs \
-  && tar -C /rootfs -xf /rootfs.tar \
-  && rm /rootfs.tar \
+  -C rootfs \
+  -cf rootfs.tar . \
+  && rm -rf rootfs \
+  && mkdir rootfs \
+  && tar -C rootfs -xf rootfs.tar \
+  && rm rootfs.tar \
   && /overlay/usr/lib/system/commit_layer /rootfs
 
 FROM scratch AS rootfs

@@ -13,8 +13,7 @@ ARG \
   VARIANT="GNOME" \
   VARIANT_ID="gnome"
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   gdm \
   gnome-shell \
   ghostty \
@@ -24,9 +23,7 @@ RUN /usr/lib/system/initialize_pacman \
   gnome-packagekit \
   fwupd \
   gnome-tweaks \
-  gnome-control-center \
-  && /usr/lib/system/remove_pacman_files \
-  && /usr/lib/system/commit_layer
+  gnome-control-center
 
 RUN systemctl enable gdm \
   && /usr/lib/system/commit_layer
