@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+sed -i \
+  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \
+  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \
+  /etc/pacman.conf
+grep -E '[[:space:]]/etc(/|$)' /proc/mounts | awk '{print $2}' | sort -r | xargs -r umount -l
+mv /etc /usr
+ln -s /usr/etc /etc
+mv /var/lib/pacman /usr/lib
+mkdir /sysroot
+ln -s /sysroot/ostree ostree

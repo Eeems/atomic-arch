@@ -258,6 +258,7 @@ def command(_: Namespace):
                 "      --security-opt apparmor=unconfined",
                 "      --cap-add=SYS_ADMIN",
                 "      --cap-add=NET_ADMIN",
+                "      --cap-add=SYS_CHROOT",
                 "      --device /dev/fuse",
                 "      --tmpfs /tmp",
                 "      --tmpfs /run",

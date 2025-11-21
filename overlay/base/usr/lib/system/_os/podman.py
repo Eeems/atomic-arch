@@ -379,14 +379,7 @@ ARG KARGS
 
 RUN /usr/lib/system/build_kernel
 
-RUN sed -i \
-  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \
-  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \
-  /etc/pacman.conf \
-  && mv /etc /usr && ln -s /usr/etc /etc \
-  && mv /var/lib/pacman /usr/lib \
-  && mkdir /sysroot \
-  && ln -s /sysroot/ostree ostree
+RUN /usr/lib/system/prepare_fs
 
 ARG VERSION_ID
 
