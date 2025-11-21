@@ -5,23 +5,25 @@ set -e
 packages=()
 aur_packages=()
 aur=false
-for var in "$@";do
+for var in "$@"; do
   case "$var" in
-    --aur)
-      aur=true
-      ;;
-    *)
-      if $aur; then
-        aur_packages+=("$var")
-      else
-        packages+=("$var")
-      fi
-      ;;
+  --aur)
+    aur=true
+    ;;
+  *)
+    if $aur; then
+      aur_packages+=("$var")
+    else
+      packages+=("$var")
+    fi
+    ;;
   esac
 done
 
-/usr/lib/system/install_packages "${packages[@]}"
-if [ ${#aur_packages[@]} -gt 0 ];then
+if [ ${#packages[@]} -gt 0 ]; then
+  /usr/lib/system/install_packages "${packages[@]}"
+fi
+if [ ${#aur_packages[@]} -gt 0 ]; then
   /usr/lib/system/install_aur_packages "${aur_packages[@]}"
 fi
 /usr/lib/system/remove_pacman_files
