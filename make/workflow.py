@@ -199,6 +199,7 @@ def command(_: Namespace):
             '      - "make/checkupdates.py"',
             '      - "make/manifest.py"',
             '      - "make/check.py"',
+            '      - "make/workflow.py"',
             "      - make.py",
             "      - seccomp.json",
             "      - .containerignore",
