@@ -84,6 +84,14 @@ def iso(local_image: bool):
     atexit.unregister(exitFunc1)
     podman("rmi", f"system:iso-{uuid}")
     if local_image:
+        if os.path.exists("/run/host/sys/fs/cgroup"):
+            execute(
+                "mount",
+                "--bind",
+                "/run/host/sys/fs/cgroup",
+                "/sys/fs/cgroup",
+            )
+
         execute(
             "systemd-nspawn",
             "--register=no",
@@ -93,6 +101,8 @@ def iso(local_image: bool):
             "-c",
             f"podman --remote save {buildImage} | podman load",
         )
+        if os.path.exists("/run/host/sys/fs/cgroup"):
+            execute("umount", "/sys/fs/cgroup")
 
     _ = shutil.copytree(os.path.join(ROOTFS_PATH, "etc/system/archiso"), "archiso")
     for path in [

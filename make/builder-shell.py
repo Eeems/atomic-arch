@@ -76,7 +76,6 @@ def command(args: Namespace):
             "--env=GITHUB_ACTIONS=true",
             "--env=CI=true",
             "--volume=/var/run/docker.sock:/var/run/docker.sock",
-            "--volume=/sys/fs/cgroup:/sys/fs/cgroup:rw",
             f"--volume={__w}:/__w",
             "--volume=/etc/machine-id:/etc/machine-id:ro",
             f"--volume={os.path.realpath('.')}:/__w/arkes/arkes:O",
