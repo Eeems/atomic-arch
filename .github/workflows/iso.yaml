@@ -48,14 +48,15 @@ jobs:
       image: ghcr.io/eeems/arkes-builder:${{ github.head_ref || github.ref_name }}
       options: >-
         --privileged
-        --security-opt seccomp=unconfined
-        --security-opt apparmor=unconfined
+        --security-opt=seccomp=unconfined
+        --security-opt=apparmor=unconfined
         --cap-add=SYS_ADMIN
         --cap-add=NET_ADMIN
-        --device /dev/fuse
-        --tmpfs /tmp
-        --tmpfs /run
+        --device=/dev/fuse
+        --tmpfs=/tmp
+        --tmpfs=/run
         --userns=host
+        --cgroupns=host
         --volume=/:/run/host
         --volume=/run/dbus/system_bus_socket:/run/dbus/system_bus_socket
         --volume=/etc/machine-id:/etc/machine-id:ro
