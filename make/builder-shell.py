@@ -1,5 +1,4 @@
 import os
-import sys
 import tempfile
 import subprocess
 
@@ -8,8 +7,6 @@ from argparse import Namespace
 from typing import Any
 from typing import cast
 
-from . import image_exists
-from .pull import pull
 from .shell import shell
 
 kwds: dict[str, str] = {
@@ -35,13 +32,6 @@ def command(args: Namespace):
         )
 
     image = f"ghcr.io/eeems/arkes-builder:{branch}"
-    if not image_exists(image, False, True):
-        if not image_exists(image, True, True):
-            print(f"{image} does not exist")
-            sys.exit(1)
-
-        pull(image)
-
     with tempfile.TemporaryDirectory() as tmpdir:
         __e = os.path.join(tmpdir, "__e")
         os.makedirs(__e)
