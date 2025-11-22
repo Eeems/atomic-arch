@@ -195,6 +195,8 @@ def command(_: Namespace):
             '      - "make/__init__.py"',
             '      - "make/iso.py"',
             '      - "make/scan.py"',
+            '      - "make/pull.py"',
+            '      - "make/push.py"',
             '      - "make/build.py"',
             '      - "make/checkupdates.py"',
             '      - "make/manifest.py"',

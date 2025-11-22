@@ -53,6 +53,18 @@ def hash(target: str) -> str:
             with open(file, "rb") as f:
                 m.update(f.read())
 
+    for file in sorted(
+        [
+            "build.py",
+            "hash.py",
+            "pull.py",
+            "push.py",
+            "__init__.py",
+        ]
+    ):
+        with open(f"make/{file}", "rb") as f:
+            m.update(f.read())
+
     return m.hexdigest()
 
 
