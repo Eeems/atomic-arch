@@ -56,7 +56,8 @@ jobs:
         --tmpfs /tmp
         --tmpfs /run
         --userns=host
-        -v /:/run/host
+        --volume=/:/run/host
+        --volume=/run/dbus/system_bus_socket:/run/dbus/system_bus_socket
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
