@@ -36,6 +36,11 @@ def command(args: Namespace):
             "iso",
             *([] if cast(bool, args.localImage) else ["--no-local-image"]),
             check=True,
+            volumes=[
+                "/etc/machine-id:/etc/machine-id:ro",
+                "/run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro",
+            ],
+            flags=["cgroupns=host"],
         )
 
 

@@ -8,7 +8,7 @@ echo "[system] Language: $LANGUAGE"
 echo "[system] Encoding: $ENCODING"
 echo "${HOSTNAME:-arkes}" >/etc/hostname
 chmod a+r /etc/hostname
-ln -sf "/usr/share/zoneinfo/%{TIMEZONE:-UTC}" /etc/localtime
+ln -sf "/usr/share/zoneinfo/${TIMEZONE:-UTC}" /etc/localtime
 echo "KEYMAP=${KEYMAP:-us}" >/etc/vconsole.conf
 echo "FONT=${FONT:-ter-124n}" >>/etc/vconsole.conf
 echo "LANG=${LANGUAGE:-en_US}.${ENCODING:-UTF-8}" >/etc/locale.conf

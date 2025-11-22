@@ -13,4 +13,3 @@ mv /var/lib/pacman /usr/lib
 echo "[system] Setting up ostree"
 mkdir /sysroot
 ln -s /sysroot/ostree ostree
-

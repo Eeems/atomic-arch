@@ -55,6 +55,7 @@ def in_system(
     entrypoint: str = "/usr/bin/os",
     check: bool = False,
     volumes: list[str] | None = None,
+    flags: list[str] | None = None,
 ) -> int:
     cmd = shlex.join(
         in_system_cmd(
@@ -62,6 +63,7 @@ def in_system(
             target=target,
             entrypoint=entrypoint,
             volumes=volumes,
+            flags=flags,
         )
     )
     ret = _execute(cmd)
@@ -76,6 +78,7 @@ def in_system_output(
     target: str = "system:latest",
     entrypoint: str = "/usr/bin/os",
     volumes: list[str] | None = None,
+    flags: list[str] | None = None,
 ) -> bytes:
     return subprocess.check_output(
         in_system_cmd(
@@ -83,6 +86,7 @@ def in_system_output(
             target=target,
             entrypoint=entrypoint,
             volumes=volumes,
+            flags=flags,
         )
     )
 
@@ -92,6 +96,7 @@ def in_system_cmd(
     target: str = "system:latest",
     entrypoint: str = "/usr/bin/os",
     volumes: list[str] | None = None,
+    flags: list[str] | None = None,
 ) -> list[str]:
     target = image_qualified_name(target)
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
@@ -136,6 +141,7 @@ def in_system_cmd(
         "--pull=never",
         "--security-opt=label=disable",
         *[f"--volume={x}" for x in volume_args],
+        *[f"--{x}" for x in (flags or [])],
         f"--entrypoint={entrypoint}",
         target,
         *args,

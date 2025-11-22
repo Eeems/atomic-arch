@@ -176,6 +176,7 @@ def install(
     exitFunc1 = atexit.register(execute, "umount", "/var/tmp")
     execute(
         "systemd-nspawn",
+        "--register=no",
         f"--directory={rootfs}",
         "--bind=/run/podman/podman.sock:/run/podman/podman.sock",
         f"--bind={os.path.join(rootfs, 'usr/etc')}:/etc",
