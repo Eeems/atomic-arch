@@ -94,6 +94,12 @@ jobs:
           key: manifest_${{ inputs.artifact }}
           artifact: true
 
+      - name: Pacman cache
+        uses: actions/cache/restore@v4
+        with:
+          key: pacman-iso-${{ inputs.variant }}
+          path: /var/cache/pacman
+
       - name: Force digest
         if: inputs.digest != '' && inputs.artifact != ''
         uses: ./.github/actions/force-image-digest
@@ -110,6 +116,12 @@ jobs:
               args="$args --no-local-image"
             fi
             ./make.py iso $args ${{ inputs.variant }}
+
+      - name: Pacman cache
+        uses: actions/cache/save@v4
+        with:
+          key: pacman-iso-${{ inputs.variant }}
+          path: /var/cache/pacman
 
       - name: Upload iso
         uses: actions/upload-artifact@v4

@@ -110,6 +110,12 @@ jobs:
           tag: ${{ inputs.artifact }}
           digest: ${{ inputs.digest }}
 
+      - name: Pacman cache
+        uses: actions/cache/restore@v4
+        with:
+          key: pacman-build-${{ inputs.variant }}
+          path: /var/cache/pacman
+
       - name: Build
         id: build
         uses: ./.github/actions/run-with-podman-service
@@ -184,6 +190,12 @@ jobs:
         env:
           updates: ${{ inputs.updates }}
           VARIANT: ${{ inputs.variant }}
+
+      - name: Pacman cache
+        uses: actions/cache/save@v4
+        with:
+          key: pacman-build-${{ inputs.variant }}
+          path: /var/cache/pacman
 
       - name: Save manifest cache
         uses: ./.github/actions/manifest-cache-update

@@ -106,6 +106,12 @@ jobs:
           path: ./.trivy
           key: trivy-${{ hashFiles('make.py') }}
 
+      - name: Pacman cache
+        uses: actions/cache/restore@v4
+        with:
+          key: pacman-scan-${{ inputs.variant }}
+          path: /var/cache/pacman
+
       - name: Scan container
         uses: ./.github/actions/run-with-podman-service
         with:
@@ -115,6 +121,12 @@ jobs:
             rm .trivy/report.json
             rm .trivy/report.md
             mv .trivy/report.sarif .
+
+      - name: Pacman cache
+        uses: actions/cache/save@v4
+        with:
+          key: pacman-scan-${{ inputs.variant }}
+          path: /var/cache/pacman
 
       - name: Upload Scan results to GitHub Security tab
         if: inputs.push
