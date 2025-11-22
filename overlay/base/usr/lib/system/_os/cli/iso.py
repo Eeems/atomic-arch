@@ -2,6 +2,7 @@ import shutil
 import atexit
 import os
 import sys
+import shlex
 
 from datetime import datetime
 from argparse import ArgumentParser
@@ -17,6 +18,7 @@ from ..system import is_root
 from ..system import baseImage
 from ..system import execute
 from ..podman import podman
+from ..podman import podman_cmd
 from ..podman import export
 
 kwds = {"help": "Build a bootable ISO image to install your system"}
@@ -85,13 +87,23 @@ def iso(local_image: bool):
     podman("rmi", f"system:iso-{uuid}")
     if local_image:
         execute(
-            "systemd-nspawn",
-            "--register=no",
-            f"--directory={ROOTFS_PATH}",
-            "--bind=/run/podman/podman.sock:/run/podman/podman.sock",
-            "/bin/bash",
+            "bash",
             "-c",
-            f"podman --remote save {buildImage} | podman load",
+            " | ".join(
+                [
+                    shlex.join(podman_cmd("save", buildImage)),
+                    shlex.join(
+                        [
+                            "podman",
+                            f"--root={ROOTFS_PATH}/var/lib/containers/storage",
+                            "--runroot=/tmp/podman-runroot",
+                            "--storage-driver=vfs",
+                            "--events-backend=file",
+                            "load",
+                        ]
+                    ),
+                ]
+            ),
         )
 
     _ = shutil.copytree(os.path.join(ROOTFS_PATH, "etc/system/archiso"), "archiso")

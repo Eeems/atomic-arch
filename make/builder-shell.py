@@ -67,7 +67,6 @@ def command(args: Namespace):
             "--env=CI=true",
             "--volume=/var/run/docker.sock:/var/run/docker.sock",
             f"--volume={__w}:/__w",
-            "--volume=/etc/machine-id:/etc/machine-id:ro",
             f"--volume={os.path.realpath('.')}:/__w/arkes/arkes:O",
             f"--volume={__e}:/__e:ro",
             f"--volume={_temp}:/__w/temp",

@@ -7,10 +7,6 @@ runs:
       shell: bash
       run: |
         set -e
-        if [ ! -s "/etc/machine-id" ]; then
-          echo "/etc/machine-id is empty"
-          exit 1
-        fi
         cp /etc/resolv.conf /etc/hosts /etc/hostname /tmp/
         mount --make-rprivate /
         umount /etc/resolv.conf /etc/hosts /etc/hostname

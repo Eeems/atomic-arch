@@ -266,8 +266,6 @@ def command(_: Namespace):
                 "      --tmpfs /run",
                 "      --userns=host",
                 "      --volume=/:/run/host",
-                "      --volume=/run/dbus/system_bus_socket:/run/dbus/system_bus_socket",
-                "      --volume=/etc/machine-id:/etc/machine-id:ro",
                 "  steps:",
                 "    - name: Checkout the repository",
                 "      uses: actions/checkout@v4",
