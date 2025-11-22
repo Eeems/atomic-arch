@@ -20,6 +20,7 @@ from ..ostree import deploy
 from ..ostree import commit
 from ..podman import build
 from ..podman import export
+from ..podman import podman_cmd
 
 
 NVIDIA_PACKAGES = [
@@ -175,13 +176,30 @@ def install(
     execute("mount", "-o", "bind", tmp, "/var/tmp")
     exitFunc1 = atexit.register(execute, "umount", "/var/tmp")
     execute(
-        "systemd-nspawn",
-        f"--directory={rootfs}",
-        "--bind=/run/podman/podman.sock:/run/podman/podman.sock",
-        f"--bind={os.path.join(rootfs, 'usr/etc')}:/etc",
-        "/bin/bash",
+        "bash",
         "-c",
-        f"podman --remote save --multi-image-archive system:latest {buildImage} | podman load",
+        " | ".join(
+            [
+                shlex.join(
+                    podman_cmd(
+                        "save",
+                        "--multi-image-archive",
+                        "system:latest",
+                        buildImage,
+                    )
+                ),
+                shlex.join(
+                    [
+                        "podman",
+                        f"--root={rootfs}/var/lib/containers/storage",
+                        "--runroot=/tmp/podman-runroot",
+                        "--storage-driver=vfs",
+                        "--events-backend=file",
+                        "load",
+                    ]
+                ),
+            ]
+        ),
     )
     lib = os.path.join(sysroot, "ostree/deploy", OS_NAME, "var/lib")
     os.makedirs(lib, exist_ok=True)

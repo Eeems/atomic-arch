@@ -27,7 +27,8 @@ RUN /usr/lib/system/initialize_pacman \
   && chronic rm -rf \
   /usr/{include,share/{doc,info,man}} \
   /usr/lib/python*/test \
-  && chronic find /usr/lib/python* -name '*.pyo' -exec rm -v {} \;
+  && chronic find /usr/lib/python* -name '*.pyo' -exec rm -v {} \; \
+  && /usr/lib/system/commit_layer
 
 ARG \
   VARIANT \
@@ -36,7 +37,8 @@ ARG \
 
 RUN VARIANT="${VARIANT}" \
   VARIANT_ID="${VARIANT_ID}" \
-  /usr/lib/system/set_variant
+  /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer
 
 FROM scratch
 

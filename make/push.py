@@ -55,7 +55,7 @@ def push(target: str):
         podman("tag", image, tag)
 
     for tag in [*tags, image]:
-        podman("push", tag)
+        podman("push", "--compression-format=zstd:chunked", tag)
         print(f"Pushed {tag}")
         _image_digests_write_cache(tag, image_digest(tag, False))
 

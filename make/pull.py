@@ -1,13 +1,16 @@
 import sys
+import _os.podman  # noqa: E402 #pyright:ignore [reportMissingImports]
 
 from argparse import ArgumentParser
 from argparse import Namespace
 from typing import Any
+from typing import Callable
 from typing import cast
 
 from . import is_root
-from . import pull
 from . import REPO
+
+pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 
 kwds: dict[str, str] = {
     "help": "Pull one or more tags from the remote repository",

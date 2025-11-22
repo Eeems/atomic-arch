@@ -6,6 +6,14 @@ ARG PACSTRAP_TAG=20250427.0.341977
 ARG HASH
 ARG VERSION_ID
 
+FROM golang:1.25.4-alpine as dockerfile2llbjson
+
+WORKDIR /app
+COPY tools/dockerfile2llbjson/go.mod tools/dockerfile2llbjson/go.sum ./
+RUN go mod download
+COPY tools/dockerfile2llbjson/main.go ./
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /app/dockerfile2llbjson .
+
 FROM docker.io/library/archlinux:base-devel-${PACSTRAP_TAG} AS pacstrap
 
 ARG \
@@ -26,6 +34,10 @@ RUN mkdir -m 0755 -p var/{cache/pacman/pkg,lib/pacman,log} dev run etc \
   && mkdir -m 1777 tmp \
   && mkdir -m 0555 sys proc
 RUN chronic fakeroot pacman -r . -Sy --noconfirm base mkinitcpio moreutils
+
+COPY overlay/rootfs /overlay
+COPY --from=dockerfile2llbjson /app/dockerfile2llbjson /overlay/usr/bin/dockerfile2llbjson
+
 RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
   && rm usr/share/libalpm/hooks/90-mkinitcpio-install.hook \
   && cp -a {/,}etc/pacman.d/mirrorlist \
@@ -33,15 +45,22 @@ RUN rm usr/share/libalpm/hooks/60-mkinitcpio-remove.hook \
   && rm -rf mnt && ln -s var/mnt mnt \
   && rm -rf root && ln -s var/roothome root \
   && rm -rf srv && ln -s var/srv srv \
-  && rm -rf usr/local && ln -s ../var/usrlocal usr/local
-
-FROM golang:1.25.4-alpine as dockerfile2llbjson
-
-WORKDIR /app
-COPY tools/dockerfile2llbjson/go.mod tools/dockerfile2llbjson/go.sum ./
-RUN go mod download
-COPY tools/dockerfile2llbjson/main.go ./
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /app/dockerfile2llbjson .
+  && rm -rf usr/local && ln -s ../var/usrlocal usr/local \
+  && truncate -s 0 etc/machine-id \
+  && cp -a /overlay/. /rootfs/. \
+  && cd / \
+  && tar --sort=name \
+  --owner=0 --group=0 \
+  --numeric-owner \
+  --pax-option=exthdr.name=%d/PaxHeaders/%p,delete=atime,delete=ctime \
+  --mtime="@946684800" \
+  -C rootfs \
+  -cf rootfs.tar . \
+  && rm -rf rootfs \
+  && mkdir rootfs \
+  && tar -C rootfs -xf rootfs.tar \
+  && rm rootfs.tar \
+  && /overlay/usr/lib/system/commit_layer /rootfs
 
 FROM scratch AS rootfs
 
@@ -73,9 +92,8 @@ LABEL \
   ]"
 
 WORKDIR /
+
 COPY --from=pacstrap /rootfs /
-COPY overlay/rootfs /
-COPY --from=dockerfile2llbjson /app/dockerfile2llbjson /usr/bin/dockerfile2llbjson
 
 RUN  echo 'NAME="Arkēs"' > /usr/lib/os-release \
   && echo 'PRETTY_NAME="Arkēs Arch Linux"' >> /usr/lib/os-release \
@@ -86,6 +104,7 @@ RUN  echo 'NAME="Arkēs"' > /usr/lib/os-release \
   && echo "VERSION=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" >> /usr/lib/os-release \
   && echo "VERSION_ID=${ARCHIVE_YEAR}.${ARCHIVE_MONTH}.${ARCHIVE_DAY}" >> /usr/lib/os-release \
   && echo "VARIANT=Base" >> /usr/lib/os-release \
-  && echo "VARIANT_ID=base" >> /usr/lib/os-release
+  && echo "VARIANT_ID=base" >> /usr/lib/os-release \
+  && /usr/lib/system/commit_layer
 
 ENTRYPOINT [ "/bin/bash" ]

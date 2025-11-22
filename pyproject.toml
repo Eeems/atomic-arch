@@ -2,4 +2,4 @@
 requires-python = ">= 3.13"
 
 [tools.ruff]
-target-version = "py311"
+target-version = "py313"

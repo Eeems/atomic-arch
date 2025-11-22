@@ -6,6 +6,11 @@ runs:
     - name: Setup container
       shell: bash
       run: |
+        set -e
+        cp /etc/resolv.conf /etc/hosts /etc/hostname /tmp/
+        mount --make-rprivate /
+        umount /etc/resolv.conf /etc/hosts /etc/hostname
+        mv /tmp/resolv.conf /tmp/hosts /tmp/hostname /etc/
         mkdir -p /github/home/.docker /home/runner
         if ! [ -f /github/home/.docker/config.json ];then
           echo '{"auths":{}}' > /github/home/.docker/config.json

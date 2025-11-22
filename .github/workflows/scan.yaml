@@ -35,7 +35,7 @@ jobs:
     name: arkes:${{ inputs.variant }} image
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/eeems/arkes-builder:latest
+      image: ghcr.io/eeems/arkes-builder:${{ github.head_ref || github.ref_name }}
       options: >-
         --privileged
         --security-opt seccomp=unconfined
@@ -46,8 +46,7 @@ jobs:
         --tmpfs /tmp
         --tmpfs /run
         --userns=host
-        -v /var/lib/containers:/var/lib/containers
-        -v /:/run/host
+        --volume=/:/run/host
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -107,6 +106,12 @@ jobs:
           path: ./.trivy
           key: trivy-${{ hashFiles('make.py') }}
 
+      - name: Pacman cache
+        uses: actions/cache/restore@v4
+        with:
+          key: pacman-scan-${{ inputs.variant }}
+          path: /var/cache/pacman
+
       - name: Scan container
         uses: ./.github/actions/run-with-podman-service
         with:
@@ -116,6 +121,12 @@ jobs:
             rm .trivy/report.json
             rm .trivy/report.md
             mv .trivy/report.sarif .
+
+      - name: Pacman cache
+        uses: actions/cache/save@v4
+        with:
+          key: pacman-scan-${{ inputs.variant }}
+          path: /var/cache/pacman
 
       - name: Upload Scan results to GitHub Security tab
         if: inputs.push

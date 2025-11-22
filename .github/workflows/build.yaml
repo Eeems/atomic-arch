@@ -11,21 +11,21 @@ on:
     paths:
       - .github/workflows/build.yaml
       - .github/workflows/build-variant.yaml
-      - .github/workflows/delta.yaml
       - .github/workflows/iso.yaml
       - .github/workflows/manifest.yaml
       - ".github/actions/**"
       - "tools/dockerfile2llbjson/**"
       - "make/__main__.py"
       - "make/__init__.py"
-      - "make/get-deltas.py"
-      - "make/delta.py"
       - "make/iso.py"
       - "make/scan.py"
+      - "make/pull.py"
+      - "make/push.py"
       - "make/build.py"
       - "make/checkupdates.py"
       - "make/manifest.py"
       - "make/check.py"
+      - "make/workflow.py"
       - make.py
       - seccomp.json
       - .containerignore
@@ -79,7 +79,7 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/eeems/arkes-builder:latest
+      image: ghcr.io/eeems/arkes-builder:${{ github.head_ref || github.ref_name }}
       options: >-
         --privileged
         --security-opt seccomp=unconfined
@@ -90,8 +90,7 @@ jobs:
         --tmpfs /tmp
         --tmpfs /run
         --userns=host
-        -v /var/lib/containers:/var/lib/containers
-        -v /:/run/host
+        --volume=/:/run/host
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -126,15 +125,15 @@ jobs:
     name: Generate manifest
     if: "!cancelled()"
     needs:
-      - delta_atomic
-      - delta_atomic-nvidia
-      - delta_base
-      - delta_base-slim
-      - delta_eeems
-      - delta_eeems-nvidia
-      - delta_eeems-system76
-      - delta_gnome
-      - delta_rootfs
+      - atomic
+      - atomic-nvidia
+      - base
+      - base-slim
+      - eeems
+      - eeems-nvidia
+      - eeems-system76
+      - gnome
+      - rootfs
     uses: ./.github/workflows/manifest.yaml
     secrets: inherit
     permissions: &permissions
@@ -157,7 +156,7 @@ jobs:
     permissions: *permissions
     with:
       variant: rootfs
-      push: true
+      push: ${{ github.event_name != 'pull_request' }}
 
   base:
     name: Build eeems/arkes:base image
@@ -167,8 +166,8 @@ jobs:
     permissions: *permissions
     with:
       variant: base
-      updates: ${{ fromJson(needs['rootfs'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['rootfs'].outputs.updates) }}
       artifact: rootfs
       digest: ${{ needs['rootfs'].outputs.digest }}
 
@@ -180,8 +179,8 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic
-      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       artifact: base
       digest: ${{ needs['base'].outputs.digest }}
 
@@ -193,8 +192,8 @@ jobs:
     permissions: *permissions
     with:
       variant: atomic-nvidia
-      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       artifact: atomic
       digest: ${{ needs['atomic'].outputs.digest }}
 
@@ -206,8 +205,8 @@ jobs:
     permissions: *permissions
     with:
       variant: base-slim
-      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       artifact: base
       digest: ${{ needs['base'].outputs.digest }}
 
@@ -219,8 +218,8 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems
-      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['atomic'].outputs.updates) }}
       artifact: atomic
       digest: ${{ needs['atomic'].outputs.digest }}
 
@@ -232,8 +231,8 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-nvidia
-      updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       artifact: eeems
       digest: ${{ needs['eeems'].outputs.digest }}
 
@@ -245,8 +244,8 @@ jobs:
     permissions: *permissions
     with:
       variant: eeems-system76
-      updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['eeems'].outputs.updates) }}
       artifact: eeems
       digest: ${{ needs['eeems'].outputs.digest }}
 
@@ -258,8 +257,8 @@ jobs:
     permissions: *permissions
     with:
       variant: gnome
-      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       push: ${{ github.event_name != 'pull_request' }}
+      updates: ${{ fromJson(needs['base'].outputs.updates) }}
       artifact: base
       digest: ${{ needs['base'].outputs.digest }}
 
@@ -383,118 +382,6 @@ jobs:
       push: ${{ github.event_name != 'pull_request' }}
       artifact: ${{ fromJson(needs['gnome'].outputs.updates) && 'gnome' || '' }}
       digest: ${{ needs['gnome'].outputs.digest }}
-
-  ######################################
-  #             DELTA              #
-  ######################################
-
-  delta_rootfs:
-    name: Generate deltas for rootfs
-    if: github.event_name != 'pull_request'
-    needs: rootfs
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: rootfs
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_base:
-    name: Generate deltas for base
-    if: github.event_name != 'pull_request'
-    needs: base
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_atomic:
-    name: Generate deltas for atomic
-    if: github.event_name != 'pull_request'
-    needs: atomic
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_atomic-nvidia:
-    name: Generate deltas for atomic-nvidia
-    if: github.event_name != 'pull_request'
-    needs: atomic-nvidia
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: atomic-nvidia
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_base-slim:
-    name: Generate deltas for base-slim
-    if: github.event_name != 'pull_request'
-    needs: base-slim
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: base-slim
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_eeems:
-    name: Generate deltas for eeems
-    if: github.event_name != 'pull_request'
-    needs: eeems
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: eeems
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_eeems-nvidia:
-    name: Generate deltas for eeems-nvidia
-    if: github.event_name != 'pull_request'
-    needs: eeems-nvidia
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: eeems-nvidia
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_eeems-system76:
-    name: Generate deltas for eeems-system76
-    if: github.event_name != 'pull_request'
-    needs: eeems-system76
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: eeems-system76
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
-
-  delta_gnome:
-    name: Generate deltas for gnome
-    if: github.event_name != 'pull_request'
-    needs: gnome
-    uses: ./.github/workflows/delta.yaml
-    secrets: inherit
-    permissions: *permissions
-    with:
-      variant: gnome
-      push: ${{ github.event_name != 'pull_request' }}
-      recreate: false
 
   ######################################
   #             ISO                #

@@ -8,7 +8,6 @@ import tarfile
 import subprocess
 import json
 
-from tempfile import TemporaryDirectory
 from time import time
 from hashlib import sha256
 from glob import iglob
@@ -27,10 +26,8 @@ from .system import execute
 from .system import _execute  # pyright:ignore [reportPrivateUsage]
 from .ostree import ostree
 
-from .console import bytes_to_iec, bytes_to_stdout
+from .console import bytes_to_stdout
 from .console import bytes_to_stderr
-
-MAX_SIZE_RATIO = 0.6
 
 
 def podman_cmd(*args: str) -> list[str]:
@@ -58,6 +55,7 @@ def in_system(
     entrypoint: str = "/usr/bin/os",
     check: bool = False,
     volumes: list[str] | None = None,
+    flags: list[str] | None = None,
 ) -> int:
     cmd = shlex.join(
         in_system_cmd(
@@ -65,6 +63,7 @@ def in_system(
             target=target,
             entrypoint=entrypoint,
             volumes=volumes,
+            flags=flags,
         )
     )
     ret = _execute(cmd)
@@ -79,6 +78,7 @@ def in_system_output(
     target: str = "system:latest",
     entrypoint: str = "/usr/bin/os",
     volumes: list[str] | None = None,
+    flags: list[str] | None = None,
 ) -> bytes:
     return subprocess.check_output(
         in_system_cmd(
@@ -86,6 +86,7 @@ def in_system_output(
             target=target,
             entrypoint=entrypoint,
             volumes=volumes,
+            flags=flags,
         )
     )
 
@@ -95,6 +96,7 @@ def in_system_cmd(
     target: str = "system:latest",
     entrypoint: str = "/usr/bin/os",
     volumes: list[str] | None = None,
+    flags: list[str] | None = None,
 ) -> list[str]:
     target = image_qualified_name(target)
     if os.path.exists("/ostree") and os.path.isdir("/ostree"):
@@ -139,6 +141,7 @@ def in_system_cmd(
         "--pull=never",
         "--security-opt=label=disable",
         *[f"--volume={x}" for x in volume_args],
+        *[f"--{x}" for x in (flags or [])],
         f"--entrypoint={entrypoint}",
         target,
         *args,
@@ -382,14 +385,7 @@ ARG KARGS
 
 RUN /usr/lib/system/build_kernel
 
-RUN sed -i \
-  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \
-  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \
-  /etc/pacman.conf \
-  && mv /etc /usr && ln -s /usr/etc /etc \
-  && mv /var/lib/pacman /usr/lib \
-  && mkdir /sysroot \
-  && ln -s /sysroot/ostree ostree
+RUN /usr/lib/system/prepare_fs
 
 ARG VERSION_ID
 
@@ -443,6 +439,7 @@ def build(
             "--dns=none",
             "--tag=system:latest",
             "--pull=never",
+            "--cap-add=SYS_ADMIN",
             *[f"--build-arg={x}" for x in _buildArgs],
             f"--volume={cache}:{cache}",
             f"--file={containerfile}",
@@ -529,271 +526,8 @@ def hex_to_base62(hex_digest: str) -> str:
     )
 
 
-def _save_image(image: str) -> tuple[subprocess.Popen[bytes], TemporaryDirectory[str]]:
-    print(f"Saving {image}")
-    tmpdir = TemporaryDirectory()
-    fifo = os.path.join(tmpdir.name, "fifo")
-    os.mkfifo(fifo)
-    tar_dir = os.path.join(tmpdir.name, "tar")
-    os.mkdir(tar_dir)
-    _wait_for_processes(
-        subprocess.Popen(
-            [
-                "skopeo",
-                "copy",
-                "--remove-signatures",
-                f"containers-storage:{image}",
-                f"oci-archive:{fifo}",
-            ]
-        ),
-        subprocess.Popen(
-            ["tar", "--extract", f"--file={fifo}", f"--directory={tar_dir}"]
-        ),
-    )
-    tar_proc = subprocess.Popen(
-        [
-            "tar",
-            "--format=posix",
-            "--pax-option=exthdr.name=%d/PaxHeaders/%f,delete=atime,delete=ctime,delete=.*",
-            "--mtime=@0",
-            "--sort=name",
-            "--owner=0",
-            "--group=0",
-            "--numeric-owner",
-            "--create",
-            f"--directory={tar_dir}",
-            ".",
-        ],
-        stdout=subprocess.PIPE,
-    )
-    assert tar_proc.stdout is not None
-    return tar_proc, tmpdir
-
-
-def _wait_for_processes(
-    *processes: subprocess.Popen[bytes],
-    cleanup: Callable[[], None] | None = None,
-    fast_fail: bool = True,
-):
-    errors: list[subprocess.CalledProcessError] = []
-    queue = list(processes)
-    while queue:
-        for proc in queue:
-            try:
-                _ = proc.wait(1)
-
-            except subprocess.TimeoutExpired:
-                continue
-
-            if proc.returncode is None:
-                continue
-
-            queue.remove(proc)
-            if not proc.returncode:
-                continue
-
-            errors.append(subprocess.CalledProcessError(proc.returncode, proc.args))
-            if not fast_fail:
-                continue
-
-            for proc in queue:
-                proc.terminate()
-
-            for proc in queue:
-                if proc.wait():
-                    errors.append(
-                        subprocess.CalledProcessError(proc.returncode, proc.args)
-                    )
-
-                queue.remove(proc)
-
-    if cleanup is not None:
-        cleanup()
-
-    if errors:
-        raise ExceptionGroup("CalledProcessError", errors)  # noqa: F821
-
-
-def _save_image_to_file(image: str, path: str):
-    tar_proc, tmpdir = _save_image(image)
-    assert tar_proc.stdout is not None
-    with open(path, "wb") as f:
-        for line in tar_proc.stdout:
-            _ = f.write(line)
-            f.flush()
-
-    _wait_for_processes(tar_proc, cleanup=tmpdir.cleanup)
-
-
 def escape_label(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\\n")
-
-
-def create_delta(imageA: str, imageB: str, imageD: str, pull: bool = True) -> bool:
-    digestA = image_digest(imageA, remote=False)
-    digestB = image_digest(imageB, remote=False)
-    with TemporaryDirectory() as tmpdir:
-        old_oci_path = os.path.join(tmpdir, "old.oci")
-        try:
-            _save_image_to_file(imageA, old_oci_path)
-            tar_proc, tardir = _save_image(imageB)
-            assert tar_proc.stdout is not None
-            xdelta_proc = subprocess.Popen(
-                ["xdelta3", "-0", "-S", "none", "-s", old_oci_path, "-", "-"],
-                stdin=tar_proc.stdout,
-                stdout=subprocess.PIPE,
-            )
-            tar_proc.stdout.close()
-            assert xdelta_proc.stdout is not None
-            diff_path = os.path.join(tmpdir, "diff.xd3.zstd")
-            zstd_proc = subprocess.Popen(
-                ["zstd", "-19", "-T0", "-o", diff_path],
-                stdin=xdelta_proc.stdout,
-                stdout=subprocess.PIPE,
-            )
-            xdelta_proc.stdout.close()
-            _ = zstd_proc.communicate()
-            _wait_for_processes(
-                zstd_proc,
-                xdelta_proc,
-                tar_proc,
-                cleanup=tardir.cleanup,
-            )
-            sizeA = os.path.getsize(old_oci_path)
-            sizeB = image_size(imageB)
-            sizeD = os.path.getsize(diff_path)
-            maxSize = int(sizeB * MAX_SIZE_RATIO)
-            print(f"Size of {imageA}: {bytes_to_iec(sizeA)}")
-            print(f"Size of {imageB}: {bytes_to_iec(sizeB)}")
-            print(f"Size of delta: {bytes_to_iec(sizeD)}")
-            print(f"Threshhold size: {bytes_to_iec(maxSize)}")
-            success = sizeD < maxSize
-            if not success:
-                print("Delta too large to use")
-
-        except ExceptionGroup:  # noqa: F821
-            print("Failed to genrate delta")
-            success = False
-
-        labels: dict[str, str] = {
-            "description": f"Delta between {imageA} and {imageB}",
-            "ref.name": imageD,
-        }
-        src_labels = image_labels(imageB)
-        for label in [
-            "create",
-            "authors",
-            "url",
-            "documentation",
-            "source",
-            "vendor",
-            "licenses",
-            "base.digest",
-            "base.name",
-            "version",
-            "revision",
-        ]:
-            full_label = f"org.opencontainers.image.{label}"
-            if full_label in src_labels:
-                labels[label] = src_labels[full_label]
-
-        containerfile = os.path.join(tmpdir, "Containerfile")
-        patch_format = "xdelta3+zstd" if success else "pull"
-        with open(containerfile, "w") as f:
-            _ = f.write(f"""\
-FROM scratch
-LABEL {"\n  ".join([f'org.opencontainers.image.{k}="{escape_label(v)}" \\' for k, v in labels.items()])}
-  arkes.patch.prev="{digestA}" \\
-  arkes.patch.ref="{digestB}" \\
-  arkes.patch.format="{patch_format}"
-""")
-            match patch_format:
-                case "pull":
-                    print("Creating empty delta instead")
-
-                case "xdelta3+zstd":
-                    _ = f.write("COPY diff.xd3.zstd /diff.xd3.zstd\n")
-
-        podman(
-            "build",
-            f"--tag={imageD}",
-            f"--file={containerfile}",
-            "--force-rm",
-            f"--pull={'newer' if pull else 'never'}",
-            tmpdir,
-        )
-        return success
-
-
-def apply_delta(
-    image: str,
-    delta_image: str,
-    new_image: str,
-    onstdout: Callable[[bytes], None] = bytes_to_stdout,
-    onstderr: Callable[[bytes], None] = bytes_to_stderr,
-):
-    image = image_qualified_name(image)
-    if not image_exists(image, remote=False):
-        raise ValueError(f"{image} is missing")
-
-    delta_image = image_qualified_name(delta_image)
-    if not image_exists(delta_image, False):
-        podman("pull", delta_image, onstdout=onstdout, onstderr=onstderr)
-
-    labels = image_labels(delta_image, False)
-    if labels.get("arkes.patch.format", "") != "xdelta3+zstd":
-        raise ValueError("Incompatible patch format")
-
-    digest = image_digest(image, remote=False)
-    if labels.get("arkes.patch.prev", "") != digest:
-        raise ValueError("Patch does not apply to this image")
-
-    new_digest = image_digest(new_image, remote=True)
-    if labels.get("arkes.patch.ref", "") != new_digest:
-        raise ValueError("Patch does not result in the correct image")
-
-    if not image_exists(image, False) or image_digest(image, False) != digest:
-        podman("pull", image, onstdout=onstdout, onstderr=onstderr)
-
-    with TemporaryDirectory() as tmpdir:
-        onstderr(b"Saving old.oci\n")
-        old_oci_path = os.path.join(tmpdir, "old.oci")
-        _save_image_to_file(image, old_oci_path)
-        onstderr(b"Patching old.oci\n")
-        podman_run_proc = subprocess.Popen(
-            podman_cmd(
-                "run",
-                "--rm",
-                *[
-                    f"--volume={x}:{x}:ro"
-                    for x in ["/usr", "/lib", "/lib64", "/bin", "/var"]
-                ],
-                delta_image,
-                *["zstdcat", "--decompress", "--keep", "/diff.xd3.zstd"],
-            ),
-            stdout=subprocess.PIPE,
-        )
-        assert podman_run_proc.stdout is not None
-        new_oci_path = os.path.join(tmpdir, "new.oci")
-        xdelta3_proc = subprocess.Popen(
-            ["xdelta3", "-d", "-s", old_oci_path, "-", new_oci_path],
-            stdin=podman_run_proc.stdout,
-        )
-        podman_run_proc.stdout.close()
-        _ = xdelta3_proc.communicate()
-        _wait_for_processes(xdelta3_proc, podman_run_proc)
-        os.unlink(old_oci_path)
-        _ = subprocess.check_call(
-            [
-                "skopeo",
-                "copy",
-                "--preserve-digests",
-                f"oci-archive:{new_oci_path}",
-                f"containers-storage:{new_image}",
-            ]
-        )
-        if image_digest(new_image, remote=False) != new_digest:
-            raise RuntimeError("Resulting image has the wrong digest")
 
 
 def pull(
@@ -801,91 +535,12 @@ def pull(
     onstdout: Callable[[bytes], None] = bytes_to_stdout,
     onstderr: Callable[[bytes], None] = bytes_to_stderr,
 ):
-    image = image_qualified_name(image)
-    remote_digest = image_digest(image, remote=True)
-    image_exists_locally = image_exists(image, remote=False)
-    candidates: list[tuple[str, str]] = []
-    if image_exists_locally:
-        local_digest = image_digest(image, remote=False)
-        if local_digest == remote_digest:
-            onstderr(f"Image {image} is already up to date\n".encode("utf-8"))
-            return
-
-        candidates.append((image, local_digest))
-
-    registry, name, target_tag, ref = image_name_parts(image)
-    if ref is not None:
-        onstderr(b"Unable to handle digest images...\n")
-        podman("pull", image, onstdout=onstdout, onstderr=onstderr)
-
-    target_tag = target_tag or "latest"
-    base_image = f"{registry}/{name}"
-    tags = image_tags(base_image)
-    tags.sort()
-    tag_base = target_tag.split("_")[0] if "_" in target_tag else target_tag
-    version_tags = [
-        tag for tag in tags if tag.startswith(f"{tag_base}_") and "_" in tag
-    ]
-    for version_tag in version_tags:
-        local_image = f"{base_image}:{version_tag}"
-        if image_exists(local_image, remote=False):
-            local_digest = image_digest(local_image, remote=False)
-            candidates.append((local_image, local_digest))
-            onstderr(f"Found local version: {local_image}\n".encode("utf-8"))
-
-    for local_image, local_digest in candidates:
-        delta_tag = (
-            f"_diff-{hex_to_base62(local_digest)}-{hex_to_base62(remote_digest)}"
-        )
-        delta_image = f"{base_image}:{delta_tag}"
-        onstderr(f"Looking for potential delta {delta_tag}\n".encode("utf-8"))
-        if not image_exists(delta_image, remote=True, skip_manifest=True):
-            onstderr(b"Not found\n")
-            continue
-
-        delta_labels = image_labels(delta_image, remote=True)
-        if delta_labels.get("arkes.patch.prev") != local_digest:
-            onstderr(b"Wrong digest\n")
-            continue
-
-        if delta_labels.get("arkes.patch.format", "none") == "none":
-            onstderr(b"Empty patch, likely patching will be too large\n")
-            continue
-
-        delta_size = image_size(delta_image)
-        target_size = image_size(image)
-        if delta_size >= target_size * MAX_SIZE_RATIO:
-            onstderr(b"Delta is too large\n")
-            continue
-
-        target_size_fmt = bytes_to_iec(target_size)
-        savings_pct = ((target_size - delta_size) / target_size) * 100
-        onstderr(
-            f"Saving {savings_pct:.1f} of {target_size_fmt} using delta optimization...\n".encode(
-                "utf-8"
-            )
-        )
-        try:
-            apply_delta(
-                local_image,
-                delta_image,
-                image,
-                onstdout=onstdout,
-                onstderr=onstderr,
-            )
-
-            return
-
-        except Exception as e:
-            onstderr(f"Delta optimization failed: {e}\n".encode("utf-8"))
-            continue
-
-        finally:
-            if image_exists(delta_image, remote=False):
-                podman("rmi", delta_image, onstdout=onstdout, onstderr=onstderr)
-
-    onstderr(b"Falling back to full pull...\n")
-    podman("pull", f"{base_image}:{target_tag}", onstdout=onstdout, onstderr=onstderr)
+    podman(
+        "pull",
+        image_qualified_name(image),
+        onstdout=onstdout,
+        onstderr=onstderr,
+    )
 
 
 def parse_containerfile(

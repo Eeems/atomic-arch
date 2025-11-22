@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+echo "[system] Unmounting /etc bind mounts"
+grep -E '[[:space:]]/etc(/|$)' /proc/mounts | awk '{print $2}' | sort -r | xargs -r umount -l
+mv /etc /usr
+ln -s /usr/etc /etc
+echo "[system] Configuring pacman"
+sed -i \
+  -e 's|^#\(DBPath\s*=\s*\).*|\1/usr/lib/pacman|g' \
+  -e 's|^#\(IgnoreGroup\s*=\s*\).*|\1modified|g' \
+  /usr/etc/pacman.conf
+mv /var/lib/pacman /usr/lib
+echo "[system] Setting up ostree"
+mkdir /sysroot
+ln -s /sysroot/ostree ostree

@@ -51,9 +51,7 @@ image_info = cast(Callable[[str, bool], dict[str, object]], _os.podman.image_inf
 image_labels = cast(Callable[[str, bool], dict[str, str]], _os.podman.image_labels)  # pyright:ignore [reportUnknownMemberType]
 image_exists = cast(Callable[[str, bool, bool], bool], _os.podman.image_exists)  # pyright:ignore [reportUnknownMemberType]
 image_tags = cast(Callable[[str, bool], list[str]], _os.podman.image_tags)  # pyright:ignore [reportUnknownMemberType]
-create_delta = cast(Callable[[str, str, str, bool], bool], _os.podman.create_delta)  # pyright:ignore [reportUnknownMemberType]
 hex_to_base62 = cast(Callable[[str], str], _os.podman.hex_to_base62)  # pyright:ignore [reportUnknownMemberType]
-pull = cast(Callable[[str], None], _os.podman.pull)  # pyright:ignore [reportUnknownMemberType]
 escape_label = cast(Callable[[str], str], _os.podman.escape_label)  # pyright: ignore[reportUnknownMemberType]
 image_digest = cast(Callable[[str, bool], str], _os.podman.image_digest)  # pyright:ignore [reportUnknownMemberType]
 image_qualified_name = cast(Callable[[str], str], _os.podman.image_qualified_name)  # pyright:ignore [reportUnknownMemberType]
@@ -223,6 +221,10 @@ if os.path.exists(DIGEST_CACHE_PATH):
         except Exception as e:
             print(f"Failed to load digest cache: {e}", file=sys.stderr)
             os.unlink(DIGEST_CACHE_PATH)
+
+if not os.path.exists(DIGEST_CACHE_PATH):
+    with open(DIGEST_CACHE_PATH, "w") as f:
+        _ = f.write("{}")
 
 
 def _remote_image_digest(image: str, skip_manifest: bool = False) -> str:

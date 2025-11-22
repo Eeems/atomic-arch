@@ -3,14 +3,18 @@
 # x-templates=nvidia
 ARG HASH
 
+FROM arkes:base as overlay
+
+COPY overlay/atomic /overlay
+RUN /usr/lib/system/commit_layer /overlay
+
 FROM arkes:base
 
 ARG \
   VARIANT="Atomic" \
   VARIANT_ID="atomic"
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   ghostty \
   gnome-software \
   flatpak-xdg-utils \
@@ -46,7 +50,7 @@ RUN /usr/lib/system/initialize_pacman \
   bluez-utils \
   system-config-printer \
   dex \
-  && /usr/lib/system/install_aur_packages \
+  --aur \
   python-imageio-ffmpeg \
   python-screeninfo \
   waypaper \
@@ -57,17 +61,19 @@ RUN /usr/lib/system/initialize_pacman \
   libwireplumber-4.0-compat \
   pwvucontrol \
   wego \
-  prelockd \
-  && /usr/lib/system/remove_pacman_files
+  prelockd
 
 RUN systemctl enable \
   greetd \
-  udisks2
+  udisks2 \
+  && /usr/lib/system/commit_layer
 
-COPY overlay/atomic /
+COPY --from=overlay /overlay /
+
 RUN systemctl enable \
   dconf.service \
-  prelockd.service
+  prelockd.service \
+  && /usr/lib/system/commit_layer
 
 ARG VERSION_ID HASH
 
@@ -78,4 +84,5 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer

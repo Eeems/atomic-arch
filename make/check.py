@@ -126,6 +126,7 @@ def command(args: Namespace):
             print(f"[check] Failed: {cmd}\nStatus code: {res}", file=sys.stderr)
             failed = True
 
+    print("[check] Setting up venv", file=sys.stderr)
     if not os.path.exists(".venv/bin/activate"):
         chronic("python", "-m", "venv", ".venv")
 

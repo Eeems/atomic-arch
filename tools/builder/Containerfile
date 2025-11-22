@@ -116,23 +116,9 @@ RUN mkdir /github \
     /etc/pacman.d/gnupg \
     && ln -s /usr/bin/false /usr/local/bin/systemd-detect-virt
 
-RUN <<EOF cat > /etc/containers/registries.conf.d/10-docker.conf
-unqualified-search-registries = ["docker.io"]
-EOF
+COPY overlay/base/etc/containers/registries.conf.d/10-docker.conf /etc/containers/registries.conf.d/10-docker.conf
+COPY overlay/base/usr/share/containers/storage.conf /usr/share/containers/storage.conf
 
-RUN <<EOF cat > /etc/containers/containers.conf
-unqualified-search-registries = ["docker.io"]
-
-[engine]
-runroot = "/tmp/podman-run"
-storageroot = "/var/lib/containers/storage"
-compression_format = "gzip"
-
-[aliases]
-"eeems/atomic-arch"="ghcr.io/eeems/arkes"
-"eeems/arkes"="ghcr.io/eeems/arkes"
-"arkes"="ghcr.io/eeems/arkes"
-"system"="localhost/system"
-EOF
+RUN sed -i '/^#mount_program/ s|# *||' /usr/share/containers/storage.conf
 
 USER 0

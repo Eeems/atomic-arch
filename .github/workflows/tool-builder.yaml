@@ -5,8 +5,8 @@ on:
       - master
     paths:
       - .github/workflows/tool-builder.yaml
-      - tools/builder/**
-      - tools/dockerfile2llbjson/**
+      - "tools/builder/**"
+      - "tools/dockerfile2llbjson/**"
   push: *on-filter
   workflow_dispatch:
   schedule:
@@ -40,7 +40,7 @@ jobs:
         run: |
           IMAGE_NAME=ghcr.io/eeems/arkes-builder
           echo "image=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-          echo "tags=${IMAGE_NAME}:${{ github.sha }},${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "tags=${IMAGE_NAME}:${{ github.sha }},${IMAGE_NAME}:${{ github.head_ref || github.ref_name }}" >> $GITHUB_OUTPUT
 
       - name: Build and push
         uses: docker/build-push-action@v6

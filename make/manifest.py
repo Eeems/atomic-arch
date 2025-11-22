@@ -1,16 +1,10 @@
-import itertools
-import json
 import os
 import tempfile
-import _os  # pyright: ignore[reportMissingImports]
 
 from datetime import datetime
 from datetime import UTC
 from argparse import ArgumentParser
 from argparse import Namespace
-from collections import defaultdict
-from collections import deque
-from collections.abc import Iterable
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
@@ -20,20 +14,15 @@ from typing import cast
 from . import image_tags
 from . import hex_to_base62
 from . import progress_bar
-from . import image_size_cached
 from . import podman
 from . import chronic
 from . import podman_cmd
 from . import escape_label
-from . import _image_size_cached  # pyright: ignore[reportPrivateUsage]
 from . import _image_digest_cached  # pyright: ignore[reportPrivateUsage]
 from . import _image_digests_write_cache  # pyright: ignore[reportPrivateUsage]
 from . import REPO
 
 from .config import parse_all_config
-
-
-MAX_SIZE_RATIO = cast(float, _os.podman.MAX_SIZE_RATIO)  # pyright: ignore[reportUnknownMemberType]
 
 
 kwds: dict[str, str] = {
@@ -55,7 +44,6 @@ def command(args: Namespace):
     all_tags = image_tags(REPO, True)
     assert all_tags, "No tags found"
     digest_info: dict[str, tuple[list[str], str]] = {}
-    graph: defaultdict[str, dict[str, tuple[str, int]]] = defaultdict(dict)
     digest_worker_queue: list[tuple[str, str]] = []
     valid_variants = ["rootfs", *config["variants"].keys()]
     for tag in progress_bar(
@@ -64,12 +52,6 @@ def command(args: Namespace):
     ):
         kind, a, b = _classify_tag(tag)
         if kind in ("other", "manifest"):
-            continue
-
-        if kind == "diff":
-            if a and b:
-                graph[a][b] = (tag, -1)
-
             continue
 
         if kind not in ("build", "version", "variant"):
@@ -119,70 +101,12 @@ def command(args: Namespace):
 
             digest_info[b62] = (digest_info[b62][0] + [tag], digest)
 
-    # TODO remove all delta tags that are not used
-
-    def flatten(
-        d: dict[str, dict[str, tuple[str, int]]],
-    ) -> Iterable[tuple[dict[str, tuple[str, int]], str, tuple[str, int]]]:
-        for _, inner_dict in d.items():
-            for key, value in inner_dict.items():
-                yield inner_dict, key, value
-
-    for d, key, (tag, _size) in progress_bar(
-        flatten(graph),
-        count=len(list(flatten(graph))),
-        prefix="Calculating sizes:" + " " * 8,
-    ):
-        d[key] = (tag, image_size_cached(f"{REPO}:{tag}"))
-
     labels: dict[str, str] = {}
     for b62, (tags, digest) in progress_bar(
         digest_info.items(), prefix="Generating tag labels:" + " " * 4
     ):
         for tag in tags:
             labels[f"tag.{tag}"] = digest
-
-    b62_list = list(digest_info.keys())
-    delta_map: defaultdict[str, dict[str, list[str]]] = defaultdict(dict)
-
-    def _delta_worker(data: tuple[str, str]) -> tuple[str, str, int, list[str]] | None:
-        a_b62, b_b62 = data
-        cost, path = shortest_path(a_b62, b_b62, graph)
-        if cost is None or not path:
-            return None
-
-        return b_b62, a_b62, cost, path
-
-    with ThreadPoolExecutor(max_workers=50) as exc:
-        combinations = list(itertools.combinations(b62_list, 2))
-        for future in progress_bar(
-            as_completed([exc.submit(_delta_worker, x) for x in combinations]),
-            count=len(combinations),
-            prefix="Calculating deltas:" + " " * 7,
-        ):
-            item = future.result()
-            if item is None:
-                continue
-
-            b_b62, a_b62, cost, path = item
-            sizes = [
-                x
-                for t in digest_info[b_b62][0]
-                for x in [_image_size_cached(f"{REPO}:{t}")]
-            ]
-            b_direct: int = min(
-                [x.result() if isinstance(x, Future) else x for x in sizes]
-            )
-            if cost >= b_direct * MAX_SIZE_RATIO:
-                continue
-
-            delta_map[b_b62][a_b62] = path
-
-    for b_b62, item in progress_bar(
-        delta_map.items(),
-        prefix="Generating map labels:" + " " * 4,
-    ):
-        labels[f"map.{b_b62}"] = json.dumps(item, separators=(",", ":"), indent=2)
 
     labels["timestamp"] = datetime.now(tz=UTC).replace(microsecond=0).isoformat() + "Z"
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -208,32 +132,26 @@ def command(args: Namespace):
                 )
             )
 
-        except:
+        except Exception:
+            tmppath = f"/tmp/{os.getpid()}.manifest.Containerfile"
             with (
                 open(containerfile, "r") as f,
-                open("/tmp/manifest.Containerfile", "w") as out,
+                open(tmppath, "w") as out,
             ):
                 _ = out.write(f.read())
 
+            print(f"Containerfile: {tmppath}")
             raise
         if cast(bool, args.push):
             podman("push", image)
 
 
 def _classify_tag(tag: str) -> tuple[str, str | None, str | None]:
-    if tag == "_manifest":
-        return "manifest", None, None
+    if tag.startswith("_"):
+        if tag == "_manifest":
+            return "manifest", None, None
 
-    if tag.startswith("_diff-"):
-        if len(tag) != 93 or tag[49] != "-":
-            return "other", None, None
-
-        src_b62 = tag[6:49]
-        dst_b62 = tag[50:]
-        if len(src_b62) != 43 or len(dst_b62) != 43:
-            return "other", None, None
-
-        return "diff", src_b62, dst_b62
+        return "other", None, None
 
     if "_" not in tag:
         if all(c.isalnum() or c == "-" for c in tag):
@@ -263,28 +181,6 @@ def _classify_tag(tag: str) -> tuple[str, str | None, str | None]:
         return "version", variant, rest
 
     return "other", None, None
-
-
-def shortest_path(
-    a: str, b: str, graph: dict[str, dict[str, tuple[str, int]]]
-) -> tuple[int | None, list[str] | None]:
-    if a == b:
-        return 0, []
-
-    queue = deque([(a, 0, cast(list[str], []))])
-    visited: dict[str, tuple[int, list[str]]] = {a: (0, [])}
-    while queue:
-        node, cost, path = queue.popleft()
-        for neigh, (tag, sz) in graph.get(node, {}).items():
-            if sz == -1:
-                continue
-
-            new_cost = cost + sz
-            if neigh not in visited or new_cost < visited[neigh][0]:
-                visited[neigh] = (new_cost, path + [tag])
-                queue.append((neigh, new_cost, path + [tag]))
-
-    return visited.get(b, (None, None))
 
 
 if __name__ == "__main__":

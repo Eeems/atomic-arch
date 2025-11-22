@@ -3,13 +3,11 @@ ARG BASE_VARIANT_ID
 
 FROM arkes:${BASE_VARIANT_ID}
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   nvidia-open-dkms \
   nvidia-container-toolkit \
   nvidia-utils \
-  nvidia-settings \
-  && /usr/lib/system/remove_pacman_files
+  nvidia-settings
 
 ARG \
   VARIANT \
@@ -24,4 +22,5 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer

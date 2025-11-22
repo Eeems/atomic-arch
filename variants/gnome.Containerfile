@@ -2,14 +2,18 @@
 # x-depends=base
 ARG HASH
 
+FROM arkes:base as overlay
+
+COPY overlay/gnome /overlay
+RUN /usr/lib/system/commit_layer /overlay
+
 FROM arkes:base
 
 ARG \
   VARIANT="GNOME" \
   VARIANT_ID="gnome"
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   gdm \
   gnome-shell \
   ghostty \
@@ -19,12 +23,12 @@ RUN /usr/lib/system/initialize_pacman \
   gnome-packagekit \
   fwupd \
   gnome-tweaks \
-  gnome-control-center \
-  && /usr/lib/system/remove_pacman_files
+  gnome-control-center
 
-RUN systemctl enable gdm
+RUN systemctl enable gdm \
+  && /usr/lib/system/commit_layer
 
-COPY overlay/gnome /
+COPY --from=overlay /overlay /
 
 ARG VERSION_ID HASH
 
@@ -35,4 +39,5 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer

@@ -3,14 +3,18 @@
 # x-templates=slim
 ARG HASH
 
+FROM arkes:rootfs as overlay
+
+COPY overlay/base /overlay
+RUN /usr/lib/system/commit_layer /overlay
+
 FROM arkes:rootfs
 
 ARG \
   VARIANT="Base" \
   VARIANT_ID="base"
 
-RUN /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_packages \
+RUN /usr/lib/system/package_layer \
   base \
   nano \
   micro \
@@ -56,37 +60,34 @@ RUN /usr/lib/system/initialize_pacman \
   python-dbus \
   distrobox \
   xdelta3 \
-  && /usr/lib/system/remove_pacman_files \
   && rm /usr/bin/su \
   && ln -s /usr/bin/su{-rs,} \
   && ln -s /usr/bin/sudo{-rs,} \
   && ln -s /usr/bin/visudo{-rs,} \
-  && chmod u+s /usr/bin/new{u,g}idmap
+  && chmod u+s /usr/bin/new{u,g}idmap \
+  && /usr/lib/system/commit_layer /usr/bin
+
+COPY --from=overlay /overlay /
+
+# install_aur_packages is part of the overlay
+RUN mkdir /var/home \
+  && /usr/lib/system/package_layer \
+  --aur \
+  localepurge \
+  && rmdir /var/home
 
 RUN systemctl enable \
   NetworkManager \
   bluetooth \
-  podman
-
-RUN mkdir -p /var/lib/system
-
-COPY overlay/base /
-
-RUN mkdir /var/home \
-  && /usr/lib/system/initialize_pacman \
-  && /usr/lib/system/install_aur_packages \
-  localepurge \
-  && /usr/lib/system/remove_pacman_files \
-  && rmdir /var/home
-
-RUN \
-  systemctl enable \
+  podman \
   atomic-state-overlay \
   os-daemon \
   os-checkupdates.timer \
   systemd-timesyncd \
+  && mkdir -p /var/lib/system \
   && chmod 400 /etc/sudoers \
-  && chmod 644 /etc/pam.d/sudo{,-i}
+  && chmod 644 /etc/pam.d/sudo{,-i} \
+  && /usr/lib/system/commit_layer
 
 ARG VERSION_ID HASH
 
@@ -97,4 +98,5 @@ LABEL \
   org.opencontainers.image.ref.name="${VARIANT_ID}" \
   hash="${HASH}"
 
-RUN /usr/lib/system/set_variant
+RUN /usr/lib/system/set_variant \
+  && /usr/lib/system/commit_layer

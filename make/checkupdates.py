@@ -13,11 +13,11 @@ from . import is_root
 from . import image_qualified_name
 from . import image_exists
 from . import in_system_output
-from . import pull
 from . import image_hash
 from . import in_system
 from . import REPO
 
+from .pull import pull
 from .hash import hash
 
 kwds: dict[str, str] = {
